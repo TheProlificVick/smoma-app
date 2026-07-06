@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMOMA - Agence de Régulation des Télécommunications</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .sidebar-item.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-left: 4px solid #eab308;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between flex-shrink-0 z-10 shadow-xl">
+        <div>
+            <div class="p-4 bg-slate-950 flex flex-col items-center border-b border-slate-800 text-center">
+                <img src="ART logo.jpg" alt="ART Cameroon Logo" class="h-20 w-auto object-contain mb-2 rounded bg-white p-1 onerror-fallback" onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex'">
+                <div id="logo-placeholder" class="hidden h-20 w-20 bg-blue-500 rounded-full flex items-center justify-center font-bold text-slate-900 text-xl mb-2">ART</div>
+                <h1 class="text-sm font-bold tracking-wider text-blue-500 uppercase">Agence de Régulation Des Télécommunications Cameroun</h1>
+                <p class="text-xs text-gray-400 mt-1 font-medium">SMOMA Dashboard</p>
+            </div>
+            <nav class="mt-4 px-2 space-y-1">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="sidebar-item active w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-slate-800">
+                    <i class="fa-solid fa-chart-pie w-6 text-blue-500"></i> Dashboard Summary
+                </button>
+                <button onclick="switchTab('domain3')" id="tab-domain3" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-slate-800">
+                    <i class="fa-solid fa-file-signature w-6 text-blue-500"></i> D3. Mission Orders
+                </button>
+                <button onclick="switchTab('domain4')" id="tab-domain4" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-slate-800">
+                    <i class="fa-solid fa-wallet w-6 text-blue-500"></i> D4. Financial Management
+                </button>
+                <button onclick="switchTab('domain5')" id="tab-domain5" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-slate-800">
+                    <i class="fa-solid fa-square-poll-vertical w-6 text-blue-500"></i> D5. Reporting & Stats
+                </button>
+                <button onclick="switchTab('domain1-2')" id="tab-domain1-2" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-slate-800">
+                    <i class="fa-solid fa-gears w-6 text-blue-500"></i> D1 & D2. Admin Settings
+                </button>
+            </nav>
+        </div>
+        <div class="p-3 bg-slate-950 border-t border-slate-800 text-center text-[10px] text-gray-500">
+            <p></p>
+            <p class="mt-1 text-gray-400 font-semibold">Alvick Eddie Lloyd Omenga Ambas</p>
+        </div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10 flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold uppercase tracking-wide">Secure Network</span>
+                <h2 id="view-title" class="text-xl font-bold text-slate-800">Dashboard Summary</h2>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative cursor-pointer hover:text-slate-600 transition-colors">
+                    <i class="fa-solid fa-bell text-xl text-slate-600"></i>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+                </div>
+                <div class="h-8 w-px bg-blue-200"></div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">                        
+                    </div>
+                    <div class="text-left hidden md:block">
+                        <p class="text-xs font-semibold text-slate-900"></p>
+                        <p class="text-[10px] text-gray-500"></p>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main class="flex-1 overflow-y-auto p-6 bg-slate-50">            
+            <div id="content-dashboard" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl shadow-xs border border-blue-100 flex items-center space-x-4">
+                        <div class="p-3 bg-blue-100 text-amber-600 rounded-lg"><i class="fa-solid fa-file-pen text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Draft/Pending</p>
+                            <p class="text-2xl font-bold text-slate-800">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center space-x-4">
+                        <div class="p-3 bg-blue-100 text-blue-600 rounded-lg"><i class="fa-solid fa-signature text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">In Approval Loop</p>
+                            <p class="text-2xl font-bold text-slate-800">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center space-x-4">
+                        <div class="p-3 bg-emerald-100 text-emerald-600 rounded-lg"><i class="fa-solid fa-circle-check text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Approved Today</p>
+                            <p class="text-2xl font-bold text-slate-800"></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center space-x-4">
+                        <div class="p-3 bg-rose-100 text-rose-600 rounded-lg"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Budget Warnings</p>
+                            <p class="text-2xl font-bold text-rose-600"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100 lg:col-span-2">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-bolt text-amber-500 mr-2"></i> Quick Actions</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button onclick="switchTab('domain3')" class="p-4 border border-dashed border-gray-200 rounded-lg hover:border-amber-500 hover:bg-amber-50/20 text-left transition-all group">
+                                <h4 class="font-semibold text-sm text-slate-900 group-hover:text-amber-600"><i class="fa-solid fa-plus-circle mr-1"></i> Initiate New Mission Order</h4>
+                                <p class="text-xs text-gray-500 mt-1">Fill formal mission requirements, destination data, and estimated metrics.</p>
+                            </button>
+                            <button onclick="switchTab('domain4')" class="p-4 border border-dashed border-gray-200 rounded-lg hover:border-emerald-500 hover:bg-emerald-50/20 text-left transition-all group">
+                                <h4 class="font-semibold text-sm text-slate-900 group-hover:text-emerald-600"><i class="fa-solid fa-file-invoice-dollar mr-1"></i> Process Expense Clearances</h4>
+                                <p class="text-xs text-gray-500 mt-1"></p>
+                            </button>
+                        </div>
+                    </div>                   
+                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100">
+                        <h3 class="font-bold text-slate-800 mb-3 flex items-center"><i class="fa-solid fa-clock-rotate-left text-slate-500 mr-2"></i> Recent System Logs (D6)</h3>
+                        <div class="space-y-3 text-xs">
+                            <div class="p-2 bg-slate-50 rounded border-l-2 border-emerald-500">
+                                <p class="font-semibold text-slate-700"></p>
+                                <p class="text-gray-400 text-[10px]"></p>
+                            </div>
+                            <div class="p-2 bg-slate-50 rounded border-l-2 border-amber-500">
+                                <p class="font-semibold text-slate-700"></p>
+                                <p class="text-gray-400 text-[10px]"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="content-domain3" class="tab-content hidden space-y-6">
+                <div class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b border-gray-100 bg-slate-50 flex flex-wrap justify-between items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800">Mission Registry & Order Initiation</h3>
+                            <p class="text-xs text-gray-500">Create, validate, and sign internal/external organizational missions.</p>
+                        </div>
+                        <button onclick="toggleModal('mo-modal', true)" class="bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition-colors">
+                            <i class="fa-solid fa-plus mr-1"></i> New Request
+                        </button>
+                    </div>                   
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-gray-600 border-collapse">
+                            <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4">Mission ID</th>
+                                    <th class="p-4">Staff Member</th>
+                                    <th class="p-4">Destination</th>
+                                    <th class="p-4">Duration</th>
+                                    <th class="p-4">Current Lifecycle State</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 font-medium">
+                                <tr>
+                                    <td class="p-4 font-bold text-slate-900"></td>
+                                    <td class="p-4"></td>
+                                    <td class="p-4"></td>
+                                    <td class="p-4"></td>
+                                    <td class="p-4"><span class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-semibold text-[10px]">PENDING APPROVAL</span></td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-blue-600 hover:underline font-bold"></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-bold text-slate-900"></td>
+                                    <td class="p-4"></td>
+                                    <td class="p-4"></td>
+                                    <td class="p-4"></td>
+                                    <td class="p-4"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold text-[10px]">FINANCE VALIDATED</span></td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-blue-600 hover:underline font-bold"></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="content-domain4" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100 lg:col-span-2 space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm border-b border-gray-100 pb-2">Active Budget Allocations & Threshold Monitor</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span></span>
+                                    <span class="text-gray-500"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full rounded-full" style="width: 75%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span>Direction Administrative</span>
+                                    <span class="text-rose-600 font-bold"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-rose-500 h-full rounded-full" style="width: 92%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                   
+                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100 space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm border-b border-gray-100 pb-2">Allowance Base Standards</h3>
+                        <p class="text-xs text-gray-500">Baseline values per structural framework parameters:</p>
+                        <div class="space-y-2 text-xs font-medium">
+                            <div class="flex justify-between p-2 bg-slate-50 rounded">
+                                <span>Category A Staff / Day</span>
+                                <span class="font-bold text-slate-900"></span>
+                            </div>
+                            <div class="flex justify-between p-2 bg-slate-50 rounded">
+                                <span>Category B Staff / Day</span>
+                                <span class="font-bold text-slate-900"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="content-domain5" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-xs border border-gray-100 space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-800">Operational Metric Generators</h3>
+                            <p class="text-xs text-gray-500">Compile aggregated reports required for regular audit tracking schedules.</p>
+                        </div>
+                        <button class="bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-emerald-700 transition-colors">
+                            <i class="fa-solid fa-file-excel mr-1"></i> Export Master Dataset
+                        </button>
+                    </div>           
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border border-gray-200 rounded-lg p-4 bg-slate-50 flex flex-col justify-between h-48">
+                            <span class="text-xs font-bold text-slate-700 uppercase">Missions Distribution by Department</span>
+                            <div class="flex justify-around items-end h-32 pt-4">
+                                <div class="w-12 bg-slate-800 rounded-t h-[80%] flex items-center justify-center text-[10px] text-white font-bold">82</div>
+                                <div class="w-12 bg-amber-500 rounded-t h-[45%] flex items-center justify-center text-[10px] text-slate-950 font-bold">41</div>
+                                <div class="w-12 bg-blue-600 rounded-t h-[60%] flex items-center justify-center text-[10px] text-white font-bold">59</div>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4 bg-slate-50 flex flex-col justify-between h-48">
+                            <span class="text-xs font-bold text-slate-700 uppercase">Financial Execution Rate (Quarterly)</span>
+                            <div class="flex items-center justify-center h-32">
+                                <p class="text-3xl font-extrabold text-slate-800">0% <span class="text-xs font-semibold text-emerald-600"><i class="fa-solid fa-arrow-trend-up"></i> Optimal</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="content-domain1-2" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100 space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm border-b border-gray-100 pb-2"><i class="fa-solid fa-user-shield mr-1 text-amber-500"></i> User Access Scopes (D1)</h3>
+                        <p class="text-xs text-gray-500">Configure role-based access parameters linked to active directory mappings.</p>
+                        <div class="space-y-2 text-xs">
+                            <label class="flex items-center space-x-2 p-2 bg-slate-50 rounded border border-gray-100 cursor-pointer">
+                                <input type="checkbox" checked class="rounded text-slate-900 focus:ring-slate-900">
+                                <span><strong>Staff Member:</strong> Request execution tracking & expense logs</span>
+                            </label>
+                            <label class="flex items-center space-x-2 p-2 bg-slate-50 rounded border border-gray-100 cursor-pointer">
+                                <input type="checkbox" checked class="rounded text-slate-900 focus:ring-slate-900">
+                                <span><strong>Validator Hierarchy:</strong> Approval workflows, validation triggers</span>
+                            </label>
+                            <label class="flex items-center space-x-2 p-2 bg-slate-50 rounded border border-gray-100 cursor-pointer">
+                                <input type="checkbox" checked class="rounded text-slate-900 focus:ring-slate-900">
+                                <span><strong>Finance Team:</strong> Budget validations, liquidations, global metrics</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-100 space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm border-b border-gray-100 pb-2"><i class="fa-solid fa-database mr-1 text-amber-500"></i> Reference Matrices (D2)</h3>
+                        <p class="text-xs text-gray-500">System baseline tables governing programmatic computation elements:</p>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="p-3 bg-slate-50 border border-gray-100 rounded-lg text-center hover:shadow-xs cursor-pointer">
+                                <i class="fa-solid fa-map-location-dot text-slate-600 mb-1 block"></i>
+                                <span class="font-semibold text-slate-800">Geographic Regions</span>
+                            </div>
+                            <div class="p-3 bg-slate-50 border border-gray-100 rounded-lg text-center hover:shadow-xs cursor-pointer">
+                                <i class="fa-solid fa-car text-slate-600 mb-1 block"></i>
+                                <span class="font-semibold text-slate-800">Transport Modes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="mo-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm uppercase tracking-wide">Initiate Mission Form (D3)</h3>
+                <button onclick="toggleModal('mo-modal', false)" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="event.preventDefault(); toggleModal('mo-modal', false); alert('Mission Template Drafted Successfully.');" class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Assigned Staff</label>
+                    <select class="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-slate-900 outline-hidden">
+                        <option></option>
+                        <option></option>
+                        <option></option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Mission Destination</label>
+                        <input type="text" placeholder="e.g., Douala, Garoua" required class="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-slate-900 outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Duration (Days)</label>
+                        <input type="number" min="1" value="3" required class="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-slate-900 outline-hidden">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Functional Objectives Description</label>
+                    <textarea rows="3" placeholder="State clear operational mission targets..." required class="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-slate-900 outline-hidden"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                    <button type="button" onclick="toggleModal('mo-modal', false)" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 font-medium">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-800 font-semibold shadow">Save Draft Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <table class="dashboard-table">
+    <thead>
+        <tr>
+            <th>Mission Code</th>
+            <th>Staff Member</th>
+            <th>Destination</th>
+            <th>Duration</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody id="missionsTableBody">
+        </tbody>
+</table>
+    <script>  
+    
+const API_URL = "http://localhost:8086/api/missions";
+
+
+
+
+async function loadDashboardMissions() {
+    try {
+        const response = await fetch(API_URL);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const missions = await response.json();
+        const tableBody = document.getElementById("missionsTableBody");
+        tableBody.innerHTML = ""; // Wipes old rows
+
+        // --- NEW: Variables to track metric calculations ---
+        let totalRequests = missions.length;
+        let pendingRequests = 0;
+        let approvedRequests = 0;
+
+        missions.forEach(mission => {
+    
+            if (mission.currentState === "PENDING") {
+                pendingRequests++;
+            } else if (mission.currentState === "APPROVED") {
+                approvedRequests++;
+            }
+
+            
+            const row = document.createElement("tr");
+            const staffName = mission.staffMember 
+                ? `${mission.staffMember.firstName} ${mission.staffMember.lastName}` 
+                : "Unassigned";
+
+            row.innerHTML = `
+                <td><strong>${mission.missionCode}</strong></td>
+                <td>${staffName}</td>
+                <td>${mission.destination}</td>
+                <td>${mission.durationDays} Days</td>
+                <td>
+                    <span class="badge status-${mission.currentState.toLowerCase()}">
+                        ${mission.currentState}
+                    </span>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        
+        document.getElementById("totalRequestsCount").innerText = totalRequests;
+        document.getElementById("pendingRequestsCount").innerText = pendingRequests;
+        document.getElementById("approvedRequestsCount").innerText = approvedRequests;
+
+    } catch (error) {
+        console.error("Error connecting to the backend API:", error);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadDashboardMissions);
+        
+    </script>
+</body>
+</html>

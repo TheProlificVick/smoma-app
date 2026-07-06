@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMOMA - Portal de Connexion</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col justify-between items-center bg-[radial-gradient(#166534_1px,transparent_1px)] [background-size:16px_16px]">
+    <div></div>
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100 mx-4 transition-all transform hover:shadow-2xl">
+                <div class="flex flex-col items-center text-center mb-8">
+            <img src="ART logo.jpg" alt="ART Cameroon Logo" class="h-24 w-auto object-contain mb-3 rounded p-1" onerror="this.style.display='none'; document.getElementById('login-logo-placeholder').style.display='flex'">
+            <div id="login-logo-placeholder" class="hidden h-20 w-20 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-green-900 text-xl mb-3">ART</div>
+            
+            <h1 class="text-lg font-extrabold text-green-900 tracking-wide uppercase">A.R.T. Cameroon</h1>
+            <p class="text-xs text-gray-500 font-semibold mt-1">Staff Mission Order Management Application (SMOMA)</p>
+            <div class="mt-4 px-3 py-1.5 bg-green-50 rounded-full border border-green-200/60 inline-flex items-center space-x-2 text-[11px] font-bold text-green-800">
+                <i class="fa-solid fa-network-wired text-green-600 animate-pulse"></i>
+                <span>Active Directory Federated Login</span>
+            </div>
+        </div>
+<form id="login-form" onsubmit="handleLoginSuite(event)" class="space-y-5 text-xs">
+                        <div>
+                <label class="block font-bold text-gray-700 mb-1 uppercase tracking-wider text-[10px]">AD Corporate Email / Username</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <input type="text" placeholder="username@art.cm or Matricule" required class="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all font-medium text-gray-800 placeholder-gray-400">
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-gray-700 mb-1 uppercase tracking-wider text-[10px]">Password</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <input type="password" placeholder="••••••••" required class="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all font-medium text-gray-800">
+                </div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-gray-500 font-medium">
+                <label class="flex items-center space-x-2 cursor-pointer select-none">
+                    <input type="checkbox" class="rounded text-green-800 focus:ring-green-800 border-gray-300">
+                    <span>Remember terminal session</span>
+                </label>
+                <a href="#" onclick="alert('Please contact your structural IT Administrator unit at ART Headquarters to reset network credentials.')" class="text-green-700 hover:underline font-semibold">Forgot Credential?</a>
+            </div>
+            <button type="submit" id="submit-btn" class="w-full py-3 bg-green-800 hover:bg-green-900 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer group">
+                <span id="btn-text" class="tracking-wide">Authenticate Securely</span>
+                <i id="btn-icon" class="fa-solid fa-arrow-right text-yellow-400 transition-transform group-hover:translate-x-1"></i>
+                <div id="btn-spinner" class="hidden animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            </button>
+        </form>
+        <p class="mt-6 text-[10px] text-center text-gray-400 leading-relaxed font-medium">
+            <i class="fa-solid fa-shield-halved text-gray-300 mr-1"></i>
+            This is a protected state communication network. Unauthorized entry metrics are intercepted and audited continuously.
+        </p>
+    </div>
+    <footer class="w-full py-4 bg-white border-t border-gray-200 text-center text-[11px] text-gray-500 font-medium mt-8">
+        <div class="max-w-md mx-auto px-4 flex justify-between items-center">
+            <span class="text-green-800 font-bold">SMOMA Enterprise Environment</span>
+            <span>Law No. 98/014 & Decree 2012/1638/PM</span>
+        </div>
+    </footer>
+    <script>
+        function handleLoginSuite(event) {
+            event.preventDefault();
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
+            const btnSpinner = document.getElementById('btn-spinner');
+            const submitBtn = document.getElementById('submit-btn');
+            btnText.innerText = "Connecting to AD Server...";
+            btnIcon.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('bg-green-800', 'hover:bg-green-900');
+            submitBtn.classList.add('bg-green-950', 'opacity-90', 'cursor-not-allowed');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
