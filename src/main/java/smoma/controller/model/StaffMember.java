@@ -1,4 +1,4 @@
-package smoma.model;
+package smoma.controller.model;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -231,7 +231,6 @@
             background-color: #F8FAFC;
         }
 
-        /* --- CLEAN COMPLIANCE STATUS BADGES --- */
         .badge {
             display: inline-block;
             padding: 4px 10px;
@@ -479,20 +478,27 @@
                 let approved = 0;
 
                 missions.forEach(m => {
-                    if (m.status === "PENDING") pending++;
-                    else if (m.status === "APPROVED") approved++;
+                    
+                    const mStatus = m.status || "PENDING";
+                    const mCode = m.missionCode || m.codeMission || "N/A";
+                    const mStaff = m.staffMember || m.nomAgent || "Agent Assigné";
+                    const mDest = m.destination || m.lieu || "N/A";
+                    const mDuration = m.duration || m.duree || 0;
+
+                    if (mStatus === "PENDING") pending++;
+                    else if (mStatus === "APPROVED") approved++;
 
                     let statusClass = "status-pending";
-                    if (m.status === "APPROVED") statusClass = "status-approved";
-                    if (m.status === "REJECTED") statusClass = "status-rejected";
+                    if (mStatus === "APPROVED") statusClass = "status-approved";
+                    if (mStatus === "REJECTED") statusClass = "status-rejected";
 
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                        <td><strong>${m.missionCode}</strong></td>
-                        <td>${m.staffMember || "Agent Assigné"}</td>
-                        <td>${m.destination}</td>
-                        <td>${m.duration}</td>
-                        <td><span class="badge ${statusClass}">${m.status}</span></td>
+                        <td><strong>${mCode}</strong></td>
+                        <td>${mStaff}</td>
+                        <td>${mDest}</td>
+                        <td>${mDuration} Jours</td>
+                        <td><span class="badge ${statusClass}">${mStatus}</span></td>
                     `;
                     tableBody.appendChild(row);
                 });
@@ -503,11 +509,11 @@
 
             } catch (err) {
                 console.error("Connection Error:", err);
-                tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--art-red); font-weight:bold; padding:20px;">⚠️ Échec de synchronisation : Le serveur Spring Boot (Port 8086) est inaccessible.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--art-red); font-weight:bold; padding:20px;">⚠️ Erreur de liaison avec le serveur MySQL.</td></tr>`;
             }
         }
 
-        // 3. NAVIGATION MANAGEMENT
+        
         document.querySelectorAll(".menu-link").forEach(link => {
             link.addEventListener("click", function(e) {
                 e.preventDefault();
@@ -534,10 +540,11 @@
         document.getElementById("newMissionForm").addEventListener("submit", async function(e) {
             e.preventDefault();
             
+            // FIXED: Target corrected element IDs and parse duration explicitly to a numeric integer
             const payload = {
                 missionCode: document.getElementById("inputMissionCode").value,
                 destination: document.getElementById("inputDestination").value,
-                duration: document.getElementById("inputDuration").value + " Jours",
+                duration: parseInt(document.getElementById("inputDuration").value, 10),            
                 staffMember: "Agent Enregistreur",
                 status: "PENDING"
             };
@@ -552,9 +559,11 @@
                 if (response.ok) {
                     modal.style.display = "none";
                     document.getElementById("newMissionForm").reset();
-                    loadDashboardMissions(); // Dynamic screen refresh!
+                    loadDashboardMissions(); 
                 } else {
-                    alert("Erreur lors de l'enregistrement de l'ordre de mission.");
+                    const errorData = await response.json().catch(() => null);
+                    const errorText = errorData ? JSON.stringify(errorData) : await response.text();
+                    alert("❌ Server Rejected Data!\nStatus: " + response.status + "\nReason: " + errorText);
                 }
             } catch (err) { 
                 alert("Erreur réseau: Impossible de communiquer avec la base MySQL."); 
@@ -566,3 +575,5 @@
     </script>
 </body>
 </html>
+
+```
