@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MissionFormDetailRepository extends JpaRepository<MissionFormDetail, Long> {
-    
 }

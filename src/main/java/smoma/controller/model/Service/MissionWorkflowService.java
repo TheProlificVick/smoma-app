@@ -1,106 +1,100 @@
 package smoma.controller.model.Service;
 
-import smoma.controller.model.MissionFormDetail;
-import smoma.controller.model.MissionRequest;
-import smoma.controller.model.MissionState;
-import smoma.repository.MissionFormDetailRepository;
-import smoma.repository.MissionRequestRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import smoma.controller.model.*;
+import smoma.repository.*;
+
+import java.time.LocalDateTime;
 
 @Service
+@Transactional
 public class MissionWorkflowService {
 
-    private final MissionRequestRepository requestRepository;
-    private final MissionFormDetailRepository formDetailRepository;
-    private final AuditLogService auditLogService;
-    private final NotificationService notificationService;
+    @Autowired
+    private MissionRequestRepository requestRepository;
 
-    public MissionWorkflowService(MissionRequestRepository requestRepository,
-                                  MissionFormDetailRepository formDetailRepository,
-                                  AuditLogService auditLogService,
-                                  NotificationService notificationService) {
-        this.requestRepository = requestRepository;
-        this.formDetailRepository = formDetailRepository;
-        this.auditLogService = auditLogService;
-        this.notificationService = notificationService;
-    }
+    @Autowired
+    private MissionFormDetailRepository formRepository;
 
-    @Transactional
+    @Autowired
+    private AuditLogRepository auditLogRepository;
+
+    // UC-01: Initiate Request
     public MissionRequest initiateRequest(MissionRequest request) {
         request.setState(MissionState.INITIATED);
         MissionRequest savedRequest = requestRepository.save(request);
-
-        auditLogService.logTransaction(savedRequest.getId(), "DEPARTMENT_REP", "INITIATE", 
-                "Mission project initialized for department: " + request.getOriginatingDepartment());
-        
+        writeAuditLog(savedRequest.getId(), "INITIATE", "Mission initiated.");
         return savedRequest;
     }
 
-    @Transactional
-    public MissionRequest reviewByGM(Long requestId, boolean isApproved, String signatureStamp) {
+    // UC-02: GM Executive Review
+    public MissionRequest reviewByGM(Long requestId, boolean approved, String actorEmail) {
         MissionRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Mission request record not found."));
-
-        if (request.getState() != MissionState.INITIATED) {
-            throw new IllegalStateException("Operational Pipeline Error: Target dossier is not in an INITIATED state.");
-        }
-
-        if (isApproved) {
+                .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
+        
+        if (approved) {
             request.setState(MissionState.GM_APPROVED);
-            request.setGmApprovalStamp(signatureStamp);
-            auditLogService.logTransaction(requestId, "GENERAL_MANAGER", "APPROVE", "Executive review passed. Forwarded to HR.");
+            request.setGmApprovalStamp(actorEmail);
+            writeAuditLog(requestId, "APPROVE", "Approved by GM: " + actorEmail);
         } else {
             request.setState(MissionState.REJECTED);
-            auditLogService.logTransaction(requestId, "GENERAL_MANAGER", "REJECT", "Executive review denied. Workflow terminated.");
+            writeAuditLog(requestId, "REJECT", "Rejected by GM: " + actorEmail);
         }
-
-        MissionRequest updatedRequest = requestRepository.save(request);
-        notificationService.notifyStaff(updatedRequest.getStaffMemberId(), updatedRequest.getId(), updatedRequest.getState());
-        
-        return updatedRequest;
+        return requestRepository.save(request);
     }
 
-    @Transactional
-    public MissionFormDetail populateHRDetails(Long requestId, MissionFormDetail incomingForm) {
+    // UC-03: HR Form Completion
+    public MissionFormDetail populateHRDetails(Long requestId, MissionFormDetail formDetails) {
         MissionRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Mission request record not found."));
+                .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
 
-        // Strict Enforcement: Exclusivity validation for HR data entry 
-        if (request.getState() != MissionState.GM_APPROVED) {
-            throw new IllegalStateException("Exclusivity Violation: Cannot populate logistics unless request is formally GM Approved.");
-        }
+        formDetails.setMissionRequest(request);
+        MissionFormDetail savedDetails = formRepository.save(formDetails);
 
-        incomingForm.setMissionRequest(request);
-        MissionFormDetail savedForm = formDetailRepository.save(incomingForm);
-
-        request.setState(MissionState.FORM_COMPLETED); // Transition to Form Completed state 
+        request.setState(MissionState.FORM_COMPLETED);
         requestRepository.save(request);
 
-        auditLogService.logTransaction(requestId, "HR_OFFICER", "POPULATE_FORM", 
-                String.format("HR logistics configured. Duration days: %d. PerDiem: %s", 
-                        incomingForm.getTotalComputedActiveDays(), incomingForm.getPerDiemAmount().toString()));
-
-        notificationService.notifyStaff(request.getStaffMemberId(), request.getId(), request.getState());
-        
-        return savedForm;
+        writeAuditLog(requestId, "POPULATE_FORM", "Logistics form completed by HR.");
+        return savedDetails;
     }
 
-    @Transactional
+    // Complete Issuance
     public MissionRequest issueMissionOrder(Long requestId) {
         MissionRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Mission request record not found."));
-
-        if (request.getState() != MissionState.FORM_COMPLETED) {
-            throw new IllegalStateException("Pipeline Error: Cannot compile final document without verified HR logistics.");
-        }
+                .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
 
         request.setState(MissionState.ISSUED_ACTIVE);
-        MissionRequest finalizedRequest = requestRepository.save(request);
+        MissionRequest savedRequest = requestRepository.save(request);
 
-        auditLogService.logTransaction(requestId, "SYSTEM", "ISSUE_DOCUMENT", "Final read-only PDF document generated and exposed for downstream download.");
-        notificationService.notifyStaff(finalizedRequest.getStaffMemberId(), finalizedRequest.getId(), finalizedRequest.getState());
-
-        return finalizedRequest;
+        writeAuditLog(requestId, "ISSUE_DOCUMENT", "Mission order issued and active.");
+        return savedRequest;
     }
-} 
+
+    // Process and link a form detail with simple authorization checks
+    public MissionFormDetail saveFormDetails(Long requestId, MissionFormDetail formDetails, StaffMember actor) {
+        // Enforce matching enum check
+        if (!"STAFF".equalsIgnoreCase(actor.getRoleScope()) && !"ADMIN".equalsIgnoreCase(actor.getRoleScope())) {
+            throw new SecurityException("Unauthorized: Only staff members can fill out mission forms.");
+        }
+        return populateHRDetails(requestId, formDetails);
+    }
+
+    // Role-based action to transition workflow states
+    public void approveMission(Long requestId, StaffMember actor) {
+        if (!"SUPERVISOR".equalsIgnoreCase(actor.getRoleScope()) && !"ADMIN".equalsIgnoreCase(actor.getRoleScope())) {
+            throw new SecurityException("Unauthorized: Only Supervisors or Admins can approve missions.");
+        }
+        reviewByGM(requestId, true, actor.getEmail());
+    }
+
+    private void writeAuditLog(Long requestId, String action, String description) {
+        AuditLog log = new AuditLog();
+        log.setMissionRequestId(requestId);
+        log.setAction(action);
+        log.setDescription(description);
+        log.setTimestamp(LocalDateTime.now());
+        auditLogRepository.save(log);
+    }
+}
