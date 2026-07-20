@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -29,8 +30,6 @@ public class MissionFormDetail {
 
     @Column(columnDefinition = "TEXT")
     private String missionObjectives;
-
-    // Logistical details requested by the integration lifecycle test:
     private String originCity;
     private String targetCities;
     private String transitRoutes;
@@ -43,5 +42,6 @@ public class MissionFormDetail {
 
     @OneToOne
     @JoinColumn(name = "mission_request_id", referencedColumnName = "id")
+    @JsonBackReference // Stops serialization back-tracking here
     private MissionRequest missionRequest;
 }

@@ -1,6 +1,7 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,11 +31,11 @@ public class MissionRequest {
     private Long staffMemberId; 
 
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "missionRequest")
+    @JsonManagedReference 
     private MissionFormDetail formDetail; 
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getOriginatingDepartment() { return originatingDepartment; }

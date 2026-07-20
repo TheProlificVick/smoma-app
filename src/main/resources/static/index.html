@@ -3,577 +3,556 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ART - Tableau de Bord Institutionnel</title>
+    <title>ART - Gestion des Ordres de Mission</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        artBlue: '#1E40AF',
+                        artGold: '#EAB308',
+                        artGreen: '#16A34A',
+                        artRed: '#DC2626'
+                    }
+                }
+            }
+        }
+    </script>
+    <link class="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --art-navy: #0F2C59;
-            --art-navy-light: #163C75;
-            --art-red: #D32F2F;
-            --art-gold: #FFC107;
-            --bg-light: #F8F9FA;
-            --border-muted: #E2E8F0;
-            --text-main: #333333;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-light);
-            color: var(--text-main);
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* --- SIDEBAR LAYOUT (Institutional Style) --- */
-        .sidebar {
-            width: 260px;
-            background-color: var(--art-navy);
-            color: #FFFFFF;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .sidebar-brand {
-            padding: 25px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-        }
-
-        .sidebar-brand h1 {
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-            padding: 20px 0;
-            flex-grow: 1;
-        }
-
-        .menu-link {
-            display: block;
-            padding: 12px 24px;
-            color: #CBD5E1;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .menu-link:hover, .menu-link.active {
-            color: #FFFFFF;
-            background-color: var(--art-navy-light);
-            border-left: 4px solid var(--art-gold);
-        }
-
-        .sidebar-footer {
-            padding: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .btn-logout {
-            width: 100%;
-            padding: 9px;
-            background-color: transparent;
-            border: 1px solid #EF4444;
-            color: #FCA5A5;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .btn-logout:hover {
-            background-color: #EF4444;
-            color: white;
-        }
-
-        /* --- MAIN VIEW CONTAINER --- */
-        .main-viewport {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        .top-navbar {
-            background: #FFFFFF;
-            height: 70px;
-            border-bottom: 1px solid var(--border-muted);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 35px;
-        }
-
-        .page-header-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--art-navy);
-        }
-
-        .content-workspace {
-            padding: 35px;
-            flex-grow: 1;
-        }
-
-        .content-section {
-            display: block;
-        }
-
-        .content-section.hidden {
-            display: none;
-        }
-
-        /* --- RECTANGULAR STATISTICAL GRIDS --- */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 25px;
-            margin-bottom: 35px;
-        }
-
-        .metric-card {
-            background: #FFFFFF;
-            border: 1px solid var(--border-muted);
-            border-radius: 4px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #64748B;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-
-        .metric-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--art-navy);
-        }
-
-        /* --- DATA TABLE LAYOUT --- */
-        .data-panel {
-            background: #FFFFFF;
-            border: 1px solid var(--border-muted);
-            border-radius: 4px;
-            padding: 25px;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .panel-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--art-navy);
-        }
-
-        .btn-action {
-            background-color: var(--art-navy);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-action:hover {
-            background-color: var(--art-navy-light);
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-
-        .table-institutional {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        .table-institutional th {
-            background-color: #F1F5F9;
-            color: #475569;
-            font-weight: 600;
-            padding: 14px 16px;
-            border-bottom: 2px solid var(--border-muted);
-        }
-
-        .table-institutional td {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border-muted);
-            color: #334155;
-        }
-
-        .table-institutional tr:hover {
-            background-color: #F8FAFC;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            border-radius: 4px;
-            text-transform: uppercase;
-        }
-
-        .status-approved { background-color: #DCFCE7; color: #15803D; }
-        .status-pending { background-color: #FEF9C3; color: #A16207; }
-        .status-rejected { background-color: #FEE2E2; color: #B91C1C; }
-
-        /* --- STANDARD MODAL STYLING --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 44, 89, 0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-container {
-            background: #FFFFFF;
-            width: 100%;
-            max-width: 480px;
-            border-radius: 4px;
-            border-top: 4px solid var(--art-navy);
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-
-        .modal-header h3 {
-            font-size: 18px;
-            color: var(--art-navy);
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .modal-form-group {
-            margin-bottom: 16px;
-        }
-
-        .modal-form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #475569;
-        }
-
-        .modal-form-control {
-            width: 100%;
-            padding: 9px 12px;
-            font-size: 14px;
-            border: 1px solid var(--border-muted);
-            border-radius: 4px;
-            outline: none;
-        }
-
-        .modal-form-control:focus {
-            border-color: var(--art-navy);
-        }
-
-        .modal-footer {
-            margin-top: 25px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .btn-cancel {
-            background-color: #E2E8F0;
-            color: #475569;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .btn-cancel:hover { background-color: #CBD5E1; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex">
 
-    <div class="sidebar">
-        <div class="sidebar-brand">
-            <h1>PORTAIL ART SMOMA</h1>
-        </div>
-        <ul class="sidebar-menu">
-            <li><a href="#" class="menu-link active" data-target="dashboardSection">Ordres de Mission</a></li>
-            <li><a href="#" class="menu-link" data-target="personnelSection">Répertoire Agents</a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <button id="logoutBtn" class="btn-logout">Déconnexion</button>
+    <!-- DYNAMIC LOGIN OVERLAY -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-100 max-h-[85vh] flex flex-col">
+            <div class="text-center space-y-3 mb-6 flex-shrink-0">
+                <div class="h-20 w-auto flex justify-center items-center">
+                    <img id="login-logo" src="/images/ART%20logo.jpg" alt="ART Logo" class="h-16 w-auto object-contain">
+                </div>
+                <h2 class="text-xl font-bold text-slate-800">Portail d'Accréditation Unique</h2>
+                <p class="text-xs text-slate-500">Sélectionnez un membre du personnel enregistré en base de données pour vous connecter.</p>
+            </div>
+
+            <div id="login-accounts-list" class="space-y-3 overflow-y-auto pr-1 flex-1">
+                <div class="text-center py-8 text-slate-400">
+                    <i class="fa-solid fa-circle-notch animate-spin text-2xl text-artBlue"></i>
+                    <p class="text-xs mt-2">Chargement du personnel de l'ART...</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="main-viewport">
-        <div class="top-navbar">
-            <div class="page-header-title">République du Cameroun — ART</div>
-            <div style="font-size: 14px; color: #475569; font-weight: 500;">
-                Connecté en tant que: <strong id="agentNamePlaceholder" style="color: var(--art-navy);">Agent ART</strong>
+    <aside class="w-72 bg-artBlue text-white flex flex-col justify-between hidden md:flex shadow-xl">
+        <div class="p-6">
+            <div class="flex flex-col items-center text-center gap-2 mb-8 border-b border-blue-700/50 pb-6">
+                <div class="bg-white p-2 rounded-lg shadow-inner mb-2 w-full flex justify-center">
+                    <img id="sidebar-logo" src="/images/ART%20logo.jpg" alt="ART Logo" class="h-16 w-auto object-contain">
+                </div>
+                <div>
+                    <span class="text-sm font-bold tracking-wider block">ART CAMEROUN</span>
+                    <span class="text-[10px] text-blue-200 uppercase tracking-tight block">Système des Ordres de Mission</span>
+                </div>
             </div>
-        </div>
-
-        <div class="content-workspace">
             
-            <div id="dashboardSection" class="content-section">
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <span class="metric-label">Total Missions</span>
-                        <span id="totalRequestsCount" class="metric-value">0</span>
+            <nav class="space-y-1.5">
+                <button id="btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
+                    <i class="fa-solid fa-chart-line w-5"></i> Tableau de bord
+                </button>
+                <button id="btn-create-mission" onclick="switchTab('create-mission')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
+                    <i class="fa-solid fa-file-signature w-5"></i> Nouveau Formulaire
+                </button>
+                <button id="btn-workflow" onclick="switchTab('workflow')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
+                    <i class="fa-solid fa-arrows-split-up-and-left w-5"></i> Pipeline des Ordres
+                </button>
+                <button id="btn-access" onclick="switchTab('access-control')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
+                    <i class="fa-solid fa-user-shield w-5"></i> Droits d'Accès
+                </button>
+                <button id="btn-audit" onclick="switchTab('audit-trail')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
+                    <i class="fa-solid fa-receipt w-5"></i> Registre d'Audit
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-6 border-t border-blue-800 bg-blue-950/40">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-white text-artBlue flex items-center justify-center font-bold shadow-sm text-sm">U</div>
+                    <div>
+                        <p class="text-[10px] text-blue-200">Connecté en tant que</p>
+                        <p id="user-display-name" class="text-sm font-bold truncate max-w-[120px]">Chargement...</p>
+                        <p id="user-role-badge" class="text-[10px] font-mono text-artGold font-semibold">ROLE</p>
                     </div>
-                    <div class="metric-card" style="border-left: 4px solid var(--art-gold);">
-                        <span class="metric-label">En Attente</span>
-                        <span id="pendingRequestsCount" class="metric-value">0</span>
+                </div>
+            </div>
+            <button onclick="logout()" class="w-full bg-red-600/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/30 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm">
+                <i class="fa-solid fa-right-from-bracket"></i> Se Déconnecter
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-h-screen overflow-y-auto">
+        <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 shadow-sm">
+            <h1 id="page-title" class="text-xl font-bold text-slate-900">Tableau de bord</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-slate-400 font-semibold italic">Agence de Régulation des Télécommunications (ART)</span>
+            </div>
+        </header>
+
+        <div class="p-8 flex-1">
+            
+            <!-- ====== TAB: DASHBOARD WITH LIVE METRICS ====== -->
+            <div id="tab-dashboard" class="tab-content active space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Initiés</p>
+                            <h3 id="stat-initiated" class="text-2xl font-bold text-slate-700 mt-1">0</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500"><i class="fa-solid fa-folder-plus"></i></div>
                     </div>
-                    <div class="metric-card" style="border-left: 4px solid #22C55E;">
-                        <span class="metric-label">Approuvées Today</span>
-                        <span id="approvedRequestsCount" class="metric-value">0</span>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Approuvés DG</p>
+                            <h3 id="stat-approved" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500"><i class="fa-solid fa-file-signature"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Missions Actives</p>
+                            <h3 id="stat-active" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><i class="fa-solid fa-plane-departure"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Rejetés</p>
+                            <h3 id="stat-rejected" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500"><i class="fa-solid fa-ban"></i></div>
                     </div>
                 </div>
 
-                <div class="data-panel">
-                    <div class="panel-header">
-                        <div class="panel-title">Registre National des Missions Enregistrées</div>
-                        <button id="openModalBtn" class="btn-action">+ Enregistrer une Mission</button>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl">
+                    <h2 class="text-lg font-bold text-slate-800 mb-2">Bienvenue sur le Portail de l'ART</h2>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Utilisez les onglets de la barre latérale pour initier de nouvelles demandes de mission, gérer les autorisations système, valider les circuits administratifs ou consulter le registre réglementaire en temps réel.
+                    </p>
+                </div>
+            </div>
+
+            <!-- ====== TAB: NEW MISSION FORM ====== -->
+            <div id="tab-create-mission" class="tab-content space-y-6">
+                <div class="max-w-2xl bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="border-b border-slate-100 pb-4 mb-6">
+                        <h2 class="text-lg font-bold text-slate-800">Nouvelle Demande d'Ordre de Mission</h2>
+                        <p class="text-sm text-slate-500">Saisie et soumission réglementaire d'une mission de service.</p>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table-institutional">
-                            <thead>
-                                <tr>
-                                    <th>Code unique</th>
-                                    <th>Bénéficiaire</th>
-                                    <th>Destination Spécifiée</th>
-                                    <th>Durée estimée</th>
-                                    <th>Statut National</th>
-                                </tr>
-                            </thead>
-                            <tbody id="missionsTableBody">
-                                <tr>
-                                    <td colspan="5" style="text-align: center; padding: 20px; color: #64748B;">
-                                        Initialisation de la liaison de données...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                    <form id="mission-order-form" onsubmit="submitMissionForm(event)" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">DESTINATION</label>
+                                <select id="form-destination" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none appearance-none cursor-pointer">
+                                    <option value="" disabled selected>Choisir une ville...</option>
+                                    <option value="Yaoundé">Yaoundé (Siège)</option>
+                                    <option value="Douala">Douala</option>
+                                    <option value="Garoua">Garoua</option>
+                                    <option value="Bamenda">Bamenda</option>
+                                    <option value="Bafoussam">Bafoussam</option>
+                                    <option value="Maroua">Maroua</option>
+                                    <option value="Ngaoundéré">Ngaoundéré</option>
+                                    <option value="Buea">Buea</option>
+                                    <option value="Bertoua">Bertoua</option>
+                                    <option value="Ebolowa">Ebolowa</option>
+                                    <option value="Kribi">Kribi</option>
+                                    <option value="Limbe">Limbe</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">DURÉE (JOURS)</label>
+                                <input type="number" id="form-duration" required min="1" max="60" placeholder="Nombre de jours" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">OBJECTIF PROFESSIONNEL</label>
+                            <textarea id="form-purpose" required rows="3" placeholder="Description de la mission réglementaire de l'ART..." class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none"></textarea>
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit" class="bg-artBlue text-white hover:bg-blue-800 px-6 py-3 rounded-lg text-sm font-semibold flex items-center gap-2 transition shadow-md">
+                                <i class="fa-solid fa-paper-plane"></i> Soumettre l'ordre de mission
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ====== TAB: WORKFLOW KANBAN ====== -->
+            <div id="tab-workflow" class="tab-content space-y-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-800">Pipeline des Ordres de Mission</h2>
+                    <p class="text-sm text-slate-500">Suivi en temps réel et transitions des statuts de mission.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 min-h-[500px]">
+                        <h3 class="font-semibold text-slate-700 mb-3 flex items-center justify-between">
+                            <span>Initié</span> <span class="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full" id="count-initiated">0</span>
+                        </h3>
+                        <div id="col-initiated" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200 min-h-[500px]">
+                        <h3 class="font-semibold text-amber-800 mb-3 flex items-center justify-between">
+                            <span>Approuvé DG</span> <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full" id="count-gm_approved">0</span>
+                        </h3>
+                        <div id="col-gm_approved" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 min-h-[500px]">
+                        <h3 class="font-semibold text-emerald-800 mb-3 flex items-center justify-between">
+                            <span>Émis / Actif</span> <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full" id="count-issued_active">0</span>
+                        </h3>
+                        <div id="col-issued_active" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-200 min-h-[500px]">
+                        <h3 class="font-semibold text-rose-800 mb-3 flex items-center justify-between">
+                            <span>Rejeté</span> <span class="bg-rose-100 text-rose-800 text-xs px-2 py-0.5 rounded-full" id="count-rejected">0</span>
+                        </h3>
+                        <div id="col-rejected" class="space-y-3"></div>
                     </div>
                 </div>
             </div>
 
-            <div id="personnelSection" class="content-section hidden">
-                <div class="data-panel">
-                    <div class="panel-header">
-                        <div class="panel-title">Répertoire du Personnel Autorisé</div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table-institutional">
-                            <thead>
-                                <tr>
-                                    <th>Matricule</th>
-                                    <th>Nom Complet</th>
-                                    <th>Structure Interne</th>
-                                    <th>Statut Compte</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td><strong>ART-9921</strong></td><td>Alvick Ambas</td><td>Direction Technique</td><td><span class="badge status-approved">Actif</span></td></tr>
-                                <tr><td><strong>ART-9922</strong></td><td>Jean-Paul Belinga</td><td>Inspection Générale</td><td><span class="badge status-approved">Actif</span></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- ====== TAB: ACCESS CONTROL ====== -->
+            <div id="tab-access-control" class="tab-content space-y-6">
+                <div>
+                    <h2 class="text-lg font-semibold">Droits d'Accès & Utilisateurs</h2>
+                    <p class="text-sm text-slate-500">Gestion et assignation des rôles de validation de mission.</p>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+                                <th class="p-4">Personnel</th>
+                                <th class="p-4">Adresse Email</th>
+                                <th class="p-4">Rôle Système</th>
+                                <th class="p-4">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ====== TAB: AUDIT TRAIL ====== -->
+            <div id="tab-audit-trail" class="tab-content space-y-6">
+                <div>
+                    <h2 class="text-lg font-semibold">Registre d'Audit Réglementaire</h2>
+                    <p class="text-sm text-slate-500">Historique non modifiable des actions de validation de mission.</p>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+                                <th class="p-4">Date & Heure</th>
+                                <th class="p-4">ID de Demande</th>
+                                <th class="p-4">Action effectuée</th>
+                                <th class="p-4">Description / Détails</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
                 </div>
             </div>
 
         </div>
-    </div>
+    </main>
 
-    <div id="newRequestModal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3>Nouvel Ordre de Mission Administratif</h3>
-            </div>
-            <form id="newMissionForm">
-                <div class="modal-form-group">
-                    <label for="inputMissionCode">Code d'Ordre de Mission</label>
-                    <input type="text" id="inputMissionCode" class="modal-form-control" placeholder="Ex: MSN-8095" required>
-                </div>
-                <div class="modal-form-group">
-                    <label for="inputDestination">Destination (Ville / Centre)</label>
-                    <input type="text" id="inputDestination" class="modal-form-control" placeholder="Ex: Garoua (GOU)" required>
-                </div>
-                <div class="modal-form-group">
-                    <label for="inputDuration">Durée d'exécution (Nombre de Jours)</label>
-                    <input type="number" id="inputDuration" class="modal-form-control" placeholder="Ex: 6" min="1" required>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="closeModalBtn" class="btn-cancel">Annuler</button>
-                    <button type="submit" class="btn-action">Enregistrer en Base</button>
-                </div>
-            </form>
-        </div>
-    </div>
+   <script>
+        const API_BASE = '/api';
+        let currentUser = null;
 
-    <script>
-        const API_URL = "/api/missions";
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDatabaseStaffIntoLogin();
+            updateDashboardMetrics();
+        });
 
-        // 1. RUNTIME SECURITY CHECKPOINT
-        if (localStorage.getItem("art_authenticated") !== "true") {
-            window.location.href = "login.html";
-        } else {
-            const userName = localStorage.getItem("user_name");
-            if (userName && document.getElementById("agentNamePlaceholder")) {
-                document.getElementById("agentNamePlaceholder").innerText = userName;
+        function getDisplayName(member) {
+            if (!member) return "Utilisateur ART";
+            if (member.name) return member.name;
+            if (member.firstName || member.lastName) {
+                return `${member.firstName || ''} ${member.lastName || ''}`.trim();
             }
+            if (member.username) return member.username;
+            if (member.email) {
+                const prefix = member.email.split('@')[0];
+                return prefix.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            }
+            return "Utilisateur ART";
         }
 
-        // 2. DATA ACCESS LAYER: FETCH AND STREAM DATABASE LINES
-        async function loadDashboardMissions() {
-            const tableBody = document.getElementById("missionsTableBody");
-            if (!tableBody) return;
-
+        async function loadDatabaseStaffIntoLogin() {
+            const listContainer = document.getElementById('login-accounts-list');
             try {
-                const response = await fetch(API_URL);
-                if (!response.ok) throw new Error("Fault streaming data records");
+                const response = await fetch(`${API_BASE}/staff`);
+                if (!response.ok) throw new Error("Erreur");
+                const rawData = await response.json();
                 
-                const missions = await response.json();
-                tableBody.innerHTML = "";
+                const staffMembers = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
                 
-                if (missions.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748B;">Aucun ordre de mission enregistré dans la base MySQL.</td></tr>`;
-                    return;
-                }
-
-                let total = missions.length;
-                let pending = 0;
-                let approved = 0;
-
-                missions.forEach(m => {
+                listContainer.innerHTML = staffMembers.map(staff => {
+                    const role = staff.roleScope || staff.systemRole || 'STAFF';
+                    const displayName = getDisplayName(staff);
                     
-                    const mStatus = m.status || "PENDING";
-                    const mCode = m.missionCode || m.codeMission || "N/A";
-                    const mStaff = m.staffMember || m.nomAgent || "Agent Assigné";
-                    const mDest = m.destination || m.lieu || "N/A";
-                    const mDuration = m.duration || m.duree || 0;
+                    let badgeColor = "bg-blue-50 text-artBlue border-blue-200";
+                    if (role.toUpperCase().includes('MANAGER') || role.toUpperCase().includes('DIRECTOR')) {
+                        badgeColor = "bg-amber-50 text-amber-800 border-amber-200";
+                    }
 
-                    if (mStatus === "PENDING") pending++;
-                    else if (mStatus === "APPROVED") approved++;
-
-                    let statusClass = "status-pending";
-                    if (mStatus === "APPROVED") statusClass = "status-approved";
-                    if (mStatus === "REJECTED") statusClass = "status-rejected";
-
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td><strong>${mCode}</strong></td>
-                        <td>${mStaff}</td>
-                        <td>${mDest}</td>
-                        <td>${mDuration} Jours</td>
-                        <td><span class="badge ${statusClass}">${mStatus}</span></td>
+                    return `
+                        <button onclick="loginAs('${staff.email}', '${role}', '${displayName}')" 
+                                class="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-artBlue hover:bg-blue-50/50 transition flex items-center justify-between">
+                            <div>
+                                <p class="font-bold text-sm text-slate-800">${displayName}</p>
+                                <p class="text-xs text-slate-500 font-mono">${staff.email}</p>
+                            </div>
+                            <span class="${badgeColor} text-[10px] px-2.5 py-1 border rounded font-bold font-mono tracking-wide uppercase">${role.replace(/_/g, ' ')}</span>
+                        </button>
                     `;
-                    tableBody.appendChild(row);
-                });
-
-                if (document.getElementById("totalRequestsCount")) document.getElementById("totalRequestsCount").innerText = total;
-                if (document.getElementById("pendingRequestsCount")) document.getElementById("pendingRequestsCount").innerText = pending;
-                if (document.getElementById("approvedRequestsCount")) document.getElementById("approvedRequestsCount").innerText = approved;
-
+                }).join('');
             } catch (err) {
-                console.error("Connection Error:", err);
-                tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--art-red); font-weight:bold; padding:20px;">⚠️ Erreur de liaison avec le serveur MySQL.</td></tr>`;
+                console.error("Erreur de chargement", err);
+                listContainer.innerHTML = `<div class="text-center py-4 text-xs text-red-500">Impossible de charger le personnel. Vérifiez l'état de votre serveur backend.</div>`;
             }
         }
 
+        function loginAs(email, role, name) {
+            currentUser = { email, role, name };
+            document.getElementById('login-overlay').classList.add('hidden');
+            document.getElementById('user-display-name').innerText = name;
+            document.getElementById('user-avatar').innerText = name.split(' ').map(n=>n[0]).join('').toUpperCase();
+            document.getElementById('user-role-badge').innerText = role.replace(/_/g, ' ');
+            switchTab('dashboard');
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('login-overlay').classList.remove('hidden');
+            loadDatabaseStaffIntoLogin();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-blue-900'));
+
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.add('active');
+
+            const activeBtn = document.getElementById(`btn-${tabId === 'create-mission' ? 'create-mission' : tabId}`);
+            if (activeBtn) activeBtn.classList.add('bg-blue-900');
+
+            document.getElementById('page-title').innerText = activeBtn ? activeBtn.innerText : "Tableau de bord";
+
+            if (tabId === 'dashboard') updateDashboardMetrics();
+            if (tabId === 'workflow') fetchWorkflowMissions();
+            if (tabId === 'access-control') fetchStaffRoles();
+            if (tabId === 'audit-trail') fetchAuditLogs();
+        }
+     
+async function submitMissionForm(event) {
+    event.preventDefault();
+    
+    const activeUserEmailElement = document.querySelector('.font-mono.text-artGold');
+    let activeEmail = currentUser ? currentUser.email : null;
+    
+    if (!activeEmail && activeUserEmailElement) {
+        const parentDiv = activeUserEmailElement.parentElement;
+        const emailParagraph = parentDiv ? parentDiv.querySelector('p:nth-child(2)') : null;
+        if (emailParagraph) {
+            activeEmail = emailParagraph.innerText.trim();
+        }
+    }
+
+    if (!activeEmail || activeEmail.includes("Chargement")) {
+        alert("Erreur : Veuillez d'abord vous connecter avec un compte valide via le menu d'authentification !");
+        return;
+    }
+
+    const textValue = document.getElementById('form-purpose').value;
+    const mockId = Math.floor(1000 + Math.random() * 9000);
+
+    const newMission = {
+        id: mockId,
+        destination: document.getElementById('form-destination').value,
+        duration: parseInt(document.getElementById('form-duration').value),
+        purpose: textValue,
+        description: textValue,
+        state: "INITIATED",
+        status: "INITIATED",
+        email: activeEmail,
+        employeeEmail: activeEmail
+    };
+
+    try {
+        // Save to browser storage so it persists during tab switching and refreshes
+        let localMissions = JSON.getObj = JSON.parse(localStorage.getItem('mock_missions')) || [];
+        localMissions.push(newMission);
+        localStorage.setItem('mock_missions', JSON.stringify(localMissions));
+
+        alert("Succès : Demande d'ordre de mission enregistrée et transmise au workflow !");
+        document.getElementById('mission-order-form').reset();
         
-        document.querySelectorAll(".menu-link").forEach(link => {
-            link.addEventListener("click", function(e) {
-                e.preventDefault();
-                document.querySelectorAll(".menu-link").forEach(i => i.classList.remove("active"));
-                this.classList.add("active");
-                document.querySelectorAll(".content-section").forEach(s => s.classList.add("hidden"));
-                document.getElementById(this.getAttribute("data-target")).classList.remove("hidden");
-            });
-        });
+        // This will now safely display our new mission order along with the others
+        switchTab('workflow');
+    } catch (err) {
+        console.error("Simulation error:", err);
+        alert("Une erreur est survenue.");
+    }
+}
 
-        // 4. INSTANCE DISMISSAL CONTROL
-        document.getElementById("logoutBtn").addEventListener("click", function(e) {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = "login.html";
-        });
+     async function updateDashboardMetrics() {
+    try {
+        const response = await fetch(`/api/mission-orders`);
+        let backendMissions = [];
+        if (response.ok) {
+            const rawData = await response.json();
+            backendMissions = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+        }
 
-        // 5. INTERACTIVE POPUP FORM CONTAINER CONTROLS
-        const modal = document.getElementById("newRequestModal");
-        document.getElementById("openModalBtn").addEventListener("click", () => modal.style.display = "flex");
-        document.getElementById("closeModalBtn").addEventListener("click", () => modal.style.display = "none");
+        // Merge backend data with local storage simulation data
+        const localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+        const totalMissions = [...backendMissions, ...localMissions];
 
-        // 6. SUBMIT FLOW DISPATCHER TO BACKEND JPA PERSISTENCE
-        document.getElementById("newMissionForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
+        const counts = { INITIATED: 0, GM_APPROVED: 0, ISSUED_ACTIVE: 0, REJECTED: 0 };
+        totalMissions.forEach(m => { if(m && counts[m.state] !== undefined) counts[m.state]++; });
+
+        document.getElementById('stat-initiated').innerText = counts.INITIATED;
+        document.getElementById('stat-approved').innerText = counts.GM_APPROVED;
+        document.getElementById('stat-active').innerText = counts.ISSUED_ACTIVE;
+        document.getElementById('stat-rejected').innerText = counts.REJECTED;
+    } catch (err) { console.error("Metrics load failed", err); }
+}
+
+async function fetchWorkflowMissions() {
+    try {
+        const cols = { INITIATED: [], GM_APPROVED: [], ISSUED_ACTIVE: [], REJECTED: [] };
+        
+        const response = await fetch(`/api/mission-orders`);
+        let backendMissions = [];
+        if (response.ok) {
+            const rawData = await response.json();
+            backendMissions = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+        }
+        
+        // Merge backend data with local storage simulation data
+        const localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+        const totalMissions = [...backendMissions, ...localMissions];
+        
+        totalMissions.forEach(m => { if (m && cols[m.state]) cols[m.state].push(m); });
+
+        Object.keys(cols).forEach(state => {
+            const countElem = document.getElementById('count-' + state.toLowerCase());
+            if (countElem) countElem.innerText = cols[state].length;
             
-            // FIXED: Target corrected element IDs and parse duration explicitly to a numeric integer
-            const payload = {
-                missionCode: document.getElementById("inputMissionCode").value,
-                destination: document.getElementById("inputDestination").value,
-                duration: parseInt(document.getElementById("inputDuration").value, 10),            
-                staffMember: "Agent Enregistreur",
-                status: "PENDING"
-            };
+            const container = document.getElementById('col-' + state.toLowerCase());
+            if (!container) return;
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
+            container.innerHTML = cols[state].map(m => {
+                let actionButtons = '';
                 
-                if (response.ok) {
-                    modal.style.display = "none";
-                    document.getElementById("newMissionForm").reset();
-                    loadDashboardMissions(); 
-                } else {
-                    const errorData = await response.json().catch(() => null);
-                    const errorText = errorData ? JSON.stringify(errorData) : await response.text();
-                    alert("❌ Server Rejected Data!\nStatus: " + response.status + "\nReason: " + errorText);
+                if (state === 'INITIATED' && currentUser && currentUser.role === 'GENERAL_MANAGER') {
+                    actionButtons = `
+                        <div class="flex gap-1 mt-2">
+                            <button onclick="updateMissionState(${m.id}, 'GM_APPROVED')" class="p-1 px-2 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold">Approuver</button>
+                            <button onclick="updateMissionState(${m.id}, 'REJECTED')" class="p-1 px-2 rounded bg-rose-100 text-rose-800 text-[11px] font-bold">Rejeter</button>
+                        </div>`;
+                } else if (state === 'GM_APPROVED' && currentUser && currentUser.role === 'Human_Resources_Director') {
+                    actionButtons = `
+                        <button onclick="updateMissionState(${m.id}, 'ISSUED_ACTIVE')" class="mt-2 text-center bg-blue-100 text-artBlue font-bold text-[11px] py-1 px-2 rounded w-full block">Signer l'Ordre</button>`;
                 }
-            } catch (err) { 
-                alert("Erreur réseau: Impossible de communiquer avec la base MySQL."); 
-            }
-        });
 
-        // 7. INITIAL LAUNCH TRIGGER
-        document.addEventListener("DOMContentLoaded", loadDashboardMissions);
+                return `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                        <p class="text-xs text-slate-400 font-mono">#OM-${m.id}</p>
+                        <h4 class="font-bold text-slate-800 text-sm mt-0.5">${m.destination || ''}</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">${m.purpose || m.description || ''}</p>
+                        <div class="mt-3 pt-2 border-t border-slate-100 flex flex-col justify-between">
+                            <span class="text-xs text-slate-400 font-medium"><i class="fa-regular fa-clock"></i> ${m.duration || 0} jours</span>
+                            ${actionButtons}
+                        </div>
+                    </div>`;
+            }).join('');
+        });
+    } catch (err) { console.error(err); }
+}
+
+async function updateMissionState(missionId, state) {
+    try {
+        let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+        let missionIndex = localMissions.findIndex(m => m.id == missionId);
+
+        if (missionIndex !== -1) {
+            // Update inside local simulation cache
+            localMissions[missionIndex].state = state;
+            localMissions[missionIndex].status = state;
+            localStorage.setItem('mock_missions', JSON.stringify(localMissions));
+            fetchWorkflowMissions();
+            updateDashboardMetrics();
+        } else {
+            // Fallback to true backend transition mapping if it exists there
+            const actorEmail = currentUser ? currentUser.email : '';
+            await fetch(`/api/workflow/transition`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ missionId: missionId.toString(), state: state })
+            });
+            fetchWorkflowMissions();
+            updateDashboardMetrics();
+        }
+    } catch (err) { console.error(err); }
+}
+
+        async function fetchStaffRoles() {
+            try {
+                const response = await fetch(`${API_BASE}/staff`);
+                if (!response.ok) return;
+                const rawData = await response.json();
+                
+                const staff = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+                
+                document.getElementById('users-table-body').innerHTML = staff.map(member => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 font-semibold text-slate-800">${getDisplayName(member)}</td>
+                        <td class="p-4 text-slate-500 font-mono text-xs">${member.email || ''}</td>
+                        <td class="p-4"><span class="px-2 py-1 bg-blue-50 text-artBlue font-mono text-xs rounded border border-blue-100">${member.roleScope || member.systemRole || 'STAFF'}</span></td>
+                        <td class="p-4"><span class="flex items-center gap-1.5 text-xs text-emerald-700 font-medium"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Actif</span></td>
+                    </tr>`).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function fetchAuditLogs() {
+            try {
+                const response = await fetch(`${API_BASE}/audit-logs`);
+                if (!response.ok) return;
+                const rawData = await response.json();
+                
+                const logs = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+                
+                document.getElementById('audit-table-body').innerHTML = logs.map(log => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 text-xs font-mono text-slate-500">${log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}</td>
+                        <td class="p-4 font-semibold text-slate-800">#OM-${log.missionRequestId || 'N/A'}</td>
+                        <td class="p-4"><span class="px-2 py-0.5 text-xs bg-slate-100 rounded-full font-medium">${log.action || ''}</span></td>
+                        <td class="p-4 text-slate-500 text-xs">${log.description || 'Pas de détails'}</td>
+                    </tr>`).join('');
+            } catch (err) { console.error(err); }
+        }
     </script>
 </body>
 </html>
-
-```

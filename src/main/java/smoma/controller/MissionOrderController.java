@@ -36,12 +36,12 @@ public class MissionOrderController {
             @RequestParam String action,
             @RequestParam String actorEmail) { 
         
-        // 1. Validate permissions against our AppPermission declarations
+        
         AppPermission requiredPermission;
         if ("APPROVE".equalsIgnoreCase(action)) {
             requiredPermission = AppPermission.APPROVE_MISSION;
         } else if ("REJECT".equalsIgnoreCase(action)) {
-            requiredPermission = AppPermission.CREATE_MISSION; // Fallback mapping
+            requiredPermission = AppPermission.CREATE_MISSION; 
         } else {
             return ResponseEntity.badRequest().body("Unknown workflow action: " + action);
         }
