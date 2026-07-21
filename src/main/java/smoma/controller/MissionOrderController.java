@@ -1,62 +1,53 @@
 package smoma.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import smoma.controller.model.MissionFormDetail;
 import smoma.controller.model.MissionOrder;
+import smoma.repository.MissionFormDetailRepository;
 import smoma.repository.MissionOrderRepository;
-import smoma.controller.model.Service.AppPermission;
-import smoma.controller.model.Service.RoleManagementService;
-import smoma.controller.model.Service.MissionWorkflowService;
-
-import java.util.List;
+import smoma.controller.model.Service.NotificationService;
 
 @RestController
 @RequestMapping("/api/mission-orders")
 public class MissionOrderController {
 
     @Autowired
-    private MissionOrderRepository orderRepository;
+    private MissionOrderRepository missionOrderRepository;
 
     @Autowired
-    private MissionWorkflowService workflowService;
+    private MissionFormDetailRepository missionFormDetailRepository;
 
     @Autowired
-    private RoleManagementService roleService;
+    private NotificationService notificationService;
 
-    @GetMapping
-    public ResponseEntity<List<MissionOrder>> getAllOrders() {
-        return ResponseEntity.ok(orderRepository.findAll());
-    }
+    @PostMapping("/{id}/complete-form")
+    public ResponseEntity<?> completeMissionForm(
+            @PathVariable Long id,
+            @RequestBody MissionFormDetail formDetail) {
 
-    @PostMapping("/{id}/transition")
-    public ResponseEntity<String> transitionWorkflow(
-            @PathVariable Long id, 
-            @RequestParam String action,
-            @RequestParam String actorEmail) { 
-        
-        
-        AppPermission requiredPermission;
-        if ("APPROVE".equalsIgnoreCase(action)) {
-            requiredPermission = AppPermission.APPROVE_MISSION;
-        } else if ("REJECT".equalsIgnoreCase(action)) {
-            requiredPermission = AppPermission.CREATE_MISSION; 
-        } else {
-            return ResponseEntity.badRequest().body("Unknown workflow action: " + action);
-        }
+        // 1. Fetch the existing Mission Order / Request
+        MissionOrder missionOrder = missionOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mission Order not found with id: " + id));
 
-        if (!roleService.isAuthorized(actorEmail, requiredPermission)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Access Denied: " + actorEmail + " does not have permission to " + action);
-        }
+        // 2. Save Form Details directly to repository
+        missionFormDetailRepository.save(formDetail);
 
-        try {
-            boolean isApproved = "APPROVE".equalsIgnoreCase(action);
-            workflowService.reviewByGM(id, isApproved, actorEmail);
-            return ResponseEntity.ok("Mission workflow successfully updated by " + actorEmail);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error processing workflow: " + e.getMessage());
-        }
+        // 3. Build notification message using actual schema fields (target_cities)
+        String destination = (formDetail.getTargetCities() != null && !formDetail.getTargetCities().isEmpty()) 
+                ? formDetail.getTargetCities() 
+                : "the designated location";
+
+        String message = "You have been assigned a new mission to " + destination + ".";
+
+        // 4. Send Notification
+        notificationService.sendNotification(
+                missionOrder.getId(), 
+                "NEW_MISSION_ASSIGNMENT", 
+                message
+        );
+
+        return ResponseEntity.ok().body("Mission form populated and staff notified successfully.");
     }
 }
