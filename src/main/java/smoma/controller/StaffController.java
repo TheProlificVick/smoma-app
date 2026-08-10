@@ -30,7 +30,7 @@ public class StaffController {
         
         if (staffOpt.isPresent()) {
             StaffMember staff = staffOpt.get();
-            // Assuming your StaffMember model has a standard setter for role or roleScope:
+            
             staff.setRoleScope(newRole);
             staffMemberRepository.save(staff);
             return ResponseEntity.ok().build();

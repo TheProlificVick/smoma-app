@@ -1,0 +1,128 @@
+dn: dc=art,dc=cm
+objectClass: top
+objectClass: domain
+dc: art
+
+dn: ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: organizationalUnit
+ou: Users
+
+# 1. Aurelien Atangana Etoundi - GENERAL_MANAGER
+dn: cn=Aurelien Atangana Etoundi,ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Aurelien Atangana Etoundi
+sn: Atangana Etoundi
+givenName: Aurelien
+sAMAccountName: gm
+userPrincipalName: gm@art.cm
+mail: gm@art.cm
+department: Executive Office
+title: GENERAL_MANAGER
+userPassword: Password123!
+objectGUID: ad-uuid-0000-0001
+
+# 2. Aboubakar Ousman - Deputy_General_Manager
+dn: cn=Aboubakar Ousman,ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Aboubakar Ousman
+sn: Ousman
+givenName: Aboubakar
+sAMAccountName: aboubakar.ousman
+userPrincipalName: aboubakar.ousman@art.cm
+mail: aboubakar.ousman@art.cm
+department: Executive Office
+title: Deputy_General_Manager
+userPassword: Password123!
+objectGUID: ad-uuid-0000-0002
+
+# 3. Chantal Abega - Human_Resources_Director
+dn: cn=Chantal Abega,ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Chantal Abega
+sn: Abega
+givenName: Chantal
+sAMAccountName: abega.chantal
+userPrincipalName: abega.chantal@art.cm
+mail: abega.chantal@art.cm
+department: Human Resources
+title: Human_Resources_Director
+userPassword: Password123!
+objectGUID: ad-uuid-0000-0003
+
+# 4. Alain Kamga - Finance_Department_Director
+dn: cn=Alain Kamga,ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Alain Kamga
+sn: Kamga
+givenName: Alain
+sAMAccountName: kamga.alain
+userPrincipalName: kamga.alain@art.cm
+mail: kamga.alain@art.cm
+department: Finance Department
+title: Finance_Department_Director
+userPassword: Password123!
+objectGUID: ad-uuid-0000-0004
+
+# 5. Julienne Ntsama - Information_Systems_Unit_Director
+dn: cn=Julienne Ntsama,ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Julienne Ntsama
+sn: Ntsama
+givenName: Julienne
+sAMAccountName: ntsama.julienne
+userPrincipalName: ntsama.julienne@art.cm
+mail: ntsama.julienne@art.cm
+department: Information Systems
+title: Information_Systems_Unit_Director
+userPassword: Password123!
+objectGUID: ad-uuid-0000-0005
+
+# 6. Lucas Eyango - Information_Systems_Unit_Personnel
+dn: cn=Lucas Eyango,ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Lucas Eyango
+sn: Eyango
+givenName: Lucas
+sAMAccountName: eyango.lucas
+userPrincipalName: eyango.lucas@art.cm
+mail: eyango.lucas@art.cm
+department: Information Systems
+title: Information_Systems_Unit_Personnel
+userPassword: Password123!
+objectGUID: ad-uuid-0000-0006
+
+# 7. Alvick Ambas - STAFF
+dn: cn=Alvick Ambas,ou=Users,dc=art,dc=cm
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Alvick Ambas
+sn: Ambas
+givenName: Alvick
+sAMAccountName: alvick.ambas
+userPrincipalName: alvick.ambas@art.cm
+mail: alvick.ambas@art.cm
+department: CSI Division
+title: Software Engineer
+userPassword: Password123!
+objectGUID: ad-uuid-0000-0007

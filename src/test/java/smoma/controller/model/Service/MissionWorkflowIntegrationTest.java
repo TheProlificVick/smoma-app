@@ -10,13 +10,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 public class MissionWorkflowIntegrationTest {
 
     @Autowired
@@ -48,7 +51,7 @@ public class MissionWorkflowIntegrationTest {
 
     @Test
     void testEndToEndMissionOrderLifecycleWithAuditing() {
-        // 1. Arrange: Create a Staff Member with all required database fields
+        // 1. Arrange: Create a Staff Member with Active Directory fields
         StaffMember staff = new StaffMember();
         staff.setFirstName("Alvick");
         staff.setLastName("Ambas");
@@ -56,6 +59,15 @@ public class MissionWorkflowIntegrationTest {
         staff.setMatricule("ART-2026-042"); 
         staff.setEmail("alvick.ambas@art.cm"); 
         staff.setRoleScope("STAFF"); 
+        
+        // Active Directory test mapping
+        staff.setSamAccountName("a.ambas");
+        staff.setUserPrincipalName("alvick.ambas@art.cm");
+        staff.setObjectGuid("ad-uuid-0000-0001");
+        staff.setJobTitle("Stagiare");
+        staff.setIsAdManaged(true);
+        staff.setLastAdSyncAt(LocalDateTime.now());
+
         StaffMember savedStaff = staffMemberRepository.save(staff);
 
         // 2. Arrange a Mission Request
@@ -63,7 +75,7 @@ public class MissionWorkflowIntegrationTest {
         request.setOriginatingDepartment("CSI Division");
         request.setIssueDescription("Regular Telecom Infrastructure Audit.");
         request.setTextJustification("Compliance monitoring directive.");
-        request.setStaffMemberId(savedStaff.getId()); 
+        request.setStaffMemberId(savedStaff.getStaffId()); 
 
         // 3. Act: Initiate (UC-01)
         MissionRequest initiatedRequest = workflowService.initiateRequest(request);

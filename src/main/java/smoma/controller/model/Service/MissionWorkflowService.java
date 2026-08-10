@@ -74,6 +74,9 @@ public class MissionWorkflowService {
 
     // Process and link a form detail with simple authorization checks
     public MissionFormDetail saveFormDetails(Long requestId, MissionFormDetail formDetails, StaffMember actor) {
+        if (actor == null || actor.getRoleScope() == null) {
+            throw new SecurityException("Unauthorized: Invalid staff actor credentials.");
+        }
         // Enforce matching enum check
         if (!"STAFF".equalsIgnoreCase(actor.getRoleScope()) && !"ADMIN".equalsIgnoreCase(actor.getRoleScope())) {
             throw new SecurityException("Unauthorized: Only staff members can fill out mission forms.");
@@ -83,6 +86,9 @@ public class MissionWorkflowService {
 
     // Role-based action to transition workflow states
     public void approveMission(Long requestId, StaffMember actor) {
+        if (actor == null || actor.getRoleScope() == null) {
+            throw new SecurityException("Unauthorized: Invalid staff actor credentials.");
+        }
         if (!"SUPERVISOR".equalsIgnoreCase(actor.getRoleScope()) && !"ADMIN".equalsIgnoreCase(actor.getRoleScope())) {
             throw new SecurityException("Unauthorized: Only Supervisors or Admins can approve missions.");
         }

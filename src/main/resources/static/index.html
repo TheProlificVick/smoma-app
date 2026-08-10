@@ -21,6 +21,9 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -32,7 +35,7 @@
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-100 max-h-[85vh] flex flex-col">
             <div class="text-center space-y-3 mb-6 flex-shrink-0">
                 <div class="h-20 w-auto flex justify-center items-center">
-                    <img id="login-logo" src="/images/ART%20logo.jpg" alt="ART Logo" class="h-16 w-auto object-contain">
+                    <img id="login-logo" src="/images/ART%20logo.jpg" alt="ART Logo" class="h-16 w-auto object-contain" onerror="this.src='https://via.placeholder.com/150?text=ART+Logo'">
                 </div>
                 <h2 class="text-xl font-bold text-slate-800">Portail d'Accréditation Unique</h2>
                 <p class="text-xs text-slate-500">Sélectionnez un membre du personnel enregistré en base de données pour vous connecter.</p>
@@ -51,7 +54,7 @@
         <div class="p-6">
             <div class="flex flex-col items-center text-center gap-2 mb-8 border-b border-blue-700/50 pb-6">
                 <div class="bg-white p-2 rounded-lg shadow-inner mb-2 w-full flex justify-center">
-                    <img id="sidebar-logo" src="/images/ART%20logo.jpg" alt="ART Logo" class="h-16 w-auto object-contain">
+                    <img id="sidebar-logo" src="/images/ART%20logo.jpg" alt="ART Logo" class="h-16 w-auto object-contain" onerror="this.src='https://via.placeholder.com/150?text=ART+Logo'">
                 </div>
                 <div>
                     <span class="text-sm font-bold tracking-wider block">ART CAMEROUN</span>
@@ -62,9 +65,6 @@
             <nav class="space-y-1.5">
                 <button id="btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
                     <i class="fa-solid fa-chart-line w-5"></i> Tableau de bord
-                </button>
-                <button id="btn-create-mission" onclick="switchTab('create-mission')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
-                    <i class="fa-solid fa-file-signature w-5"></i> Nouveau Formulaire
                 </button>
                 <button id="btn-workflow" onclick="switchTab('workflow')" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800/60 transition font-medium">
                     <i class="fa-solid fa-arrows-split-up-and-left w-5"></i> Pipeline des Ordres
@@ -98,25 +98,41 @@
     <main class="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 shadow-sm">
             <h1 id="page-title" class="text-xl font-bold text-slate-900">Tableau de bord</h1>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-6">
+                <!-- NOTIFICATIONS POP-OVER TRIGGER -->
+                <div class="relative">
+                    <button onclick="toggleNotificationsMenu()" class="relative text-slate-500 hover:text-artBlue p-2 rounded-lg transition">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span id="notif-badge" class="hidden absolute top-1 right-1 bg-artRed text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+                    </button>
+                    <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 z-40 p-4">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2 flex items-center justify-between">
+                            <span>Notifications de Mission</span>
+                            <i class="fa-solid fa-envelope-open text-artBlue"></i>
+                        </h4>
+                        <div id="notif-list" class="space-y-2 max-h-60 overflow-y-auto">
+                            <p class="text-xs text-slate-400 italic text-center py-2">Aucune nouvelle notification.</p>
+                        </div>
+                    </div>
+                </div>
                 <span class="text-xs text-slate-400 font-semibold italic">Agence de Régulation des Télécommunications (ART)</span>
             </div>
         </header>
+
         <div class="p-8 flex-1">
-            
-            <!-- ====== TAB: DASHBOARD WITH LIVE METRICS ====== -->
+            <!-- ====== TAB: DASHBOARD ====== -->
             <div id="tab-dashboard" class="tab-content active space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
                     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Initiés</p>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Demandes Initiées</p>
                             <h3 id="stat-initiated" class="text-2xl font-bold text-slate-700 mt-1">0</h3>
                         </div>
                         <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500"><i class="fa-solid fa-folder-plus"></i></div>
                     </div>
                     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Approuvés DG</p>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Approuvés DG (A remplir RH)</p>
                             <h3 id="stat-approved" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
                         </div>
                         <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500"><i class="fa-solid fa-file-signature"></i></div>
@@ -136,65 +152,31 @@
                         <div class="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500"><i class="fa-solid fa-ban"></i></div>
                     </div>
                 </div>
+
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl">
                     <h2 class="text-lg font-bold text-slate-800 mb-2">Bienvenue sur le Portail de l'ART</h2>
-                    <p class="text-slate-600 text-sm leading-relaxed">     
-                        Utilisez les onglets de la barre latérale pour initier de nouvelles demandes de mission, gérer les autorisations système, valider les circuits administratifs ou consulter le registre réglementaire en temps réel.
+                    <p class="text-slate-600 text-sm leading-relaxed">    
+                        Utilisez les onglets de la barre latérale pour suivre le pipeline des ordres, soumettre des demandes de mission, valider les circuits administratifs ou consulter le registre réglementaire.
                     </p>
-                    <!-- HR ONLY BUTTON -->
-                    <div id="hr-action-container" class="mt-4 hidden">
-                        <button 
-                            type="button"
-                            onclick="openHrModal(1)" 
-                            class="px-4 py-2 bg-artBlue hover:bg-blue-800 text-white text-sm font-medium rounded-lg shadow transition flex items-center gap-2">
-                            <i class="fa-solid fa-plus"></i>  Remplir Ordre de Mission
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ====== TAB: NEW MISSION FORM ====== -->
-            <div id="tab-create-mission" class="tab-content space-y-6">
-                <div class="max-w-2xl bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                    <div class="border-b border-slate-100 pb-4 mb-6">
-                        <h2 class="text-lg font-bold text-slate-800">Nouvelle Demande d'Ordre de Mission</h2>
-                        <p class="text-sm text-slate-500">Saisie et soumission réglementaire d'une mission de service.</p>
-                    </div>
-                    <form id="mission-order-form" onsubmit="submitMissionForm(event)" class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">DESTINATION</label>
-                                <select id="form-destination" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Choisir une ville...</option>
-                                    <option value="Yaoundé">Yaoundé (Siège)</option>
-                                    <option value="Douala">Douala</option>
-                                    <option value="Garoua">Garoua</option>
-                                    <option value="Bamenda">Bamenda</option>
-                                    <option value="Bafoussam">Bafoussam</option>
-                                    <option value="Maroua">Maroua</option>
-                                    <option value="Ngaoundéré">Ngaoundéré</option>
-                                    <option value="Buea">Buea</option>
-                                    <option value="Bertoua">Bertoua</option>
-                                    <option value="Ebolowa">Ebolowa</option>
-                                    <option value="Kribi">Kribi</option>
-                                    <option value="Limbe">Limbe</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">DURÉE (JOURS)</label>
-                                <input type="number" id="form-duration" required min="1" max="60" placeholder="Nombre de jours" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 mb-1">OBJECTIF PROFESSIONNEL</label>
-                            <textarea id="form-purpose" required rows="3" placeholder="Description de la mission réglementaire de l'ART..." class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none"></textarea>
-                        </div>
-                        <div class="pt-4">
-                            <button type="submit" class="bg-artBlue text-white hover:bg-blue-800 px-6 py-3 rounded-lg text-sm font-semibold flex items-center gap-2 transition shadow-md">
-                                <i class="fa-solid fa-paper-plane"></i> Soumettre votre demande
+                    
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <div id="dept-action-container" class="hidden">
+                            <button 
+                                type="button"
+                                onclick="openDeptDemandModal()" 
+                                class="px-4 py-2 bg-artBlue hover:bg-blue-800 text-white text-sm font-medium rounded-lg shadow transition flex items-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> Demander une Mission (Département)
                             </button>
                         </div>
-                    </form>
+                        <div id="hr-action-container" class="hidden">
+                            <button 
+                                type="button"
+                                onclick="openHrModal()" 
+                                class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg shadow transition flex items-center gap-2">
+                                <i class="fa-solid fa-file-pen"></i> Établir un Ordre de Mission (RH Exclusif)
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -202,30 +184,34 @@
             <div id="tab-workflow" class="tab-content space-y-6">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-800">Pipeline des Ordres de Mission</h2>
-                    <p class="text-sm text-slate-500">Suivi en temps réel et transitions des statuts de mission.</p>
+                    <p class="text-sm text-slate-500">Demandes de départements, approbation exclusive du DG, rédaction RH et émission.</p>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Column 1: Demande Initiée par Département -->
                     <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 min-h-[500px]">
                         <h3 class="font-semibold text-slate-700 mb-3 flex items-center justify-between">
-                            <span>Initié</span> <span class="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full" id="count-initiated">0</span>
+                            <span>Initié (Attente DG)</span> <span class="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full" id="count-initiated">0</span>
                         </h3>
                         <div id="col-initiated" class="space-y-3"></div>
                     </div>
+                    <!-- Column 2: Approuvé par DG -> Transmis aux RH -->
                     <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200 min-h-[500px]">
                         <h3 class="font-semibold text-amber-800 mb-3 flex items-center justify-between">
-                            <span>Approuvé DG</span> <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full" id="count-gm_approved">0</span>
+                            <span>Approuvé DG (Attente RH)</span> <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full" id="count-gm_approved">0</span>
                         </h3>
                         <div id="col-gm_approved" class="space-y-3"></div>
                     </div>
+                    <!-- Column 3: Finalisé / Actif -->
                     <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 min-h-[500px]">
                         <h3 class="font-semibold text-emerald-800 mb-3 flex items-center justify-between">
                             <span>Émis / Actif</span> <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full" id="count-issued_active">0</span>
                         </h3>
                         <div id="col-issued_active" class="space-y-3"></div>
                     </div>
+                    <!-- Column 4: Rejeté par DG -->
                     <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-200 min-h-[500px]">
                         <h3 class="font-semibold text-rose-800 mb-3 flex items-center justify-between">
-                            <span>Rejeté</span> <span class="bg-rose-100 text-rose-800 text-xs px-2 py-0.5 rounded-full" id="count-rejected">0</span>
+                            <span>Rejeté DG</span> <span class="bg-rose-100 text-rose-800 text-xs px-2 py-0.5 rounded-full" id="count-rejected">0</span>
                         </h3>
                         <div id="col-rejected" class="space-y-3"></div>
                     </div>
@@ -276,415 +262,834 @@
         </div>
     </main>
 
-    <!-- FORMULAIRE D'ORDRE DE MISSION MODAL (RH EXCLUSIVE) -->
-    <div id="hrMissionModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <!-- FORMULAIRE 1: DEMANDE DE MISSION PAR DEPARTEMENT (SOUMIS AU DG) -->
+    <div id="deptDemandModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100">
-            <!-- Modal Header -->
             <div class="bg-artBlue px-6 py-4 flex items-center justify-between text-white">
-                <h3 class="text-lg font-bold">Formulaire d'Ordre de Mission (RH)</h3>
-                <button type="button" onclick="closeHrModal()" class="text-slate-300 hover:text-white text-xl font-bold transition">&times;</button>
+                <h3 class="text-lg font-bold"><i class="fa-solid fa-paper-plane mr-2"></i>Demande de Mission au DG</h3>
+                <button type="button" onclick="closeDeptDemandModal()" class="text-slate-300 hover:text-white text-xl font-bold transition">&times;</button>
             </div>
-            <!-- Modal Form -->
-            <form id="hrMissionForm" onsubmit="submitHrForm(event)" class="p-6 space-y-4">
-                <input type="hidden" id="hrMissionOrderId" value="1" />
-                
-                <!-- Staff Member Assignment -->
+            <form id="deptDemandForm" onsubmit="submitDeptDemandForm(event)" class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Agent Assigné ID / Email</label>
-                    <input type="text" id="hrStaffId" required placeholder="Ex: alvick.ambas@art.cm" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none" />
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Département Initiateur</label>
+                    <input type="text" id="deptName" required placeholder="Ex: Direction des Réseaux et Services" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none" />
                 </div>
-                
-                <!-- Itinerary Details - DROPDOWN SELECTS -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Agent à Mettre en Mission (Email / Nom)</label>
+                    <input type="text" id="deptAgentEmail" required placeholder="Ex: alvick.ambas@art.cm" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none" />
+                </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Ville de Départ</label>
-                        <select id="hrOriginCity" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none appearance-none cursor-pointer">
-                            <option value="" disabled selected>Choisir une ville...</option>
+                        <select id="deptOriginCity" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none appearance-none cursor-pointer">
+                            <option value="" disabled selected>Ville départ...</option>
                             <option value="Yaoundé">Yaoundé (Siège)</option>
                             <option value="Douala">Douala</option>
                             <option value="Garoua">Garoua</option>
                             <option value="Bamenda">Bamenda</option>
                             <option value="Bafoussam">Bafoussam</option>
-                            <option value="Maroua">Maroua</option>
-                            <option value="Ngaoundéré">Ngaoundéré</option>
-                            <option value="Buea">Buea</option>
-                            <option value="Bertoua">Bertoua</option>
-                            <option value="Ebolowa">Ebolowa</option>
-                            <option value="Kribi">Kribi</option>
-                            <option value="Limbe">Limbe</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Ville(s) de Destination</label>
-                        <select id="hrTargetCities" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none appearance-none cursor-pointer">
-                            <option value="" disabled selected>Choisir une ville...</option>
-                            <option value="Yaoundé">Yaoundé (Siège)</option>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Destination Souhaitée</label>
+                        <select id="deptTargetCity" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none appearance-none cursor-pointer">
+                            <option value="" disabled selected>Ville arrivée...</option>
                             <option value="Douala">Douala</option>
                             <option value="Garoua">Garoua</option>
                             <option value="Bamenda">Bamenda</option>
                             <option value="Bafoussam">Bafoussam</option>
                             <option value="Maroua">Maroua</option>
-                            <option value="Ngaoundéré">Ngaoundéré</option>
-                            <option value="Buea">Buea</option>
-                            <option value="Bertoua">Bertoua</option>
-                            <option value="Ebolowa">Ebolowa</option>
                             <option value="Kribi">Kribi</option>
-                            <option value="Limbe">Limbe</option>
                         </select>
                     </div>
                 </div>
-                
-                <!-- Duration & Financials -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Durée (Jours)</label>
-                        <input type="number" id="hrDurationDays" required min="1" max="60" placeholder="5" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Taux Per Diem (FCFA)</label>
-                        <input type="number" id="hrPerDiemAmount" required placeholder="35000" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none" />
-                    </div>
-                </div>
-                
-                <!-- Total Budget Allocation -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Budget Total Alloué (FCFA)</label>
-                    <input type="number" id="hrTotalBudget" required placeholder="175000" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none" />
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Motif / Objectif de la Mission</label>
+                    <textarea id="deptPurpose" required rows="3" placeholder="Ex: Inspection des infrastructures réseau et contrôle de conformité des opérateurs..." class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-artBlue focus:ring-1 focus:ring-artBlue outline-none"></textarea>
                 </div>
-                
-                <!-- Modal Footer / Buttons -->
                 <div class="pt-4 flex justify-end space-x-3 border-t border-slate-100">
-                    <button type="button" onclick="closeHrModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold rounded-lg transition">
-                        Annuler
-                    </button>
+                    <button type="button" onclick="closeDeptDemandModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold rounded-lg transition">Annuler</button>
                     <button type="submit" class="px-5 py-2.5 bg-artBlue hover:bg-blue-800 text-white text-sm font-semibold rounded-lg shadow transition flex items-center gap-2">
-                        <span>Valider et Notifier Agent</span>
+                        <span>Soumettre au Directeur Général</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script>
-        const API_BASE = '/api';
-        let currentUser = null;
+    <!-- FORMULAIRE 2: COMPLETION ET EMISSION PAR LA DRH (STRICTEMENT RESERVE A LA DRH) -->
+    <div id="hrMissionModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100">
+            <div class="bg-amber-600 px-6 py-4 flex items-center justify-between text-white">
+                <h3 class="text-lg font-bold"><i class="fa-solid fa-user-tie mr-2"></i>Formulaire d'Ordre de Mission (RH Exclusif)</h3>
+                <button type="button" onclick="closeHrModal()" class="text-slate-300 hover:text-white text-xl font-bold transition">&times;</button>
+            </div>
+            <form id="hrMissionForm" onsubmit="submitHrForm(event)" class="p-6 space-y-4">
+                <input type="hidden" id="hrMissionOrderId" value="" />
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Agent Assigné (Email)</label>
+                    <input type="email" id="hrStaffId" required placeholder="Ex: alvick.ambas@art.cm" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-amber-600 focus:ring-1 focus:ring-amber-600 outline-none" />
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Ville de Départ</label>
+                        <select id="hrOriginCity" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-amber-600 focus:ring-1 focus:ring-amber-600 outline-none appearance-none cursor-pointer">
+                            <option value="" disabled selected>Choisir une ville...</option>
+                            <option value="Yaoundé">Yaoundé (Siège)</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Limbe">Limbe</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Ville de Destination</label>
+                        <select id="hrTargetCities" required class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-amber-600 focus:ring-1 focus:ring-amber-600 outline-none appearance-none cursor-pointer">
+                            <option value="" disabled selected>Choisir une ville...</option>
+                            <option value="Yaoundé">Yaoundé (Siège)</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Limbe">Limbe</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Durée (Jours)</label>
+                    <input type="number" id="hrDurationDays" required min="1" max="60" placeholder="5" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-amber-600 focus:ring-1 focus:ring-amber-600 outline-none" />
+                </div>
+                
+                <div class="pt-4 flex justify-end space-x-3 border-t border-slate-100">
+                    <button type="button" onclick="closeHrModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold rounded-lg transition">Annuler</button>
+                    <button type="submit" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg shadow transition flex items-center gap-2">
+                        <span>Émettre l'Ordre de Mission Final</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadDatabaseStaffIntoLogin();
+    <!-- PREVIEW & PDF DOWNLOAD MODAL -->
+    <div id="viewMissionModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="bg-artBlue px-6 py-4 flex items-center justify-between text-white">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-file-contract"></i>
+                    <span>Aperçu de l'Ordre de Mission</span>
+                    <span id="preview-mission-id" class="text-xs bg-blue-900/80 font-mono px-2 py-0.5 rounded border border-blue-400">#0000</span>
+                </h3>
+                <button type="button" onclick="closeViewMissionModal()" class="text-slate-300 hover:text-white text-xl font-bold transition">&times;</button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 text-sm bg-slate-50/50">
+                <!-- OFFICIAL HEADER -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-artBlue"></div>
+                    <div class="flex justify-between items-center text-[10px] uppercase font-bold text-slate-500 border-b border-slate-100 pb-3 mb-3">
+                        <div class="text-left">
+                            <p>République du Cameroun</p>
+                            <p class="text-[8px] font-normal text-slate-400">Paix - Travail - Patrie</p>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-artBlue font-bold text-xs">A.R.T. CAMEROUN</span>
+                        </div>
+                        <div class="text-right">
+                            <p>Republic of Cameroon</p>
+                            <p class="text-[8px] font-normal text-slate-400">Peace - Work - Fatherland</p>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-artBlue tracking-wide uppercase">ORDRE DE MISSION OFFICIEL</h2>
+                    <p id="preview-status-badge" class="mt-1 inline-block text-[10px] font-mono uppercase px-2.5 py-0.5 rounded border font-bold">STATUS</p>
+                </div>
+
+                <!-- DETAILS TABLE -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="grid grid-cols-2 gap-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Agent Notifié / Missionné</span>
+                            <span id="preview-agent" class="font-bold text-slate-800">--</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Département Initiateur</span>
+                            <span id="preview-dept" class="font-semibold text-slate-700">--</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Ville de Départ</span>
+                            <span id="preview-origin" class="font-semibold text-slate-700">--</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Destination</span>
+                            <span id="preview-destination" class="font-semibold text-artBlue">--</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Durée Estimée</span>
+                            <span id="preview-duration" class="font-semibold text-slate-700">--</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Objet / Motif de la Mission</span>
+                        <p id="preview-purpose" class="text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs italic">--</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2 text-[11px] text-slate-500">
+                        <div>
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase">Approbation Direction</span>
+                            <span id="preview-gm-approval" class="font-medium">Directeur Général (Accord Requis)</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase">Émission Administrative</span>
+                            <span id="preview-hr-issuer" class="font-medium">Direction des Ressources Humaines</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-slate-200 flex justify-between items-center">
+                <button type="button" onclick="closeViewMissionModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">
+                    Fermer
+                </button>
+                <button id="preview-download-btn" onclick="generateAndDownloadPDF()" class="px-5 py-2 bg-artBlue hover:bg-blue-800 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-sm"></i>
+                    <span>Télécharger le PDF Officiel</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+    const API_BASE = '/api';
+    let currentUser = null;
+    let selectedMissionForPreview = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadDatabaseStaffIntoLogin();
+        updateDashboardMetrics();
+    });
+
+    // Universal Role Validators
+    function isHrRole(role) {
+        if (!role) return false;
+        const normalizedRole = role.toUpperCase();
+        return normalizedRole.includes('HR') || normalizedRole.includes('HUMAN_RESOURCES') || normalizedRole.includes('RH');
+    }
+    function isGmRole(role) {
+        if (!role) return false;
+        const normalizedRole = role.toUpperCase();
+        return normalizedRole.includes('GENERAL_MANAGER') || normalizedRole.includes('DIRECTEUR_GENERAL') || normalizedRole.includes('DG');
+    }
+    function isDeptManagerRole(role) {
+        if (!role) return false;
+        const normalizedRole = role.toUpperCase();
+        return normalizedRole.includes('MANAGER') || normalizedRole.includes('DIRECTOR') || normalizedRole.includes('HEAD') || normalizedRole.includes('DEPARTEMENT');
+    }
+    function getDisplayName(member) {
+        if (!member) return "Utilisateur ART";
+        if (member.name) return member.name;
+        if (member.firstName || member.lastName) {
+            return `${member.firstName || ''} ${member.lastName || ''}`.trim();
+        }
+        if (member.username) return member.username;
+        if (member.email) {
+            const prefix = member.email.split('@')[0];
+            return prefix.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+        return "Utilisateur ART";
+    }
+
+    async function loadDatabaseStaffIntoLogin() {
+        const listContainer = document.getElementById('login-accounts-list');
+        try {
+            const response = await fetch(`${API_BASE}/staff`);
+            if (!response.ok) throw new Error("Erreur serveur");
+            const rawData = await response.json();
+            
+            const staffMembers = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+            
+            listContainer.innerHTML = staffMembers.map(staff => {
+                const role = staff.roleScope || staff.systemRole || 'STAFF';
+                const displayName = getDisplayName(staff);
+                
+                let badgeColor = "bg-blue-50 text-artBlue border-blue-200";
+                if (isGmRole(role)) {
+                    badgeColor = "bg-amber-50 text-amber-800 border-amber-200";
+                } else if (isHrRole(role)) {
+                    badgeColor = "bg-purple-50 text-purple-800 border-purple-200";
+                } else if (isDeptManagerRole(role)) {
+                    badgeColor = "bg-emerald-50 text-emerald-800 border-emerald-200";
+                }
+                return `
+                    <button onclick="loginAs('${staff.email}', '${role}', '${displayName}')" 
+                            class="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-artBlue hover:bg-blue-50/50 transition flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-sm text-slate-800">${displayName}</p>
+                            <p class="text-xs text-slate-500 font-mono">${staff.email}</p>
+                        </div>
+                        <span class="${badgeColor} text-[10px] px-2.5 py-1 border rounded font-bold font-mono tracking-wide uppercase">${role.replace(/_/g, ' ')}</span>
+                    </button>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error("Erreur de chargement", err);
+            listContainer.innerHTML = `<div class="text-center py-4 text-xs text-red-500">Impossible de charger le personnel. Vérifiez l'état de votre serveur backend.</div>`;
+        }
+    }
+
+    function loginAs(email, role, name) {
+        currentUser = { email, role, name };
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('user-display-name').innerText = name;
+        document.getElementById('user-avatar').innerText = name.split(' ').map(n=>n[0]).join('').toUpperCase();
+        document.getElementById('user-role-badge').innerText = role.replace(/_/g, ' ');
+        
+        const hrContainer = document.getElementById('hr-action-container');
+        const deptContainer = document.getElementById('dept-action-container');
+        if (hrContainer) {
+            if (isHrRole(role)) hrContainer.classList.remove('hidden');
+            else hrContainer.classList.add('hidden');
+        }
+        if (deptContainer) {
+            if (isDeptManagerRole(role) || isGmRole(role)) deptContainer.classList.remove('hidden');
+            else deptContainer.classList.add('hidden');
+        }
+        checkUserNotifications();
+        switchTab('dashboard');
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('login-overlay').classList.remove('hidden');
+        loadDatabaseStaffIntoLogin();
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-blue-900'));
+        
+        const targetTab = document.getElementById(`tab-${tabId}`);
+        if (targetTab) targetTab.classList.add('active');
+        
+        const activeBtn = document.getElementById(`btn-${tabId}`);
+        if (activeBtn) activeBtn.classList.add('bg-blue-900');
+        
+        document.getElementById('page-title').innerText = activeBtn ? activeBtn.innerText : "Tableau de bord";
+        
+        if (tabId === 'dashboard') updateDashboardMetrics();
+        if (tabId === 'workflow') fetchWorkflowMissions();
+        if (tabId === 'access-control') fetchStaffRoles();
+        if (tabId === 'audit-trail') fetchAuditLogs();
+    }
+
+    /* --- NOTIFICATION SYSTEM --- */
+    function toggleNotificationsMenu() {
+        const dropdown = document.getElementById('notif-dropdown');
+        if (dropdown) dropdown.classList.toggle('hidden');
+    }
+
+    function checkUserNotifications() {
+        if (!currentUser) return;
+        const notifications = JSON.parse(localStorage.getItem('mock_notifications')) || [];
+        const userNotifs = notifications.filter(n => n.recipientEmail.toLowerCase() === currentUser.email.toLowerCase());
+        const badge = document.getElementById('notif-badge');
+        const notifList = document.getElementById('notif-list');
+        if (userNotifs.length > 0) {
+            badge.innerText = userNotifs.length;
+            badge.classList.remove('hidden');
+            notifList.innerHTML = userNotifs.map(n => `
+                <div onclick="openMissionPreviewById('${n.missionId}')" class="p-2.5 bg-blue-50/60 hover:bg-blue-100/60 border border-blue-100 rounded-lg text-xs cursor-pointer transition">
+                    <p class="font-bold text-slate-800 flex items-center justify-between">
+                        <span>${n.title}</span>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-artBlue"></i>
+                    </p>
+                    <p class="text-slate-600 mt-1">${n.message}</p>
+                    <span class="text-[9px] text-slate-400 block mt-1">${new Date(n.timestamp).toLocaleString('fr-FR')}</span>
+                </div>
+            `).join('');
+        } else {
+            badge.classList.add('hidden');
+            notifList.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">Aucune nouvelle notification.</p>`;
+        }
+    }
+
+    function sendMissionNotification(recipientEmail, missionId, destination) {
+        let notifications = JSON.parse(localStorage.getItem('mock_notifications')) || [];
+        notifications.push({
+            id: Date.now(),
+            missionId: missionId,
+            recipientEmail: recipientEmail,
+            title: `Ordre de Mission #${missionId} Émis`,
+            message: `Votre ordre de mission pour ${destination} a été complété par les Ressources Humaines. Cliquez pour consulter et télécharger.`,
+            timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('mock_notifications', JSON.stringify(notifications));
+    }
+
+    /* --- MODAL CONTROLS: DEPARTMENT DEMAND --- */
+    function openDeptDemandModal() {
+        const modal = document.getElementById('deptDemandModal');
+        if (modal) modal.classList.remove('hidden');
+    }
+    function closeDeptDemandModal() {
+        const modal = document.getElementById('deptDemandModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.getElementById('deptDemandForm').reset();
+        }
+    }
+    function submitDeptDemandForm(event) {
+        event.preventDefault();
+        
+        const deptName = document.getElementById('deptName').value;
+        const agentEmail = document.getElementById('deptAgentEmail').value;
+        const origin = document.getElementById('deptOriginCity').value;
+        const target = document.getElementById('deptTargetCity').value;
+        const purpose = document.getElementById('deptPurpose').value;
+        const newId = Math.floor(1000 + Math.random() * 9000);
+        const demandMission = {
+            id: newId,
+            department: deptName,
+            email: agentEmail,
+            employeeEmail: agentEmail,
+            origin: origin,
+            destination: target,
+            purpose: purpose,
+            description: `Demande formulée par le département [${deptName}]: ${purpose}`,
+            state: "INITIATED",
+            status: "INITIATED",
+            createdDate: new Date().toISOString()
+        };
+        try {
+            let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+            localMissions.push(demandMission);
+            localStorage.setItem('mock_missions', JSON.stringify(localMissions));
+            
+            alert(`Demande de mission #${newId} transmise avec succès au Directeur Général pour validation.`);
+            closeDeptDemandModal();
+            switchTab('workflow');
+        } catch (err) {
+            console.error("Erreur d'enregistrement:", err);
+            alert("Erreur lors de la soumission de la demande.");
+        }
+    }
+
+    /* --- MODAL CONTROLS: HR FORM COMPLETION --- */
+    function openHrModal(id) {
+        if (!currentUser || !isHrRole(currentUser.role)) {
+            alert("Accès refusé : La rédaction et l'émission des ordres de mission sont exclusivement réservées au personnel des Ressources Humaines (RH).");
+            return;
+        }
+        
+        const modal = document.getElementById('hrMissionModal');
+        if (modal) {
+            document.getElementById('hrMissionOrderId').value = id || '';
+            
+            if (id) {
+                let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+                let existing = localMissions.find(m => m.id == id);
+                if (existing) {
+                    document.getElementById('hrStaffId').value = existing.email || existing.employeeEmail || '';
+                    document.getElementById('hrOriginCity').value = existing.origin || 'Yaoundé';
+                    document.getElementById('hrTargetCities').value = existing.destination || '';
+                }
+            }
+            modal.classList.remove('hidden');
+        }
+    }
+    function closeHrModal() {
+        const modal = document.getElementById('hrMissionModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.getElementById('hrMissionForm').reset();
+        }
+    }
+    function submitHrForm(event) {
+        event.preventDefault();
+        if (!currentUser || !isHrRole(currentUser.role)) {
+            alert("Erreur critique : Vous ne disposez pas des privilèges RH requis.");
+            return;
+        }
+        const missionId = document.getElementById('hrMissionOrderId').value || Math.floor(1000 + Math.random() * 9000);
+        const assignedAgent = document.getElementById('hrStaffId').value;
+        const origin = document.getElementById('hrOriginCity').value;
+        const target = document.getElementById('hrTargetCities').value;
+        const duration = parseInt(document.getElementById('hrDurationDays').value);
+        let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+        let index = localMissions.findIndex(m => m.id == missionId);
+        const updatedMission = {
+            id: missionId,
+            origin: origin,
+            destination: target,
+            duration: duration,
+            purpose: localMissions[index]?.purpose || `Mission RH officielle de ${origin} vers ${target}`,
+            description: `Durée: ${duration} jours`,
+            state: "ISSUED_ACTIVE",
+            status: "ISSUED_ACTIVE",
+            email: assignedAgent,
+            employeeEmail: assignedAgent,
+            department: localMissions[index]?.department || 'Ressources Humaines',
+            issuedByHr: currentUser.email,
+            updatedDate: new Date().toISOString()
+        };
+        if (index !== -1) {
+            localMissions[index] = { ...localMissions[index], ...updatedMission };
+        } else {
+            localMissions.push(updatedMission);
+        }
+        localStorage.setItem('mock_missions', JSON.stringify(localMissions));
+        sendMissionNotification(assignedAgent, missionId, target);
+        alert(`Ordre de mission #${missionId} duly rempli et émis ! L'agent (${assignedAgent}) a été notifié.`);
+        closeHrModal();
+        switchTab('workflow');
+    }
+
+    /* --- GM ACTION FUNCTIONALITY (APPROVE / REJECT) --- */
+    function updateMissionState(missionId, newState) {
+        if (!currentUser || !isGmRole(currentUser.role)) {
+            alert("Accès refusé : Seul le Directeur Général (DG) peut approuver ou rejeter les demandes de mission.");
+            return;
+        }
+        let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+        let index = localMissions.findIndex(m => m.id == missionId);
+        if (index !== -1) {
+            localMissions[index].state = newState;
+            localMissions[index].status = newState;
+            localMissions[index].updatedDate = new Date().toISOString();
+            localStorage.setItem('mock_missions', JSON.stringify(localMissions));
+            const actionLabel = newState === 'GM_APPROVED' ? 'approuvée (transmise aux RH)' : 'rejetée';
+            alert(`La demande #${missionId} a été ${actionLabel} avec succès.`);
+            
+            fetchWorkflowMissions();
             updateDashboardMetrics();
+        } else {
+            alert("Impossible de trouver la demande de mission spécifiée.");
+        }
+    }
+
+    /* --- MISSION ORDER VIEW & PREVIEW MODAL --- */
+    async function openMissionPreviewById(missionId) {
+        let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+        let found = localMissions.find(m => m.id == missionId);
+        
+        if (!found) {
+            try {
+                const response = await fetch(`${API_BASE}/mission-orders/${missionId}`);
+                if (response.ok) {
+                    found = await response.json();
+                }
+            } catch(e) {}
+        }
+        
+        if (found) {
+            openViewMissionModal(found);
+        } else {
+            alert("Ordre de mission introuvable.");
+        }
+    }
+
+    function openViewMissionModal(mission) {
+        selectedMissionForPreview = mission;
+        document.getElementById('preview-mission-id').innerText = `#${mission.id}`;
+        document.getElementById('preview-agent').innerText = mission.email || mission.employeeEmail || 'N/A';
+        document.getElementById('preview-dept').innerText = mission.department || 'N/A';
+        document.getElementById('preview-origin').innerText = mission.origin || 'Yaoundé';
+        document.getElementById('preview-destination').innerText = mission.destination || 'N/A';
+        document.getElementById('preview-duration').innerText = mission.duration ? `${mission.duration} jours` : 'Non spécifiée';
+        document.getElementById('preview-purpose').innerText = mission.purpose || mission.description || 'Aucun motif renseigné';
+
+        const badge = document.getElementById('preview-status-badge');
+        const state = mission.state || mission.status || 'INITIATED';
+        
+        if (state === 'ISSUED_ACTIVE') {
+            badge.innerText = "Émis & Actif";
+            badge.className = "mt-1 inline-block text-[10px] font-mono uppercase px-2.5 py-0.5 rounded border font-bold bg-emerald-50 text-emerald-800 border-emerald-200";
+        } else if (state === 'GM_APPROVED') {
+            badge.innerText = "Approuvé DG (En attente RH)";
+            badge.className = "mt-1 inline-block text-[10px] font-mono uppercase px-2.5 py-0.5 rounded border font-bold bg-amber-50 text-amber-800 border-amber-200";
+        } else if (state === 'REJECTED') {
+            badge.innerText = "Rejeté";
+            badge.className = "mt-1 inline-block text-[10px] font-mono uppercase px-2.5 py-0.5 rounded border font-bold bg-rose-50 text-rose-800 border-rose-200";
+        } else {
+            badge.innerText = "Initié (En attente DG)";
+            badge.className = "mt-1 inline-block text-[10px] font-mono uppercase px-2.5 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-200";
+        }
+
+        document.getElementById('viewMissionModal').classList.remove('hidden');
+    }
+
+    function closeViewMissionModal() {
+        document.getElementById('viewMissionModal').classList.add('hidden');
+        selectedMissionForPreview = null;
+    }
+
+    /* --- PDF GENERATOR & DOWNLOADER --- */
+    function generateAndDownloadPDF(missionObj) {
+        const mission = missionObj || selectedMissionForPreview;
+        if (!mission) {
+            alert("Aucune mission sélectionnée pour le téléchargement PDF.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Colors
+        const primaryColor = [30, 64, 175]; // #1E40AF (artBlue)
+        const darkColor = [30, 41, 59];    // Slate 800
+
+        // Header Section
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text("RÉPUBLIQUE DU CAMEROUN\nPaix - Travail - Patrie\n-------\nAGENCE DE RÉGULATION DES TÉLÉCOMMUNICATIONS", 20, 20);
+        doc.text("REPUBLIC OF CAMEROON\nPeace - Work - Fatherland\n-------\nTELECOMMUNICATIONS REGULATORY AGENCY", 190, 20, { align: "right" });
+
+        // Title Box
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(20, 42, 170, 12, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`ORDRE DE MISSION OFFICIEL N° OM-${mission.id}`, 105, 50, { align: "center" });
+
+        // General Information Section
+        doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("1. IDENTIFICATION DU MISSIONNAIRE", 20, 68);
+
+        const staffData = [
+            ["Agent / Bénéficiaire:", mission.email || mission.employeeEmail || "N/A"],
+            ["Département / Direction:", mission.department || "Non spécifié"],
+            ["Rôle / Fonction:", "Personnel Accrédité ART"]
+        ];
+
+        doc.autoTable({
+            startY: 72,
+            margin: { left: 20, right: 20 },
+            body: staffData,
+            theme: 'plain',
+            styles: { fontSize: 10, cellPadding: 2 },
+            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } }
         });
 
-        function isHrRole(role) {
-            if (!role) return false;
-            const normalizedRole = role.toUpperCase();
-            return normalizedRole.includes('HR') || normalizedRole.includes('HUMAN_RESOURCES') || normalizedRole.includes('RH');
-        }
+        // Mission Details Section
+        const nextY = doc.lastAutoTable.finalY + 8;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text("2. DÉTAILS DE LA MISSION", 20, nextY);
 
-        function getDisplayName(member) {
-            if (!member) return "Utilisateur ART";
-            if (member.name) return member.name;
-            if (member.firstName || member.lastName) {
-                return `${member.firstName || ''} ${member.lastName || ''}`.trim();
-            }
-            if (member.username) return member.username;
-            if (member.email) {
-                const prefix = member.email.split('@')[0];
-                return prefix.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            }
-            return "Utilisateur ART";
-        }
+        const missionDetails = [
+            ["Ville de Départ:", mission.origin || "Yaoundé (Siège)"],
+            ["Lieu / Destination:", mission.destination || "N/A"],
+            ["Durée Impartie:", mission.duration ? `${mission.duration} jour(s)` : "Non définie"],
+            ["Date d'Émission:", mission.createdDate ? new Date(mission.createdDate).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')],
+            ["Objet de la Mission:", mission.purpose || mission.description || "Contrôle réglementaire et inspection"]
+        ];
 
-        async function loadDatabaseStaffIntoLogin() {
-            const listContainer = document.getElementById('login-accounts-list');
-            try {
-                const response = await fetch(`${API_BASE}/staff`);
-                if (!response.ok) throw new Error("Erreur");
+        doc.autoTable({
+            startY: nextY + 4,
+            margin: { left: 20, right: 20 },
+            body: missionDetails,
+            theme: 'striped',
+            headStyles: { fillColor: primaryColor },
+            styles: { fontSize: 10, cellPadding: 3 },
+            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } }
+        });
+
+        // Validation & Signatures Section
+        const sigY = doc.lastAutoTable.finalY + 20;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        
+        doc.text("Pour le Directeur Général,", 30, sigY);
+        doc.text("Le Directeur des Ressources Humaines,", 120, sigY);
+
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text("[Visa et Signature Électronique Validés]", 30, sigY + 18);
+        doc.text("[Cachet Officiel DRH / ART]", 120, sigY + 18);
+
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text("Document généré automatiquement par le Portail Officiel des Ordres de Mission - ART Cameroun.", 105, 285, { align: "center" });
+
+        // Save PDF
+        doc.save(`Ordre_de_Mission_ART_${mission.id}.pdf`);
+    }
+
+    
+    async function updateDashboardMetrics() {
+        try {
+            const response = await fetch(`${API_BASE}/mission-orders`);
+            let backendMissions = [];
+            if (response.ok) {
                 const rawData = await response.json();
+                backendMissions = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+            }
+            const localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+            const totalMissions = [...backendMissions, ...localMissions];
+            
+            const counts = { INITIATED: 0, GM_APPROVED: 0, ISSUED_ACTIVE: 0, REJECTED: 0 };
+            totalMissions.forEach(m => { if(m && counts[m.state] !== undefined) counts[m.state]++; });
+            
+            document.getElementById('stat-initiated').innerText = counts.INITIATED;
+            document.getElementById('stat-approved').innerText = counts.GM_APPROVED;
+            document.getElementById('stat-active').innerText = counts.ISSUED_ACTIVE;
+            document.getElementById('stat-rejected').innerText = counts.REJECTED;
+        } catch (err) { 
+            console.error("Metrics load failed", err); 
+        }
+    }
+
+    async function fetchWorkflowMissions() {
+        try {
+            const cols = { INITIATED: [], GM_APPROVED: [], ISSUED_ACTIVE: [], REJECTED: [] };
+            
+            const response = await fetch(`${API_BASE}/mission-orders`);
+            let backendMissions = [];
+            if (response.ok) {
+                const rawData = await response.json();
+                backendMissions = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+            }
+            
+            const localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
+            const totalMissions = [...backendMissions, ...localMissions];
+            
+            totalMissions.forEach(m => { if (m && cols[m.state]) cols[m.state].push(m); });
+            
+            Object.keys(cols).forEach(state => {
+                const countElem = document.getElementById('count-' + state.toLowerCase());
+                if (countElem) countElem.innerText = cols[state].length;
                 
-                const staffMembers = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
-                
-                listContainer.innerHTML = staffMembers.map(staff => {
-                    const role = staff.roleScope || staff.systemRole || 'STAFF';
-                    const displayName = getDisplayName(staff);
+                const container = document.getElementById('col-' + state.toLowerCase());
+                if (!container) return;
+                if (cols[state].length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">Aucun ordre dans cet état</p>`;
+                    return;
+                }
+                container.innerHTML = cols[state].map(m => {
+                    let actionButtons = '';
                     
-                    let badgeColor = "bg-blue-50 text-artBlue border-blue-200";
-                    if (role.toUpperCase().includes('MANAGER') || role.toUpperCase().includes('DIRECTOR')) {
-                        badgeColor = "bg-amber-50 text-amber-800 border-amber-200";
+                    // GM Review Actions
+                    if (state === 'INITIATED' && currentUser && isGmRole(currentUser.role)) {
+                        actionButtons = `
+                            <div class="flex gap-1 mt-3 pt-2 border-t border-slate-100">
+                                <button onclick="updateMissionState(${m.id}, 'GM_APPROVED')" class="p-1.5 px-3 rounded bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 transition flex-1 flex items-center justify-center gap-1 shadow-sm">
+                                    <i class="fa-solid fa-check"></i> Approuver
+                                </button>
+                                <button onclick="updateMissionState(${m.id}, 'REJECTED')" class="p-1.5 px-3 rounded bg-rose-600 text-white text-[11px] font-bold hover:bg-rose-700 transition flex-1 flex items-center justify-center gap-1 shadow-sm">
+                                    <i class="fa-solid fa-xmark"></i> Rejeter
+                                </button>
+                            </div>`;
+                    } 
+                    // HR Actions
+                    else if (state === 'GM_APPROVED') {
+                        if (currentUser && isHrRole(currentUser.role)) {
+                            actionButtons = `
+                                <button onclick="openHrModal(${m.id})" class="mt-3 text-center bg-amber-600 text-white font-bold text-[11px] py-2 px-2 rounded-lg w-full block hover:bg-amber-700 transition shadow">
+                                    <i class="fa-solid fa-file-signature mr-1"></i> Émettre Ordre (RH)
+                                </button>`;
+                        } else {
+                            actionButtons = `
+                                <div class="mt-3 text-[10px] bg-amber-100/70 text-amber-900 p-2 rounded-lg font-medium text-center">
+                                    <i class="fa-solid fa-hourglass-half mr-1"></i> En attente des RH
+                                </div>`;
+                        }
                     }
+                    // Issued / Active Actions (Download & View)
+                    else if (state === 'ISSUED_ACTIVE') {
+                        actionButtons = `
+                            <div class="flex gap-1 mt-3 pt-2 border-t border-slate-100">
+                                <button onclick="openMissionPreviewById(${m.id})" class="p-1.5 px-2 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-bold transition flex-1 flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-eye"></i> Aperçu
+                                </button>
+                                <button onclick="openMissionPreviewById(${m.id})" class="p-1.5 px-2 rounded bg-artBlue text-white hover:bg-blue-800 text-[11px] font-bold transition flex-1 flex items-center justify-center gap-1 shadow-sm">
+                                    <i class="fa-solid fa-download"></i> PDF
+                                </button>
+                            </div>`;
+                    }
+
                     return `
-                        <button onclick="loginAs('${staff.email}', '${role}', '${displayName}')" 
-                                class="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-artBlue hover:bg-blue-50/50 transition flex items-center justify-between">
-                            <div>
-                                <p class="font-bold text-sm text-slate-800">${displayName}</p>
-                                <p class="text-xs text-slate-500 font-mono">${staff.email}</p>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-mono font-bold text-artBlue bg-blue-50 px-2 py-0.5 rounded border border-blue-100 cursor-pointer" onclick="openMissionPreviewById(${m.id})">#${m.id}</span>
+                                <span class="text-[10px] text-slate-400">${m.createdDate ? new Date(m.createdDate).toLocaleDateString('fr-FR') : ''}</span>
                             </div>
-                            <span class="${badgeColor} text-[10px] px-2.5 py-1 border rounded font-bold font-mono tracking-wide uppercase">${role.replace(/_/g, ' ')}</span>
-                        </button>
+                            <h4 class="text-xs font-bold text-slate-800 line-clamp-1 cursor-pointer hover:text-artBlue" onclick="openMissionPreviewById(${m.id})">${m.purpose || m.description || 'Mission Sans Titre'}</h4>
+                            <p class="text-[11px] text-slate-500 mt-1"><i class="fa-solid fa-user text-slate-400 mr-1"></i> ${m.email || m.employeeEmail || 'N/A'}</p>
+                            <p class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i> ${m.origin || '?'} &rarr; ${m.destination || '?'}</p>
+                            ${m.department ? `<p class="text-[10px] text-slate-400 mt-1 italic">Dép: ${m.department}</p>` : ''}
+                            ${actionButtons}
+                        </div>
                     `;
                 }).join('');
-            } catch (err) {
-                console.error("Erreur de chargement", err);
-                listContainer.innerHTML = `<div class="text-center py-4 text-xs text-red-500">Impossible de charger le personnel. Vérifiez l'état de votre serveur backend.</div>`;
-            }
+            });
+        } catch (err) {
+            console.error("Workflow fetch failed", err);
         }
+    }
 
-        function loginAs(email, role, name) {
-            currentUser = { email, role, name };
-            document.getElementById('login-overlay').classList.add('hidden');
-            document.getElementById('user-display-name').innerText = name;
-            document.getElementById('user-avatar').innerText = name.split(' ').map(n=>n[0]).join('').toUpperCase();
-            document.getElementById('user-role-badge').innerText = role.replace(/_/g, ' ');
-            
-            // Check HR privilege for button visibility
-            const hrContainer = document.getElementById('hr-action-container');
-            if (hrContainer) {
-                if (isHrRole(role)) {
-                    hrContainer.classList.remove('hidden');
-                } else {
-                    hrContainer.classList.add('hidden');
-                }
-            }
-            switchTab('dashboard');
+    async function fetchStaffRoles() {
+        const tbody = document.getElementById('users-table-body');
+        if (!tbody) return;
+        try {
+            const response = await fetch(`${API_BASE}/staff`);
+            if (!response.ok) throw new Error("Erreur serveur");
+            const staffList = await response.json();
+            tbody.innerHTML = staffList.map(s => `
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="p-4 font-bold text-slate-800">${getDisplayName(s)}</td>
+                    <td class="p-4 font-mono text-slate-500 text-xs">${s.email}</td>
+                    <td class="p-4"><span class="bg-blue-50 text-artBlue border border-blue-100 px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase">${s.roleScope || s.systemRole || 'STAFF'}</span></td>
+                    <td class="p-4"><span class="text-emerald-600 font-semibold text-xs flex items-center gap-1"><i class="fa-solid fa-circle text-[8px]"></i> Actif</span></td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-xs text-slate-400">Impossible de charger la liste du personnel.</td></tr>`;
         }
+    }
 
-        function logout() {
-            currentUser = null;
-            document.getElementById('login-overlay').classList.remove('hidden');
-            loadDatabaseStaffIntoLogin();
+    async function fetchAuditLogs() {
+        const tbody = document.getElementById('audit-table-body');
+        if (!tbody) return;
+        try {
+            const response = await fetch(`${API_BASE}/audit-logs`);
+            if (!response.ok) throw new Error("Erreur serveur");
+            const logs = await response.json();
+            tbody.innerHTML = logs.map(l => `
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="p-4 font-mono text-xs text-slate-500">${new Date(l.timestamp).toLocaleString('fr-FR')}</td>
+                    <td class="p-4 font-mono font-bold text-artBlue">#${l.missionId || 'N/A'}</td>
+                    <td class="p-4 font-semibold text-slate-800">${l.action}</td>
+                    <td class="p-4 text-slate-600 text-xs">${l.details || l.description || '-'}</td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-xs text-slate-400">Aucun registre d'audit disponible.</td></tr>`;
         }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-blue-900'));
-            const targetTab = document.getElementById(`tab-${tabId}`);
-            if (targetTab) targetTab.classList.add('active');
-            const activeBtn = document.getElementById(`btn-${tabId === 'create-mission' ? 'create-mission' : tabId}`);
-            if (activeBtn) activeBtn.classList.add('bg-blue-900');
-            document.getElementById('page-title').innerText = activeBtn ? activeBtn.innerText : "Tableau de bord";
-            if (tabId === 'dashboard') updateDashboardMetrics();
-            if (tabId === 'workflow') fetchWorkflowMissions();
-            if (tabId === 'access-control') fetchStaffRoles();
-            if (tabId === 'audit-trail') fetchAuditLogs();
-        }
-
-        /* --- MODAL CONTROLS WITH HR EXCLUSIVITY CHECK --- */
-        function openHrModal(id) {
-            if (!currentUser || !isHrRole(currentUser.role)) {
-                alert("Accès refusé : Cette fonctionnalité est exclusivement réservée aux membres de la Direction des Ressources Humaines (RH).");
-                return;
-            }
-            const modal = document.getElementById('hrMissionModal');
-            if (modal) {
-                document.getElementById('hrMissionOrderId').value = id || 1;
-                modal.classList.remove('hidden');
-            }
-        }
-
-        function closeHrModal() {
-            const modal = document.getElementById('hrMissionModal');
-            if (modal) {
-                modal.classList.add('hidden');
-                document.getElementById('hrMissionForm').reset();
-            }
-        }
-
-        function submitHrForm(event) {
-            event.preventDefault();
-            if (!currentUser || !isHrRole(currentUser.role)) {
-                alert("Erreur de privilège : Action non autorisée.");
-                return;
-            }
-
-            const assignedAgent = document.getElementById('hrStaffId').value;
-            const origin = document.getElementById('hrOriginCity').value;
-            const target = document.getElementById('hrTargetCities').value;
-            const mockId = Math.floor(1000 + Math.random() * 9000);
-            
-            const newMission = {
-                id: mockId,
-                destination: target,
-                duration: parseInt(document.getElementById('hrDurationDays').value),
-                purpose: `Mission RH de ${origin} vers ${target} (Per Diem: ${document.getElementById('hrPerDiemAmount').value} FCFA)`,
-                description: `Budget Total Alloué: ${document.getElementById('hrTotalBudget').value} FCFA`,
-                state: "INITIATED",
-                status: "INITIATED",
-                email: assignedAgent,
-                employeeEmail: assignedAgent
-            };
-
-            try {
-                let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
-                localMissions.push(newMission);
-                localStorage.setItem('mock_missions', JSON.stringify(localMissions));
-                alert("Succès : Formulaire RH validé et ordre de mission généré !");
-                closeHrModal();
-                switchTab('workflow');
-            } catch (err) {
-                console.error("Simulation error:", err);
-                alert("Une erreur est survenue lors de l'enregistrement.");
-            }
-        }
-
-        /* --- FORM & WORKFLOW HANDLERS --- */
-        async function submitMissionForm(event) {
-            event.preventDefault();
-            
-            let activeEmail = currentUser ? currentUser.email : null;
-            if (!activeEmail) {
-                alert("Erreur : Veuillez d'abord vous connecter avec un compte valide via le menu d'authentification !");
-                return;
-            }
-            const textValue = document.getElementById('form-purpose').value;
-            const mockId = Math.floor(1000 + Math.random() * 9000);
-            const newMission = {
-                id: mockId,
-                destination: document.getElementById('form-destination').value,
-                duration: parseInt(document.getElementById('form-duration').value),
-                purpose: textValue,
-                description: textValue,
-                state: "INITIATED",
-                status: "INITIATED",
-                email: activeEmail,
-                employeeEmail: activeEmail
-            };
-            try {
-                let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
-                localMissions.push(newMission);
-                localStorage.setItem('mock_missions', JSON.stringify(localMissions));
-                alert("Succès : Demande d'ordre de mission enregistrée et transmise au workflow !");
-                document.getElementById('mission-order-form').reset();
-                switchTab('workflow');
-            } catch (err) {
-                console.error("Simulation error:", err);
-                alert("Une erreur est survenue.");
-            }
-        }
-
-        async function updateDashboardMetrics() {
-            try {
-                const response = await fetch(`/api/mission-orders`);
-                let backendMissions = [];
-                if (response.ok) {
-                    const rawData = await response.json();
-                    backendMissions = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
-                }
-                const localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
-                const totalMissions = [...backendMissions, ...localMissions];
-                const counts = { INITIATED: 0, GM_APPROVED: 0, ISSUED_ACTIVE: 0, REJECTED: 0 };
-                totalMissions.forEach(m => { if(m && counts[m.state] !== undefined) counts[m.state]++; });
-                document.getElementById('stat-initiated').innerText = counts.INITIATED;
-                document.getElementById('stat-approved').innerText = counts.GM_APPROVED;
-                document.getElementById('stat-active').innerText = counts.ISSUED_ACTIVE;
-                document.getElementById('stat-rejected').innerText = counts.REJECTED;
-            } catch (err) { console.error("Metrics load failed", err); }
-        }
-
-        async function fetchWorkflowMissions() {
-            try {
-                const cols = { INITIATED: [], GM_APPROVED: [], ISSUED_ACTIVE: [], REJECTED: [] };
-                
-                const response = await fetch(`/api/mission-orders`);
-                let backendMissions = [];
-                if (response.ok) {
-                    const rawData = await response.json();
-                    backendMissions = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
-                }
-                
-                const localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
-                const totalMissions = [...backendMissions, ...localMissions];
-                
-                totalMissions.forEach(m => { if (m && cols[m.state]) cols[m.state].push(m); });
-                Object.keys(cols).forEach(state => {
-                    const countElem = document.getElementById('count-' + state.toLowerCase());
-                    if (countElem) countElem.innerText = cols[state].length;
-                    
-                    const container = document.getElementById('col-' + state.toLowerCase());
-                    if (!container) return;
-                    container.innerHTML = cols[state].map(m => {
-                        let actionButtons = '';
-                        
-                        if (state === 'INITIATED' && currentUser && currentUser.role === 'GENERAL_MANAGER') {
-                            actionButtons = `
-                                <div class="flex gap-1 mt-2">
-                                    <button onclick="updateMissionState(${m.id}, 'GM_APPROVED')" class="p-1 px-2 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold">Approuver</button>
-                                    <button onclick="updateMissionState(${m.id}, 'REJECTED')" class="p-1 px-2 rounded bg-rose-100 text-rose-800 text-[11px] font-bold">Rejeter</button>
-                                </div>`;
-                        } else if (state === 'GM_APPROVED' && currentUser && isHrRole(currentUser.role)) {
-                            actionButtons = `
-                                <button onclick="updateMissionState(${m.id}, 'ISSUED_ACTIVE')" class="mt-2 text-center bg-blue-100 text-artBlue font-bold text-[11px] py-1 px-2 rounded w-full block">Signer l'Ordre</button>`;
-                        }
-                        return `
-                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                                <p class="text-xs text-slate-400 font-mono">#OM-${m.id}</p>
-                                <h4 class="font-bold text-slate-800 text-sm mt-0.5">${m.destination || ''}</h4>
-                                <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">${m.purpose || m.description || ''}</p>
-                                <div class="mt-3 pt-2 border-t border-slate-100 flex flex-col justify-between">
-                                    <span class="text-xs text-slate-400 font-medium"><i class="fa-regular fa-clock"></i> ${m.duration || 0} jours</span>
-                                    ${actionButtons}
-                                </div>
-                            </div>`;
-                    }).join('');
-                });
-            } catch (err) { console.error(err); }
-        }
-
-        async function updateMissionState(missionId, state) {
-            try {
-                let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
-                let missionIndex = localMissions.findIndex(m => m.id == missionId); 
-                if (missionIndex !== -1) {
-                    localMissions[missionIndex].state = state;
-                    localMissions[missionIndex].status = state;
-                    localStorage.setItem('mock_missions', JSON.stringify(localMissions));
-                    fetchWorkflowMissions();
-                    updateDashboardMetrics();
-                } else {
-                    await fetch(`/api/workflow/transition`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ missionId: missionId.toString(), state: state })
-                    });
-                    fetchWorkflowMissions();
-                    updateDashboardMetrics();
-                }
-            } catch (err) { console.error(err); }
-        }
-
-        async function fetchStaffRoles() {
-            try {
-                const response = await fetch(`${API_BASE}/staff`);
-                if (!response.ok) return;
-                const rawData = await response.json();
-                
-                const staff = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
-                
-                document.getElementById('users-table-body').innerHTML = staff.map(member => `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-4 font-semibold text-slate-800">${getDisplayName(member)}</td>
-                        <td class="p-4 text-slate-500 font-mono text-xs">${member.email || ''}</td>
-                        <td class="p-4"><span class="px-2 py-1 bg-blue-50 text-artBlue font-mono text-xs rounded border border-blue-100">${member.roleScope || member.systemRole || 'STAFF'}</span></td>
-                        <td class="p-4"><span class="flex items-center gap-1.5 text-xs text-emerald-700 font-medium"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Actif</span></td>
-                    </tr>`).join('');
-            } catch (err) { console.error(err); }
-        }
-
-        async function fetchAuditLogs() {
-            try {
-                const response = await fetch(`${API_BASE}/audit-logs`);
-                if (!response.ok) return;
-                const rawData = await response.json();
-                
-                const logs = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
-                
-                document.getElementById('audit-table-body').innerHTML = logs.map(log => `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-4 text-xs font-mono text-slate-500">${log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}</td>
-                        <td class="p-4 font-semibold text-slate-800">#OM-${log.missionRequestId || 'N/A'}</td>
-                        <td class="p-4"><span class="px-2 py-0.5 text-xs bg-slate-100 rounded-full font-medium">${log.action || ''}</span></td>
-                        <td class="p-4 text-slate-500 text-xs">${log.description || 'Pas de détails'}</td>
-                    </tr>`).join('');
-            } catch (err) { console.error(err); }
-        }
+    }
     </script>
 </body>
 </html>
