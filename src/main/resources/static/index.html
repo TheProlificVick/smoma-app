@@ -30,6 +30,7 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex">
+
     <!-- DYNAMIC LOGIN OVERLAY -->
     <div id="login-overlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-100 max-h-[85vh] flex flex-col">
@@ -77,6 +78,7 @@
                 </button>
             </nav>
         </div>
+        
         <div class="p-6 border-t border-blue-800 bg-blue-950/40">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
@@ -418,7 +420,6 @@
                     <h2 class="text-lg font-bold text-artBlue tracking-wide uppercase">ORDRE DE MISSION OFFICIEL</h2>
                     <p id="preview-status-badge" class="mt-1 inline-block text-[10px] font-mono uppercase px-2.5 py-0.5 rounded border font-bold">STATUS</p>
                 </div>
-
                 <!-- DETAILS TABLE -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
                     <div class="grid grid-cols-2 gap-4 pb-3 border-b border-slate-100">
@@ -431,7 +432,6 @@
                             <span id="preview-dept" class="font-semibold text-slate-700">--</span>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-3 gap-4 pb-3 border-b border-slate-100">
                         <div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase block">Ville de Départ</span>
@@ -446,12 +446,10 @@
                             <span id="preview-duration" class="font-semibold text-slate-700">--</span>
                         </div>
                     </div>
-
                     <div>
                         <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Objet / Motif de la Mission</span>
                         <p id="preview-purpose" class="text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs italic">--</p>
                     </div>
-
                     <div class="grid grid-cols-2 gap-4 pt-2 text-[11px] text-slate-500">
                         <div>
                             <span class="block text-[10px] font-bold text-slate-400 uppercase">Approbation Direction</span>
@@ -464,7 +462,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="p-4 bg-white border-t border-slate-200 flex justify-between items-center">
                 <button type="button" onclick="closeViewMissionModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">
                     Fermer
@@ -488,22 +485,38 @@
         updateDashboardMetrics();
     });
 
-    // Universal Role Validators
+    // Universal Role & Permission Helpers
     function isHrRole(role) {
         if (!role) return false;
         const normalizedRole = role.toUpperCase();
         return normalizedRole.includes('HR') || normalizedRole.includes('HUMAN_RESOURCES') || normalizedRole.includes('RH');
     }
+
     function isGmRole(role) {
         if (!role) return false;
         const normalizedRole = role.toUpperCase();
         return normalizedRole.includes('GENERAL_MANAGER') || normalizedRole.includes('DIRECTEUR_GENERAL') || normalizedRole.includes('DG');
     }
+
     function isDeptManagerRole(role) {
         if (!role) return false;
         const normalizedRole = role.toUpperCase();
         return normalizedRole.includes('MANAGER') || normalizedRole.includes('DIRECTOR') || normalizedRole.includes('HEAD') || normalizedRole.includes('DEPARTEMENT');
     }
+
+    // Explicit Ownership & Viewing Permission Check
+    function canUserAccessMission(mission, user) {
+        if (!user || !mission) return false;
+        
+        // HR, GM, and Department Managers have administrative oversight to preview/download missions
+        if (isHrRole(user.role) || isGmRole(user.role) || isDeptManagerRole(user.role)) {
+            return true;
+        }
+        const assignedEmail = (mission.email || mission.employeeEmail || '').trim().toLowerCase();
+        const userEmail = (user.email || '').trim().toLowerCase();
+        return assignedEmail.length > 0 && assignedEmail === userEmail;
+    }
+
     function getDisplayName(member) {
         if (!member) return "Utilisateur ART";
         if (member.name) return member.name;
@@ -539,6 +552,7 @@
                 } else if (isDeptManagerRole(role)) {
                     badgeColor = "bg-emerald-50 text-emerald-800 border-emerald-200";
                 }
+
                 return `
                     <button onclick="loginAs('${staff.email}', '${role}', '${displayName}')" 
                             class="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-artBlue hover:bg-blue-50/50 transition flex items-center justify-between">
@@ -650,6 +664,7 @@
         const modal = document.getElementById('deptDemandModal');
         if (modal) modal.classList.remove('hidden');
     }
+
     function closeDeptDemandModal() {
         const modal = document.getElementById('deptDemandModal');
         if (modal) {
@@ -657,6 +672,7 @@
             document.getElementById('deptDemandForm').reset();
         }
     }
+
     function submitDeptDemandForm(event) {
         event.preventDefault();
         
@@ -666,6 +682,7 @@
         const target = document.getElementById('deptTargetCity').value;
         const purpose = document.getElementById('deptPurpose').value;
         const newId = Math.floor(1000 + Math.random() * 9000);
+
         const demandMission = {
             id: newId,
             department: deptName,
@@ -679,6 +696,7 @@
             status: "INITIATED",
             createdDate: new Date().toISOString()
         };
+
         try {
             let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
             localMissions.push(demandMission);
@@ -686,6 +704,7 @@
             
             alert(`Demande de mission #${newId} transmise avec succès au Directeur Général pour validation.`);
             closeDeptDemandModal();
+            updateDashboardMetrics();
             switchTab('workflow');
         } catch (err) {
             console.error("Erreur d'enregistrement:", err);
@@ -711,11 +730,15 @@
                     document.getElementById('hrStaffId').value = existing.email || existing.employeeEmail || '';
                     document.getElementById('hrOriginCity').value = existing.origin || 'Yaoundé';
                     document.getElementById('hrTargetCities').value = existing.destination || '';
+                    document.getElementById('hrDurationDays').value = existing.duration || '';
                 }
+            } else {
+                document.getElementById('hrMissionForm').reset();
             }
             modal.classList.remove('hidden');
         }
     }
+
     function closeHrModal() {
         const modal = document.getElementById('hrMissionModal');
         if (modal) {
@@ -723,19 +746,23 @@
             document.getElementById('hrMissionForm').reset();
         }
     }
+
     function submitHrForm(event) {
         event.preventDefault();
         if (!currentUser || !isHrRole(currentUser.role)) {
             alert("Erreur critique : Vous ne disposez pas des privilèges RH requis.");
             return;
         }
+
         const missionId = document.getElementById('hrMissionOrderId').value || Math.floor(1000 + Math.random() * 9000);
         const assignedAgent = document.getElementById('hrStaffId').value;
         const origin = document.getElementById('hrOriginCity').value;
         const target = document.getElementById('hrTargetCities').value;
         const duration = parseInt(document.getElementById('hrDurationDays').value);
+
         let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
         let index = localMissions.findIndex(m => m.id == missionId);
+
         const updatedMission = {
             id: missionId,
             origin: origin,
@@ -751,15 +778,18 @@
             issuedByHr: currentUser.email,
             updatedDate: new Date().toISOString()
         };
+
         if (index !== -1) {
             localMissions[index] = { ...localMissions[index], ...updatedMission };
         } else {
             localMissions.push(updatedMission);
         }
+
         localStorage.setItem('mock_missions', JSON.stringify(localMissions));
         sendMissionNotification(assignedAgent, missionId, target);
-        alert(`Ordre de mission #${missionId} duly rempli et émis ! L'agent (${assignedAgent}) a été notifié.`);
+        alert(`Ordre de mission #${missionId} dûment rempli et émis ! L'agent (${assignedAgent}) a été notifié.`);
         closeHrModal();
+        updateDashboardMetrics();
         switchTab('workflow');
     }
 
@@ -769,6 +799,7 @@
             alert("Accès refusé : Seul le Directeur Général (DG) peut approuver ou rejeter les demandes de mission.");
             return;
         }
+
         let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
         let index = localMissions.findIndex(m => m.id == missionId);
         if (index !== -1) {
@@ -786,7 +817,7 @@
         }
     }
 
-    /* --- MISSION ORDER VIEW & PREVIEW MODAL --- */
+    /* --- MISSION ORDER VIEW & PREVIEW MODAL WITH PERMISSION CHECKS --- */
     async function openMissionPreviewById(missionId) {
         let localMissions = JSON.parse(localStorage.getItem('mock_missions')) || [];
         let found = localMissions.find(m => m.id == missionId);
@@ -808,6 +839,11 @@
     }
 
     function openViewMissionModal(mission) {
+        if (!canUserAccessMission(mission, currentUser)) {
+            alert("Accès refusé : Seul l'agent attribué à cet ordre de mission est autorisé à le prévisualiser ou à le télécharger.");
+            return;
+        }
+
         selectedMissionForPreview = mission;
         document.getElementById('preview-mission-id').innerText = `#${mission.id}`;
         document.getElementById('preview-agent').innerText = mission.email || mission.employeeEmail || 'N/A';
@@ -816,7 +852,7 @@
         document.getElementById('preview-destination').innerText = mission.destination || 'N/A';
         document.getElementById('preview-duration').innerText = mission.duration ? `${mission.duration} jours` : 'Non spécifiée';
         document.getElementById('preview-purpose').innerText = mission.purpose || mission.description || 'Aucun motif renseigné';
-
+        
         const badge = document.getElementById('preview-status-badge');
         const state = mission.state || mission.status || 'INITIATED';
         
@@ -847,6 +883,11 @@
         const mission = missionObj || selectedMissionForPreview;
         if (!mission) {
             alert("Aucune mission sélectionnée pour le téléchargement PDF.");
+            return;
+        }
+
+        if (!canUserAccessMission(mission, currentUser)) {
+            alert("Accès refusé : Seul l'agent attribué à cet ordre de mission peut télécharger ce PDF.");
             return;
         }
 
@@ -939,7 +980,7 @@
         doc.save(`Ordre_de_Mission_ART_${mission.id}.pdf`);
     }
 
-    
+    /* --- METRICS & WORKFLOW KANBAN RENDERING --- */
     async function updateDashboardMetrics() {
         try {
             const response = await fetch(`${API_BASE}/mission-orders`);
@@ -989,6 +1030,7 @@
                     container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">Aucun ordre dans cet état</p>`;
                     return;
                 }
+                
                 container.innerHTML = cols[state].map(m => {
                     let actionButtons = '';
                     
@@ -1018,26 +1060,39 @@
                                 </div>`;
                         }
                     }
-                    // Issued / Active Actions (Download & View)
+                    // Issued / Active Actions
                     else if (state === 'ISSUED_ACTIVE') {
-                        actionButtons = `
-                            <div class="flex gap-1 mt-3 pt-2 border-t border-slate-100">
-                                <button onclick="openMissionPreviewById(${m.id})" class="p-1.5 px-2 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-bold transition flex-1 flex items-center justify-center gap-1">
-                                    <i class="fa-solid fa-eye"></i> Aperçu
-                                </button>
-                                <button onclick="openMissionPreviewById(${m.id})" class="p-1.5 px-2 rounded bg-artBlue text-white hover:bg-blue-800 text-[11px] font-bold transition flex-1 flex items-center justify-center gap-1 shadow-sm">
-                                    <i class="fa-solid fa-download"></i> PDF
-                                </button>
-                            </div>`;
+                        const canAccess = canUserAccessMission(m, currentUser);
+                        
+                        if (canAccess) {
+                            actionButtons = `
+                                <div class="flex gap-1 mt-3 pt-2 border-t border-slate-100">
+                                    <button onclick="openMissionPreviewById(${m.id})" class="p-1.5 px-2 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-bold transition flex-1 flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-eye"></i> Aperçu
+                                    </button>
+                                    <button onclick="openMissionPreviewById(${m.id})" class="p-1.5 px-2 rounded bg-artBlue text-white hover:bg-blue-800 text-[11px] font-bold transition flex-1 flex items-center justify-center gap-1 shadow-sm">
+                                        <i class="fa-solid fa-download"></i> PDF
+                                    </button>
+                                </div>`;
+                        } else {
+                            actionButtons = `
+                                <div class="mt-3 text-[10px] bg-slate-100 text-slate-500 p-2 rounded-lg font-medium text-center border border-slate-200">
+                                    <i class="fa-solid fa-lock mr-1 text-slate-400"></i> Réservé au missionnaire
+                                </div>`;
+                        }
                     }
+
+                    const isOwnerOrAdmin = canUserAccessMission(m, currentUser);
+                    const clickableHeaderClass = isOwnerOrAdmin ? "cursor-pointer hover:text-artBlue" : "";
+                    const headerOnClick = isOwnerOrAdmin ? `onclick="openMissionPreviewById(${m.id})"` : "";
 
                     return `
                         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
                             <div class="flex justify-between items-start mb-2">
-                                <span class="text-xs font-mono font-bold text-artBlue bg-blue-50 px-2 py-0.5 rounded border border-blue-100 cursor-pointer" onclick="openMissionPreviewById(${m.id})">#${m.id}</span>
+                                <span class="text-xs font-mono font-bold text-artBlue bg-blue-50 px-2 py-0.5 rounded border border-blue-100 ${clickableHeaderClass}" ${headerOnClick}>#${m.id}</span>
                                 <span class="text-[10px] text-slate-400">${m.createdDate ? new Date(m.createdDate).toLocaleDateString('fr-FR') : ''}</span>
                             </div>
-                            <h4 class="text-xs font-bold text-slate-800 line-clamp-1 cursor-pointer hover:text-artBlue" onclick="openMissionPreviewById(${m.id})">${m.purpose || m.description || 'Mission Sans Titre'}</h4>
+                            <h4 class="text-xs font-bold text-slate-800 line-clamp-1 ${clickableHeaderClass}" ${headerOnClick}>${m.purpose || m.description || 'Mission Sans Titre'}</h4>
                             <p class="text-[11px] text-slate-500 mt-1"><i class="fa-solid fa-user text-slate-400 mr-1"></i> ${m.email || m.employeeEmail || 'N/A'}</p>
                             <p class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i> ${m.origin || '?'} &rarr; ${m.destination || '?'}</p>
                             ${m.department ? `<p class="text-[10px] text-slate-400 mt-1 italic">Dép: ${m.department}</p>` : ''}

@@ -18,30 +18,30 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("⏳ MySQL table 'mission_orders' is empty. Initializing seed queries...");
 
             MissionOrder m1 = new MissionOrder();
-            m1.setMissionCode("MSN-8091");
+            m1.setMissionCode("");
             m1.setStaffId(1L); 
-            m1.setStaffMember("Alvick Ambas");
-            m1.setDestination("Kribi (KRI)");
-            m1.setDuration("5");   
-            m1.setStatus("APPROVED"); 
+            m1.setStaffMember("");
+            m1.setDestination("");
+            m1.setDuration("");   
+            m1.setStatus(""); 
             missionOrderRepository.save(m1);
 
             MissionOrder m2 = new MissionOrder();
-            m2.setMissionCode("MSN-8092");
+            m2.setMissionCode("");
             m2.setStaffId(2L);
-            m2.setStaffMember("Jean-Paul Belinga");
-            m2.setDestination("Douala (DLA)");
-            m2.setDuration("12");  
-            m2.setStatus("PENDING");  
+            m2.setStaffMember("");
+            m2.setDestination("");
+            m2.setDuration("");  
+            m2.setStatus("");  
             missionOrderRepository.save(m2);
 
             MissionOrder m3 = new MissionOrder();
-            m3.setMissionCode("MSN-8093");
+            m3.setMissionCode("");
             m3.setStaffId(1L);
-            m3.setStaffMember("Alvick Ambas");
-            m3.setDestination("Garoua (GOU)");
-            m3.setDuration("3");   
-            m3.setStatus("REJECTED"); 
+            m3.setStaffMember("");
+            m3.setDestination("");
+            m3.setDuration("");   
+            m3.setStatus(""); 
             missionOrderRepository.save(m3);
 
             System.out.println("✅ Institutional records successfully persisted to MySQL database!");

@@ -6,11 +6,13 @@ import smoma.repository.MissionFormDetailRepository;
 import smoma.repository.MissionOrderRepository;
 import smoma.repository.MissionRequestRepository;
 import smoma.repository.StaffMemberRepository;
+import smoma.controller.model.Service.MissionWorkflowService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -60,11 +62,9 @@ public class MissionWorkflowIntegrationTest {
         staff.setEmail("alvick.ambas@art.cm"); 
         staff.setRoleScope("STAFF"); 
         
-        // Active Directory test mapping
+        // Active Directory test mapping (aligned with StaffMember entity)
         staff.setSamAccountName("a.ambas");
-        staff.setUserPrincipalName("alvick.ambas@art.cm");
-        staff.setObjectGuid("ad-uuid-0000-0001");
-        staff.setJobTitle("Stagiare");
+        staff.setTitle("Stagiare");
         staff.setIsAdManaged(true);
         staff.setLastAdSyncAt(LocalDateTime.now());
 
@@ -75,7 +75,7 @@ public class MissionWorkflowIntegrationTest {
         request.setOriginatingDepartment("CSI Division");
         request.setIssueDescription("Regular Telecom Infrastructure Audit.");
         request.setTextJustification("Compliance monitoring directive.");
-        request.setStaffMemberId(savedStaff.getStaffId()); 
+        request.setStaffMemberId(savedStaff.getId()); 
 
         // 3. Act: Initiate (UC-01)
         MissionRequest initiatedRequest = workflowService.initiateRequest(request);
