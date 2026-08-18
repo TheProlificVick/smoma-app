@@ -3,38 +3,38 @@ package smoma.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import smoma.controller.model.Service.RoleScope;
 import smoma.controller.model.StaffMember;
 import smoma.repository.StaffMemberRepository;
+import smoma.controller.model.Service.RoleManagementService;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/staff")
-@CrossOrigin(origins = "*")
 public class StaffController {
 
     @Autowired
-    private StaffMemberRepository staffMemberRepository;
+    private StaffMemberRepository staffRepository;
+
+    @Autowired
+    private RoleManagementService roleManagementService;
 
     @GetMapping
     public ResponseEntity<List<StaffMember>> getAllStaff() {
-        return ResponseEntity.ok(staffMemberRepository.findAll());
+        return ResponseEntity.ok(staffRepository.findAll());
     }
 
-    @PostMapping("/{id}/role")
-    public ResponseEntity<?> updateStaffRole(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        String newRole = payload.get("role");
-        Optional<StaffMember> staffOpt = staffMemberRepository.findById(id);
-        
-        if (staffOpt.isPresent()) {
-            StaffMember staff = staffOpt.get();
-            
-            staff.setRoleScope(newRole);
-            staffMemberRepository.save(staff);
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
+    @GetMapping("/{id}")
+    public ResponseEntity<StaffMember> getStaffById(@PathVariable Long id) {
+        return staffRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}/role")
+    public ResponseEntity<StaffMember> updateRole(@PathVariable Long id, @RequestParam RoleScope role) {
+        StaffMember updated = roleManagementService.updateUserRole(id, role);
+        return ResponseEntity.ok(updated);
     }
 }

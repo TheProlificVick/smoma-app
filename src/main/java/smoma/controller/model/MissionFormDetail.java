@@ -1,11 +1,7 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import java.math.BigDecimal;
+import lombok.*;
 import java.time.LocalDate;
 
 @Entity
@@ -13,35 +9,27 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class MissionFormDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String department;
+    @OneToOne
+    @JoinColumn(name = "mission_request_id")
+    private MissionRequest missionRequest;
 
-    @Column(columnDefinition = "TEXT")
-    private String equipmentRequired;
-
-    @Column(columnDefinition = "TEXT")
-    private String safetyNotes;
-
-    @Column(columnDefinition = "TEXT")
-    private String missionObjectives;
-    private String originCity;
-    private String targetCities;
+    private String origin;
+    private String destination;
     private String transitRoutes;
-    private String costCodes;
-    private BigDecimal perDiemAmount;
-    private BigDecimal totalAllowance;
+    private Double allocatedBudget;
+    private Double perDiem;
+    private String modeOfTransport;
+
     private LocalDate startDate;
     private LocalDate endDate;
-    private Integer totalComputedActiveDays;
+    private Integer totalDays;
 
-    @OneToOne
-    @JoinColumn(name = "mission_request_id", referencedColumnName = "id")
-    @JsonBackReference // Stops serialization back-tracking here
-    private MissionRequest missionRequest;
+    private String pdfDocumentPath;
 }

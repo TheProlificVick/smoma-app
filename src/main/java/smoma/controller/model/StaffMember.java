@@ -1,83 +1,67 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "staff_member")
+@Table(name = "staff_members")
 public class StaffMember {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "sam_account_name", unique = true, nullable = false)
-    private String samAccountName;
+    @Column(nullable = false, unique = true)
+    private String username;
 
-    @Column(name = "matricule")
-    private String matricule;
-
-    @Column(name = "first_name")
-    private String firstName;
-
-    @Column(name = "last_name")
-    private String lastName;
-
-    @Column(name = "email", unique = true)
+    private String password;
+    private String fullName;
     private String email;
-
-    @Column(name = "title")
-    private String title;
-
-    @Column(name = "department")
     private String department;
+    private String grade;
 
-    @Column(name = "role_scope")
-    private String roleScope = "STAFF";
+    @Enumerated(EnumType.STRING)
+    private RoleScope role;
 
-    @Column(name = "is_active")
-    private Boolean isActive = true;
+    private Boolean active = true;
 
-    @Column(name = "is_ad_managed")
-    private Boolean isAdManaged = true;
+    public StaffMember() {}
 
-    @Column(name = "last_ad_sync_at")
-    private LocalDateTime lastAdSyncAt;
+    public StaffMember(Long id, String username, String password, String fullName, String email, String department, String grade, RoleScope role, Boolean active) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.fullName = fullName;
+        this.email = email;
+        this.department = department;
+        this.grade = grade;
+        this.role = role;
+        this.active = active;
+    }
 
-    // --- Getters & Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getSamAccountName() { return samAccountName; }
-    public void setSamAccountName(String samAccountName) { this.samAccountName = samAccountName; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public String getMatricule() { return matricule; }
-    public void setMatricule(String matricule) { this.matricule = matricule; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
-
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
     public String getDepartment() { return department; }
     public void setDepartment(String department) { this.department = department; }
 
-    public String getRoleScope() { return roleScope; }
-    public void setRoleScope(String roleScope) { this.roleScope = roleScope; }
+    public String getGrade() { return grade; }
+    public void setGrade(String grade) { this.grade = grade; }
 
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public RoleScope getRole() { return role; }
+    public void setRole(RoleScope role) { this.role = role; }
 
-    public Boolean getIsAdManaged() { return isAdManaged; }
-    public void setIsAdManaged(Boolean isAdManaged) { this.isAdManaged = isAdManaged; }
-
-    public LocalDateTime getLastAdSyncAt() { return lastAdSyncAt; }
-    public void setLastAdSyncAt(LocalDateTime lastAdSyncAt) { this.lastAdSyncAt = lastAdSyncAt; }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
 }

@@ -3,48 +3,23 @@ package smoma.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import smoma.controller.model.MissionOrder;
-import smoma.repository.MissionOrderRepository;
+import smoma.controller.model.Service.RoleScope;
+import smoma.controller.model.StaffMember;
+import smoma.repository.StaffMemberRepository;
 
 @Component
 public class DataLoader implements CommandLineRunner {
 
     @Autowired
-    private MissionOrderRepository missionOrderRepository;
+    private StaffMemberRepository staffRepository;
 
     @Override
     public void run(String... args) throws Exception {
-        if (missionOrderRepository.count() == 0) {
-            System.out.println("⏳ MySQL table 'mission_orders' is empty. Initializing seed queries...");
-
-            MissionOrder m1 = new MissionOrder();
-            m1.setMissionCode("");
-            m1.setStaffId(1L); 
-            m1.setStaffMember("");
-            m1.setDestination("");
-            m1.setDuration("");   
-            m1.setStatus(""); 
-            missionOrderRepository.save(m1);
-
-            MissionOrder m2 = new MissionOrder();
-            m2.setMissionCode("");
-            m2.setStaffId(2L);
-            m2.setStaffMember("");
-            m2.setDestination("");
-            m2.setDuration("");  
-            m2.setStatus("");  
-            missionOrderRepository.save(m2);
-
-            MissionOrder m3 = new MissionOrder();
-            m3.setMissionCode("");
-            m3.setStaffId(1L);
-            m3.setStaffMember("");
-            m3.setDestination("");
-            m3.setDuration("");   
-            m3.setStatus(""); 
-            missionOrderRepository.save(m3);
-
-            System.out.println("✅ Institutional records successfully persisted to MySQL database!");
+        if (staffRepository.count() == 0) {
+            staffRepository.save(new StaffMember(null, "admin", "admin123", "System Administrator", "admin@art.cm", "CSI", "Engineer", RoleScope.ADMIN, true));
+            staffRepository.save(new StaffMember(null, "gm_user", "gm123", "Prof. Philemon ZOO ZAME", "gm@art.cm", "Direction Générale", "General Manager", RoleScope.GENERAL_MANAGER, true));
+            staffRepository.save(new StaffMember(null, "hr_officer", "hr123", "HR Officer", "hr@art.cm", "Human Resources", "HR Specialist", RoleScope.HR_OFFICER, true));
+            staffRepository.save(new StaffMember(null, "omenga_alvick", "staff123", "OMENGA AMBAS Alvick", "a.omenga@art.cm", "CSI", "Software Engineer Intern", RoleScope.STAFF_MEMBER, true));
         }
     }
 }

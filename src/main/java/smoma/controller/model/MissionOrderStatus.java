@@ -1,5 +1,8 @@
 package smoma.controller.model;
 
-public class MissionOrderStatus {
-    
+public enum MissionOrderStatus {
+    PENDING,
+    IN_PROGRESS,
+    COMPLETED,
+    CANCELLED
 }

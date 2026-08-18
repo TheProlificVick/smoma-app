@@ -1,13 +1,13 @@
 package smoma.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import smoma.controller.model.StaffMember;
-
+import smoma.controller.model.Service.RoleScope;
 import java.util.Optional;
+import java.util.List;
 
-@Repository
 public interface StaffMemberRepository extends JpaRepository<StaffMember, Long> {
-    Optional<StaffMember> findByEmail(String email);
-    Optional<StaffMember> findBySamAccountName(String samAccountName);
+    Optional<StaffMember> findByUsername(String username);
+    List<StaffMember> findByDepartment(String department);
+    List<StaffMember> findByRole(RoleScope role);
 }

@@ -7,100 +7,80 @@ import smoma.controller.model.*;
 import smoma.repository.*;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 @Service
-@Transactional
 public class MissionWorkflowService {
 
-    @Autowired
-    private MissionRequestRepository requestRepository;
+    @Autowired private MissionRequestRepository requestRepository;
+    @Autowired private MissionFormDetailRepository formDetailRepository;
+    @Autowired private MissionOrderRepository orderRepository;
+    @Autowired private StaffMemberRepository staffRepository;
+    @Autowired private AuditLogService auditLogService;
 
-    @Autowired
-    private MissionFormDetailRepository formRepository;
+    @Transactional
+    public MissionRequest initiateRequest(Long initiatorId, Long staffId, String title, String purpose, String justification) {
+        StaffMember initiator = staffRepository.findById(initiatorId).orElseThrow();
+        StaffMember staff = staffRepository.findById(staffId).orElseThrow();
 
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+        MissionRequest request = MissionRequest.builder()
+                .initiator(initiator)
+                .assignedStaff(staff)
+                .title(title)
+                .purpose(purpose)
+                .justification(justification)
+                .state(MissionState.INITIATED)
+                .createdAt(LocalDateTime.now())
+                .build();
 
-    // UC-01: Initiate Request
-    public MissionRequest initiateRequest(MissionRequest request) {
-        request.setState(MissionState.INITIATED);
-        MissionRequest savedRequest = requestRepository.save(request);
-        writeAuditLog(savedRequest.getId(), "INITIATE", "Mission initiated.");
-        return savedRequest;
+        MissionRequest saved = requestRepository.save(request);
+        auditLogService.logAction(initiator.getUsername(), "INITIATE_REQUEST", "MissionRequest", saved.getId(), "Initiated mission request: " + title);
+        return saved;
     }
 
-    // UC-02: GM Executive Review
-    public MissionRequest reviewByGM(Long requestId, boolean approved, String actorEmail) {
-        MissionRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
-        
-        if (approved) {
-            request.setState(MissionState.GM_APPROVED);
-            request.setGmApprovalStamp(actorEmail);
-            writeAuditLog(requestId, "APPROVE", "Approved by GM: " + actorEmail);
-        } else {
-            request.setState(MissionState.REJECTED);
-            writeAuditLog(requestId, "REJECT", "Rejected by GM: " + actorEmail);
+    @Transactional
+    public MissionRequest reviewByGM(Long requestId, boolean approve, String comment, String gmUsername) {
+        MissionRequest request = requestRepository.findById(requestId).orElseThrow();
+        request.setGmDecisionAt(LocalDateTime.now());
+        request.setGmComment(comment);
+        request.setState(approve ? MissionState.GM_APPROVED : MissionState.REJECTED);
+
+        MissionRequest saved = requestRepository.save(request);
+        auditLogService.logAction(gmUsername, approve ? "GM_APPROVE" : "GM_REJECT", "MissionRequest", saved.getId(), "GM decision executed.");
+        return saved;
+    }
+
+    @Transactional
+    public MissionFormDetail completeHrForm(Long requestId, MissionFormDetail details, String hrUsername) {
+        MissionRequest request = requestRepository.findById(requestId).orElseThrow();
+        if (request.getState() != MissionState.GM_APPROVED) {
+            throw new IllegalStateException("Only GM Approved requests can be populated by HR.");
         }
-        return requestRepository.save(request);
-    }
 
-    // UC-03: HR Form Completion
-    public MissionFormDetail populateHRDetails(Long requestId, MissionFormDetail formDetails) {
-        MissionRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
+        long days = ChronoUnit.DAYS.between(details.getStartDate(), details.getEndDate()) + 1;
+        details.setTotalDays((int) days);
+        details.setMissionRequest(request);
+        details.setPdfDocumentPath("/documents/MO_" + requestId + ".pdf");
 
-        formDetails.setMissionRequest(request);
-        MissionFormDetail savedDetails = formRepository.save(formDetails);
+        MissionFormDetail savedDetail = formDetailRepository.save(details);
 
         request.setState(MissionState.FORM_COMPLETED);
         requestRepository.save(request);
 
-        writeAuditLog(requestId, "POPULATE_FORM", "Logistics form completed by HR.");
-        return savedDetails;
-    }
-
-    // Complete Issuance
-    public MissionRequest issueMissionOrder(Long requestId) {
-        MissionRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
+        // Auto-Generate Mission Order Document
+        MissionOrder order = MissionOrder.builder()
+                .orderNumber("ART-MO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .missionRequest(request)
+                .status(MissionOrderStatus.PENDING)
+                .issuedAt(LocalDateTime.now())
+                .build();
+        orderRepository.save(order);
 
         request.setState(MissionState.ISSUED_ACTIVE);
-        MissionRequest savedRequest = requestRepository.save(request);
+        requestRepository.save(request);
 
-        writeAuditLog(requestId, "ISSUE_DOCUMENT", "Mission order issued and active.");
-        return savedRequest;
-    }
-
-    // Process and link a form detail with simple authorization checks
-    public MissionFormDetail saveFormDetails(Long requestId, MissionFormDetail formDetails, StaffMember actor) {
-        if (actor == null || actor.getRoleScope() == null) {
-            throw new SecurityException("Unauthorized: Invalid staff actor credentials.");
-        }
-        // Enforce matching enum check
-        if (!"STAFF".equalsIgnoreCase(actor.getRoleScope()) && !"ADMIN".equalsIgnoreCase(actor.getRoleScope())) {
-            throw new SecurityException("Unauthorized: Only staff members can fill out mission forms.");
-        }
-        return populateHRDetails(requestId, formDetails);
-    }
-
-    // Role-based action to transition workflow states
-    public void approveMission(Long requestId, StaffMember actor) {
-        if (actor == null || actor.getRoleScope() == null) {
-            throw new SecurityException("Unauthorized: Invalid staff actor credentials.");
-        }
-        if (!"SUPERVISOR".equalsIgnoreCase(actor.getRoleScope()) && !"ADMIN".equalsIgnoreCase(actor.getRoleScope())) {
-            throw new SecurityException("Unauthorized: Only Supervisors or Admins can approve missions.");
-        }
-        reviewByGM(requestId, true, actor.getEmail());
-    }
-
-    private void writeAuditLog(Long requestId, String action, String description) {
-        AuditLog log = new AuditLog();
-        log.setMissionRequestId(requestId);
-        log.setAction(action);
-        log.setDescription(description);
-        log.setTimestamp(LocalDateTime.now());
-        auditLogRepository.save(log);
+        auditLogService.logAction(hrUsername, "HR_FORM_FILL", "MissionFormDetail", savedDetail.getId(), "HR completed parameters for Mission #" + requestId);
+        return savedDetail;
     }
 }
