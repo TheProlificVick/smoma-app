@@ -3,23 +3,24 @@ package smoma.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import smoma.controller.model.Service.RoleScope;
-import smoma.controller.model.StaffMember;
-import smoma.repository.StaffMemberRepository;
+import smoma.controller.model.Service.Role;
+import smoma.controller.model.User;
+import smoma.repository.UserRepository;
 
 @Component
 public class DataLoader implements CommandLineRunner {
 
     @Autowired
-    private StaffMemberRepository staffRepository;
+    private UserRepository userRepository;
 
     @Override
     public void run(String... args) throws Exception {
-        if (staffRepository.count() == 0) {
-            staffRepository.save(new StaffMember(null, "admin", "admin123", "System Administrator", "admin@art.cm", "CSI", "Engineer", RoleScope.ADMIN, true));
-            staffRepository.save(new StaffMember(null, "gm_user", "gm123", "Prof. Philemon ZOO ZAME", "gm@art.cm", "Direction Générale", "General Manager", RoleScope.GENERAL_MANAGER, true));
-            staffRepository.save(new StaffMember(null, "hr_officer", "hr123", "HR Officer", "hr@art.cm", "Human Resources", "HR Specialist", RoleScope.HR_OFFICER, true));
-            staffRepository.save(new StaffMember(null, "omenga_alvick", "staff123", "OMENGA AMBAS Alvick", "a.omenga@art.cm", "CSI", "Software Engineer Intern", RoleScope.STAFF_MEMBER, true));
+        if (userRepository.count() == 0) {
+            userRepository.save(new User("admin", "admin123", "System Administrator", "admin@art.cm", "IT", Role.ROLE_ADMIN));
+            userRepository.save(new User("gm_user", "password", "General Manager", "gm@art.cm", "Executive", Role.ROLE_GENERAL_MANAGER));
+            userRepository.save(new User("hr_officer", "password", "HR Officer", "hr@art.cm", "Human Resources", Role.ROLE_HR_OFFICER));
+            userRepository.save(new User("dept_rep", "password", "Dept Representative", "dept@art.cm", "Telecommunications", Role.ROLE_DEPARTMENT_REPRESENTATIVE));
+            userRepository.save(new User("staff_member", "password", "Staff Member", "staff@art.cm", "Network Engineering", Role.ROLE_STAFF_MEMBER));
         }
     }
 }

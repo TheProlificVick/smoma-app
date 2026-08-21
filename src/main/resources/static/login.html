@@ -34,40 +34,49 @@
         .login-container {
             background: #FFFFFF;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             padding: 40px 35px;
-            border-radius: 4px;
-            border-top: 5px solid var(--art-navy);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            border-top: 6px solid var(--art-navy);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
         }
 
         .header-section {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .logo-container {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .logo-container img {
-            max-height: 75px;
+            max-height: 110px;
             width: auto;
+            max-width: 100%;
             object-fit: contain;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            padding: 4px;
+            background-color: #FFFFFF;
         }
 
         .institution-title {
             font-size: 11px;
             font-weight: 700;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
             color: #6C757D;
             text-transform: uppercase;
+            margin-top: 10px;
             margin-bottom: 4px;
         }
 
         .app-title {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 19px;
+            font-weight: 700;
             color: var(--art-navy);
         }
 
@@ -85,17 +94,17 @@
 
         .form-control {
             width: 100%;
-            padding: 10px 14px;
+            padding: 11px 14px;
             font-size: 14px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .form-control:focus {
             border-color: var(--art-navy);
-            box-shadow: 0 0 0 3px rgba(15, 44, 89, 0.1);
+            box-shadow: 0 0 0 3px rgba(15, 44, 89, 0.15);
         }
 
         .btn-submit {
@@ -105,7 +114,7 @@
             color: #FFFFFF;
             border: none;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s;
@@ -141,7 +150,7 @@
     <div class="login-container">
         <div class="header-section">
             <div class="logo-container">
-                <img src="/images/ART logo.jpg" alt="Logo ART" onerror="this.src='https://placehold.co/180x75?text=ART+CAMEROUN'">
+                <img src="/images/ART%20logo.jpg" alt="Logo ART Cameroun" onerror="this.src='https://placehold.co/240x100/0F2C59/FFFFFF?text=ART+CAMEROUN'">
             </div>
             <div class="institution-title">République du Cameroun</div>
             <div class="app-title">Gestion des Ordres de Mission</div>
@@ -164,7 +173,7 @@
         </form>
 
         <div class="footer-credits">
-            © 2026 Agence de Régulation des Télécommunications (ART)
+            2026 Agence de Régulation des Télécommunications (ART)
         </div>
     </div>
 
@@ -192,11 +201,11 @@
                     localStorage.setItem("user_name", data.fullName || "Agent ART");
                     window.location.href = "index.html";
                 } else {
-                    errorBanner.innerText = "❌ Identifiants professionnels incorrects ou accès refusé.";
+                    errorBanner.innerText = "Identifiants professionnels incorrects ou accès refusé.";
                     errorBanner.style.display = "block";
                 }
             } catch (err) {
-                errorBanner.innerText = "⚠️ Erreur réseau : Impossible de joindre le serveur Spring Boot.";
+                errorBanner.innerText = "Erreur réseau : Impossible de joindre le serveur Spring Boot.";
                 errorBanner.style.display = "block";
             }
         });

@@ -1,28 +1,35 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "audit_logs")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class AuditLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String username;
     private String action;
-    private String entityName;
-    private Long entityId;
-    
-    @Column(length = 1000)
+    private String username;
     private String details;
-    
     private LocalDateTime timestamp;
+
+    public AuditLog() {
+        this.timestamp = LocalDateTime.now();
+    }
+
+    public AuditLog(String action, String username, String details) {
+        this();
+        this.action = action;
+        this.username = username;
+        this.details = details;
+    }
+
+    public Long getId() { return id; }
+    public String getAction() { return action; }
+    public String getUsername() { return username; }
+    public String getDetails() { return details; }
+    public LocalDateTime getTimestamp() { return timestamp; }
 }

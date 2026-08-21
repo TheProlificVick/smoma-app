@@ -1,0 +1,12 @@
+package smoma.controller.model.Service;
+
+public enum Role {
+    ROLE_AGENT,
+    ROLE_CHEF_SERVICE,
+    ROLE_DIRECTEUR,
+    ROLE_ADMIN,
+    ROLE_GENERAL_MANAGER,
+    ROLE_HR_OFFICER,
+    ROLE_DEPARTMENT_REPRESENTATIVE,
+    ROLE_STAFF_MEMBER
+}

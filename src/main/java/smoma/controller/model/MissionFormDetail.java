@@ -1,15 +1,10 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "mission_form_details")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class MissionFormDetail {
 
     @Id
@@ -20,16 +15,68 @@ public class MissionFormDetail {
     @JoinColumn(name = "mission_request_id")
     private MissionRequest missionRequest;
 
-    private String origin;
-    private String destination;
-    private String transitRoutes;
-    private Double allocatedBudget;
-    private Double perDiem;
-    private String modeOfTransport;
+    private String itinerary;
+    private Integer durationDays;
+    private BigDecimal allocatedBudget;
+    private String transportMode;
 
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private Integer totalDays;
+    public MissionFormDetail() {
+    }
 
-    private String pdfDocumentPath;
+    public MissionFormDetail(Long id, MissionRequest missionRequest, String itinerary, Integer durationDays, BigDecimal allocatedBudget, String transportMode) {
+        this.id = id;
+        this.missionRequest = missionRequest;
+        this.itinerary = itinerary;
+        this.durationDays = durationDays;
+        this.allocatedBudget = allocatedBudget;
+        this.transportMode = transportMode;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public MissionRequest getMissionRequest() {
+        return missionRequest;
+    }
+
+    public void setMissionRequest(MissionRequest missionRequest) {
+        this.missionRequest = missionRequest;
+    }
+
+    public String getItinerary() {
+        return itinerary;
+    }
+
+    public void setItinerary(String itinerary) {
+        this.itinerary = itinerary;
+    }
+
+    public Integer getDurationDays() {
+        return durationDays;
+    }
+
+    public void setDurationDays(Integer durationDays) {
+        this.durationDays = durationDays;
+    }
+
+    public BigDecimal getAllocatedBudget() {
+        return allocatedBudget;
+    }
+
+    public void setAllocatedBudget(BigDecimal allocatedBudget) {
+        this.allocatedBudget = allocatedBudget;
+    }
+
+    public String getTransportMode() {
+        return transportMode;
+    }
+
+    public void setTransportMode(String transportMode) {
+        this.transportMode = transportMode;
+    }
 }

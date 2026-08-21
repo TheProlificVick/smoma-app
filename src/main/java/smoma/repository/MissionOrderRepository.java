@@ -1,10 +1,9 @@
 package smoma.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import smoma.controller.model.MissionOrder;
-import java.util.Optional;
 
+@Repository
 public interface MissionOrderRepository extends JpaRepository<MissionOrder, Long> {
-    Optional<MissionOrder> findByMissionRequestId(Long requestId);
-    Optional<MissionOrder> findByOrderNumber(String orderNumber);
 }

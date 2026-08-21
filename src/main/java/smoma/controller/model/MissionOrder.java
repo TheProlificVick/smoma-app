@@ -1,15 +1,10 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "mission_orders")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class MissionOrder {
 
     @Id
@@ -17,16 +12,34 @@ public class MissionOrder {
     private Long id;
 
     private String orderNumber;
+    private LocalDate issueDate;
+
+    @Enumerated(EnumType.STRING)
+    private MissionRequest.MissionStatus status;
 
     @OneToOne
     @JoinColumn(name = "mission_request_id")
     private MissionRequest missionRequest;
 
-    @Enumerated(EnumType.STRING)
-    private MissionOrderStatus status;
+    @OneToOne
+    @JoinColumn(name = "form_detail_id")
+    private MissionFormDetail formDetail;
 
-    private Boolean arrivalStamped = false;
-    private Boolean completionStamped = false;
+    public MissionOrder() {}
 
-    private LocalDateTime issuedAt;
+    public Long getId() { return id; }
+    public String getOrderNumber() { return orderNumber; }
+    public void setOrderNumber(String orderNumber) { this.orderNumber = orderNumber; }
+
+    public LocalDate getIssueDate() { return issueDate; }
+    public void setIssueDate(LocalDate issueDate) { this.issueDate = issueDate; }
+
+    public MissionRequest.MissionStatus getStatus() { return status; }
+    public void setStatus(MissionRequest.MissionStatus status) { this.status = status; }
+
+    public MissionRequest getMissionRequest() { return missionRequest; }
+    public void setMissionRequest(MissionRequest missionRequest) { this.missionRequest = missionRequest; }
+
+    public MissionFormDetail getFormDetail() { return formDetail; }
+    public void setFormDetail(MissionFormDetail formDetail) { this.formDetail = formDetail; }
 }

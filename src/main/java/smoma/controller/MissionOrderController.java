@@ -1,22 +1,78 @@
 package smoma.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import smoma.dto.HRFormDTO;
+import smoma.dto.MissionRequestDTO;
 import smoma.controller.model.MissionOrder;
-import smoma.repository.MissionOrderRepository;
+import smoma.controller.model.MissionRequest;
+import smoma.controller.model.User;
+import smoma.repository.UserRepository;
+import smoma.controller.model.Service.MissionOrderService;
+import smoma.controller.model.Service.PdfGeneratorService;
+
+import java.io.ByteArrayInputStream;
+import java.security.Principal;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/mission-orders")
+@RequestMapping("/api/missions")
 public class MissionOrderController {
 
     @Autowired
-    private MissionOrderRepository orderRepository;
+    private MissionOrderService missionOrderService;
 
-    @GetMapping("/{requestId}")
-    public ResponseEntity<?> getOrderByRequestId(@PathVariable Long requestId) {
-        return orderRepository.findByMissionRequestId(requestId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @Autowired
+    private PdfGeneratorService pdfGeneratorService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @PostMapping("/request")
+    public ResponseEntity<MissionRequest> createRequest(@RequestBody MissionRequestDTO dto, Principal principal) {
+        String username = principal != null ? principal.getName() : "dept_rep";
+        User initiator = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        return ResponseEntity.ok(missionOrderService.initiateRequest(dto, initiator));
+    }
+
+    @PutMapping("/request/{id}/gm-review")
+    public ResponseEntity<MissionRequest> gmReview(
+            @PathVariable Long id,
+            @RequestParam boolean approve,
+            @RequestParam(required = false, defaultValue = "") String comment,
+            Principal principal) {
+        String username = principal != null ? principal.getName() : "general_manager";
+        return ResponseEntity.ok(missionOrderService.reviewByGM(id, approve, comment, username));
+    }
+
+    @PostMapping("/hr/complete-form")
+    public ResponseEntity<MissionOrder> completeHRForm(@RequestBody HRFormDTO dto, Principal principal) {
+        String username = principal != null ? principal.getName() : "hr_officer";
+        return ResponseEntity.ok(missionOrderService.completeHRForm(dto, username));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<MissionRequest>> getAllRequests() {
+        return ResponseEntity.ok(missionOrderService.getAllRequests());
+    }
+
+    @GetMapping("/order/{id}/pdf")
+    public ResponseEntity<InputStreamResource> downloadPdf(@PathVariable Long id) {
+        MissionOrder order = missionOrderService.getOrderById(id);
+        ByteArrayInputStream pdfStream = pdfGeneratorService.generateMissionOrderPdf(order);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "inline; filename=" + order.getOrderNumber() + ".pdf");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(pdfStream));
     }
 }
