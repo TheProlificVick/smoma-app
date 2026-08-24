@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SMOMA - Mission Requests</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <h2 class="mb-4">Staff Mission Order Management</h2>
+    
+    <!-- New Request Card -->
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-primary text-white"><h5 class="card-title m-0">Initiate New Mission Request</h5></div>
+        <div class="card-body">
+            <form id="requestForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Mission Title</label>
+                        <input type="text" id="title" class="form-control" required placeholder="e.g. Audit Mission">
+                    </div>
+
+                    <!-- Automatic Dropdown Selection for Destination City -->
+                    <div class="col-md-6">
+                        <label class="form-label">Destination City</label>
+                        <select id="destination" class="form-select" required>
+                            <option value="" disabled selected>-- Select Destination City --</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Limbe">Limbe</option>
+                            <option value="Dschang">Dschang</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Target Staff Member ID</label>
+                        <input type="number" id="targetStaffId" class="form-control" required placeholder="Target User ID">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Initiator ID</label>
+                        <input type="number" id="initiatorId" class="form-control" required value="1">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Objective / Justification</label>
+                        <textarea id="objective" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Submit Request</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- My Requests Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white"><h5 class="card-title m-0">My Submitted Requests</h5></div>
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Destination</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="requestsTable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadRequests() {
+        const res = await fetch('/api/mission-requests/my-requests');
+        const data = await res.json();
+        const tbody = document.getElementById('requestsTable');
+        tbody.innerHTML = data.map(r => `
+            <tr>
+                <td>${r.id}</td>
+                <td>${r.title}</td>
+                <td>${r.destination}</td>
+                <td><span class="badge bg-info text-dark">${r.status}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    document.getElementById('requestForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            title: document.getElementById('title').value,
+            destination: document.getElementById('destination').value,
+            targetStaffId: document.getElementById('targetStaffId').value,
+            initiatorId: document.getElementById('initiatorId').value,
+            objective: document.getElementById('objective').value
+        };
+        const res = await fetch('/api/mission-requests/create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            alert('Mission Request Initiated Successfully!');
+            document.getElementById('requestForm').reset();
+            loadRequests();
+        }
+    });
+
+    loadRequests();
+</script>
+</body>
+</html>

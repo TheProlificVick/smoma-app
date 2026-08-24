@@ -19,7 +19,19 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login.html", "/index.html", "/", "/images/**", "/css/**", "/js/**", "/api/auth/**").permitAll()
+                .requestMatchers(
+                    "/login.html", 
+                    "/index.html", 
+                    "/mission-requests.html", 
+                    "/validation-portal.html", 
+                    "/hr-processing.html", 
+                    "/admin-panel.html", 
+                    "/", 
+                    "/images/**", 
+                    "/css/**", 
+                    "/js/**", 
+                    "/api/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

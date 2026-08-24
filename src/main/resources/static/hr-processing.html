@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SMOMA - HR Form & Mission Order Printable</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printableMissionOrder, #printableMissionOrder * { visibility: visible; }
+            #printableMissionOrder { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <h2 class="mb-4">HR Logistics & Mission Order Generation</h2>
+    
+    <!-- HR Completion Form -->
+    <div class="card shadow-sm mb-5 d-print-none">
+        <div class="card-header bg-success text-white"><h5 class="card-title m-0">Complete Approved Request Details</h5></div>
+        <div class="card-body">
+            <form id="hrForm">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Request ID</label>
+                        <input type="number" id="requestId" class="form-control" required placeholder="e.g. 1">
+                    </div>
+                    
+                    <!-- Automatic City Selectors for Itinerary -->
+                    <div class="col-md-3">
+                        <label class="form-label">Departure City</label>
+                        <select id="originCity" class="form-select" onchange="updateItinerary()" required>
+                            <option value="Yaoundé" selected>Yaoundé</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Arrival Destination</label>
+                        <select id="destCity" class="form-select" onchange="updateItinerary()" required>
+                            <option value="Douala" selected>Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                        </select>
+                    </div>
+
+                    <!-- Hidden Auto-Generated Itinerary -->
+                    <input type="hidden" id="itinerary" value="Yaoundé - Douala">
+
+                    <div class="col-md-2">
+                        <label class="form-label">Duration (Days)</label>
+                        <input type="number" id="durationDays" class="form-control" min="1" required placeholder="4">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Transport Mode</label>
+                        <select id="transportMode" class="form-select">
+                            <option value="Road">Road</option>
+                            <option value="Air">Air</option>
+                            <option value="Train">Train</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-text mb-2">Calculated Itinerary: <strong id="itineraryPreview" class="text-success">Yaoundé - Douala</strong></div>
+                        <button type="submit" class="btn btn-success">Generate Official Order</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Official Printable Mission Order Template -->
+    <div id="printableMissionOrder" class="card shadow p-4 bg-white d-none">
+        <div class="text-center border-bottom pb-3 mb-3">
+            <h3>AGENCE DE RÉGULATION DES TÉLÉCOMMUNICATIONS</h3>
+            <h5>ORDRE DE MISSION PERMANENT / TEMPORAIRE</h5>
+            <p class="text-muted m-0">Order Ref: <strong id="outOrderNumber"></strong></p>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6"><strong>Itinerary:</strong> <span id="outItinerary"></span></div>
+            <div class="col-6"><strong>Duration:</strong> <span id="outDuration"></span> Days</div>
+            <div class="col-6"><strong>Transport Mode:</strong> <span id="outTransport"></span></div>
+            <div class="col-6"><strong>Status:</strong> <span id="outStatus"></span></div>
+        </div>
+        <div class="text-end pt-4 mt-4 border-top">
+            <p>Signed for the General Manager,</p>
+            <p class="fw-bold mt-5">Human Resources Direction</p>
+        </div>
+        <div class="mt-4 d-print-none text-center">
+            <button onclick="window.print()" class="btn btn-dark">Print Official Document</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateItinerary() {
+        const origin = document.getElementById('originCity').value;
+        const dest = document.getElementById('destCity').value;
+        const combined = `${origin} - ${dest}`;
+        document.getElementById('itinerary').value = combined;
+        document.getElementById('itineraryPreview').innerText = combined;
+    }
+
+    document.getElementById('hrForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            requestId: document.getElementById('requestId').value,
+            itinerary: document.getElementById('itinerary').value,
+            durationDays: document.getElementById('durationDays').value,
+            transportMode: document.getElementById('transportMode').value
+        };
+
+        const res = await fetch('/api/hr/complete-order?hrUsername=hr_officer', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            const order = await res.json();
+            document.getElementById('outOrderNumber').innerText = order.orderNumber;
+            document.getElementById('outItinerary').innerText = order.formDetail.itinerary;
+            document.getElementById('outDuration').innerText = order.formDetail.durationDays;
+            document.getElementById('outTransport').innerText = order.formDetail.transportMode;
+            document.getElementById('outStatus').innerText = order.status;
+            
+            document.getElementById('printableMissionOrder').classList.remove('d-none');
+            alert('Mission Order Successfully Issued!');
+        }
+    });
+</script>
+</body>
+</html>
