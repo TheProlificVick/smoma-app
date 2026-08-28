@@ -183,6 +183,8 @@
             const errorBanner = document.getElementById("errorMessage");
             errorBanner.style.display = "none";
 
+            localStorage.setItem("art_authenticated", "false");
+
             const payload = {
                 email: document.getElementById("email").value,
                 password: document.getElementById("password").value
@@ -199,6 +201,8 @@
                     const data = await response.json();
                     localStorage.setItem("art_authenticated", "true");
                     localStorage.setItem("user_name", data.fullName || "Agent ART");
+                    localStorage.setItem("art_user_role", data.role || "ROLE_AGENT");
+                    localStorage.setItem("art_user_email", data.username || "");
                     window.location.href = "index.html";
                 } else {
                     errorBanner.innerText = "Identifiants professionnels incorrects ou accès refusé.";

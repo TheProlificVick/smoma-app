@@ -23,6 +23,22 @@ public class MissionRequest {
     @Enumerated(EnumType.STRING)
     private MissionStatus status;
 
+    @Column(length = 50)
+    private String missionType = "INTERNE";
+
+    @Column(length = 50)
+    private String feeType = "WITHOUT_FEES";
+
+    @Column(length = 50)
+    private String currentStage = "INITIATED";
+
+    @Column(length = 50)
+    private String paymentStatus = "PENDING";
+
+    private boolean mandateApproved = false;
+    private boolean mandateSignedByGeneralManager = false;
+    private String mandateReference;
+
     @ManyToOne
     @JoinColumn(name = "initiator_id")
     private User initiator;
@@ -59,6 +75,27 @@ public class MissionRequest {
 
     public User getAssignedStaff() { return assignedStaff; }
     public void setAssignedStaff(User assignedStaff) { this.assignedStaff = assignedStaff; }
+
+    public String getMissionType() { return missionType; }
+    public void setMissionType(String missionType) { this.missionType = missionType; }
+
+    public String getFeeType() { return feeType; }
+    public void setFeeType(String feeType) { this.feeType = feeType; }
+
+    public String getCurrentStage() { return currentStage; }
+    public void setCurrentStage(String currentStage) { this.currentStage = currentStage; }
+
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+
+    public boolean isMandateApproved() { return mandateApproved; }
+    public void setMandateApproved(boolean mandateApproved) { this.mandateApproved = mandateApproved; }
+
+    public boolean isMandateSignedByGeneralManager() { return mandateSignedByGeneralManager; }
+    public void setMandateSignedByGeneralManager(boolean mandateSignedByGeneralManager) { this.mandateSignedByGeneralManager = mandateSignedByGeneralManager; }
+
+    public String getMandateReference() { return mandateReference; }
+    public void setMandateReference(String mandateReference) { this.mandateReference = mandateReference; }
 
     public enum MissionStatus {
         INITIATED,

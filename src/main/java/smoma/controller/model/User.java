@@ -22,6 +22,10 @@ public class User {
     private String structure;
     private String title;
 
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 
@@ -71,6 +75,8 @@ public class User {
     public void setStructure(String structure) { this.structure = structure; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+    public Department getDepartment() { return department; }
+    public void setDepartment(Department department) { this.department = department; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     public boolean isActive() { return active; }

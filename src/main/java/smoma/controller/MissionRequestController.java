@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.MissionRequest;
 import smoma.controller.model.Service.MissionOrderService;
+import smoma.repository.MissionRequestRepository;
 
 import java.security.Principal;
 import java.util.List;
@@ -17,6 +18,9 @@ public class MissionRequestController {
     @Autowired
     private MissionOrderService missionOrderService;
 
+    @Autowired
+    private MissionRequestRepository missionRequestRepository;
+
     @PostMapping("/create")
     public ResponseEntity<?> createRequest(@RequestBody Map<String, Object> payload, Principal principal) {
         try {
@@ -24,16 +28,23 @@ public class MissionRequestController {
             String title = (String) payload.get("title");
             String objective = (String) payload.get("objective");
             String destination = (String) payload.get("destination");
+            String feeType = String.valueOf(payload.getOrDefault("feeType", "WITHOUT_FEES"));
+            String missionType = String.valueOf(payload.getOrDefault("missionType", "INTERNE"));
 
-            // Initiator ID passed from session or requested payload fallback
-            Long initiatorId = payload.containsKey("initiatorId") 
-                    ? Long.parseLong(payload.get("initiatorId").toString()) 
+            Long initiatorId = payload.containsKey("initiatorId")
+                    ? Long.parseLong(payload.get("initiatorId").toString())
                     : 1L;
 
             MissionRequest request = missionOrderService.initiateRequest(
                     initiatorId, targetStaffId, title, objective, destination
             );
-            return ResponseEntity.ok(request);
+            request.setMissionType(missionType);
+            request.setFeeType(feeType);
+            request.setCurrentStage("INITIATED");
+            request.setPaymentStatus("PENDING");
+            request.setMandateApproved(false);
+            request.setMandateSignedByGeneralManager(false);
+            return ResponseEntity.ok(missionRequestRepository.save(request));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMOMA - Staff Mission Order Management Dashboard</title>
+    <title>SMOMA - Agence de Régulation des Télécommunications (ART)</title>
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .module-card {
-            transition: transform 0.2s ease, shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
             border: none;
         }
@@ -27,94 +27,172 @@
             border-radius: 12px;
             font-size: 1.5rem;
         }
+        .bg-art-navy {
+            background-color: #0B2545 !important;
+        }
     </style>
 </head>
 <body class="bg-light">
 
     <!-- Top Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-art-navy shadow-sm">
         <div class="container-fluid px-4">
-            <a class="navbar-brand fw-bold" href="/index.html">
-                <i class="fa-solid fa-plane-departure me-2 text-primary"></i>SMOMA Portal
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="/index.html">
+                <i class="fa-solid fa-plane-departure me-2 text-primary"></i>
+                <span>SMOMA Portal - ART Yaoundé</span>
             </a>
+            
             <div class="d-flex align-items-center">
+                <!-- Language Selector (French Default / English Toggle) -->
+                <div class="dropdown me-3">
+                    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-globe me-1"></i> <span id="currentLangLabel">Français (FR)</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
+                        <li><a class="dropdown-item" href="#" onclick="switchLanguage('fr')">🇫🇷 Français (FR)</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="switchLanguage('en')">🇬🇧 English (EN)</a></li>
+                    </ul>
+                </div>
+
                 <span class="navbar-text me-3 text-light" id="userGreeting">
-                    <i class="fa-solid fa-circle-user me-1"></i> Connected Session
+                    <i class="fa-solid fa-circle-user me-1"></i> <span data-i18n="connectedSession">Session Connectée</span>
                 </span>
-                <a href="/login.html" class="btn btn-outline-light btn-sm">Logout</a>
+                <a href="/login.html" class="btn btn-outline-light btn-sm" data-i18n="logout">Déconnexion</a>
             </div>
         </div>
     </nav>
 
     <!-- Main Container -->
-    <div class="container py-5">
+    <div class="container py-4">
         
         <!-- Header Banner -->
-        <div class="p-4 mb-4 bg-white rounded-3 shadow-sm border">
-            <div class="container-fluid py-2">
-                <h1 class="display-6 fw-bold text-dark">Staff Mission Order Management Application</h1>
-                <p class="col-md-10 fs-6 text-muted mb-0">
-                    Agence de Régulation des Télécommunications (ART). Welcome to the centralized control hub for managing mission order lifecycles, approvals, HR logistics, and Active Directory synchronization.
+        <div class="p-4 mb-4 bg-white rounded-3 shadow-sm border border-top border-4 border-primary">
+            <div class="container-fluid py-1">
+                <h1 class="display-6 fw-bold text-dark" data-i18n="mainHeader">Système de Gestion des Ordres de Mission (SMOMA)</h1>
+                <p class="col-md-10 fs-6 text-muted mb-0" data-i18n="mainSubheader">
+                    Agence de Régulation des Télécommunications (ART) - Siège de Yaoundé. Plateforme centralisée pour la gestion des mandats signés du DG, des ordres de mission, de la structuration des départements, du personnel et du suivi budgétaire.
                 </p>
             </div>
         </div>
 
-        <!-- Quick Modules Grid -->
-        <h4 class="mb-3 text-secondary fw-bold"><i class="fa-solid fa-cubes me-2"></i>Application Modules</h4>
-        <div class="row g-4 mb-5">
+        <!-- System Administration & Organizational Management Modules -->
+        <h5 class="mb-3 text-secondary fw-bold"><i class="fa-solid fa-sitemap me-2"></i><span data-i18n="sectionOrg">Structure Organisationnelle & Personnel</span></h5>
+        <div class="row g-4 mb-4">
             
-            <!-- Module 1: Mission Initiation -->
+            <!-- Module: Department Management -->
             <div class="col-md-6 col-lg-3">
-                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/mission-requests.html'">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/departments.html'">
                     <div class="card-body p-4 text-center">
-                        <div class="icon-box bg-primary text-white mx-auto mb-3">
-                            <i class="fa-solid fa-file-pen"></i>
+                        <div class="icon-box bg-indigo text-white bg-primary mx-auto mb-3">
+                            <i class="fa-solid fa-building"></i>
                         </div>
-                        <h5 class="card-title fw-bold">Mission Requests</h5>
-                        <p class="card-text text-muted small">Initiate new mission requests and track current request statuses.</p>
-                        <a href="/mission-requests.html" class="btn btn-primary btn-sm w-100">Access Module</a>
+                        <h5 class="card-title fw-bold" data-i18n="modDepartmentsTitle">Directions & Depts</h5>
+                        <p class="card-text text-muted small" data-i18n="modDepartmentsDesc">Gérer l'organigramme de l'ART (DRH, DGF, DT, DLCI, DPS, etc.).</p>
+                        <a href="/departments.html" class="btn btn-outline-primary btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Module 2: Executive Validation -->
+            <!-- Module: Personnel Management -->
             <div class="col-md-6 col-lg-3">
-                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/validation-portal.html'">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/personnel.html'">
                     <div class="card-body p-4 text-center">
-                        <div class="icon-box bg-warning text-dark mx-auto mb-3">
-                            <i class="fa-solid fa-user-check"></i>
+                        <div class="icon-box bg-info text-white mx-auto mb-3">
+                            <i class="fa-solid fa-address-book"></i>
                         </div>
-                        <h5 class="card-title fw-bold">Approval Desk</h5>
-                        <p class="card-text text-muted small">General Manager and Department Heads validation desk for pending requests.</p>
-                        <a href="/validation-portal.html" class="btn btn-warning text-dark btn-sm w-100">Access Module</a>
+                        <h5 class="card-title fw-bold" data-i18n="modPersonnelTitle">Gestion du Personnel</h5>
+                        <p class="card-text text-muted small" data-i18n="modPersonnelDesc">Créer et mettre à jour le profil des agents, fonctions et matricules.</p>
+                        <a href="/personnel.html" class="btn btn-info text-white btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Module 3: HR & Order Printing -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/hr-processing.html'">
-                    <div class="card-body p-4 text-center">
-                        <div class="icon-box bg-success text-white mx-auto mb-3">
-                            <i class="fa-solid fa-print"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">HR Logistics</h5>
-                        <p class="card-text text-muted small">Input itinerary, duration, per diems, and generate official printable PDF orders.</p>
-                        <a href="/hr-processing.html" class="btn btn-success btn-sm w-100">Access Module</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Module 4: Administration & AD Sync -->
+            <!-- Module: Admin & AD Sync -->
             <div class="col-md-6 col-lg-3">
                 <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/admin-panel.html'">
                     <div class="card-body p-4 text-center">
                         <div class="icon-box bg-secondary text-white mx-auto mb-3">
                             <i class="fa-solid fa-id-card"></i>
                         </div>
-                        <h5 class="card-title fw-bold">Admin & AD Sync</h5>
-                        <p class="card-text text-muted small">Synchronize Active Directory accounts and view local database assignments.</p>
-                        <a href="/admin-panel.html" class="btn btn-secondary btn-sm w-100">Access Module</a>
+                        <h5 class="card-title fw-bold" data-i18n="modAdminTitle">Admin & Synchro AD</h5>
+                        <p class="card-text text-muted small" data-i18n="modAdminDesc">Synchronisation Active Directory et comptes d'accès local.</p>
+                        <a href="/admin-panel.html" class="btn btn-secondary btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module: Fiscal Year Annual Dashboard -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/annual-dashboard.html'">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-box bg-dark text-white mx-auto mb-3">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <h5 class="card-title fw-bold" data-i18n="modAnnualDashboardTitle">Bilan Annuel Agent</h5>
+                        <p class="card-text text-muted small" data-i18n="modAnnualDashboardDesc">Historique annuel des missions effectuées par agent pour l'exercice.</p>
+                        <a href="/annual-dashboard.html" class="btn btn-dark btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Mission Lifecycle & Processing Modules -->
+        <h5 class="mb-3 text-secondary fw-bold"><i class="fa-solid fa-cubes me-2"></i><span data-i18n="sectionMissions">Gestion Operationnelle des Missions</span></h5>
+        <div class="row g-4 mb-5">
+            
+            <!-- Module: General Mandates (Mandats de Mission DG) -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/mandats.html'">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-box bg-danger text-white mx-auto mb-3">
+                            <i class="fa-solid fa-stamp"></i>
+                        </div>
+                        <h5 class="card-title fw-bold" data-i18n="modMandatsTitle">Mandats (DG)</h5>
+                        <p class="card-text text-muted small" data-i18n="modMandatsDesc">Mandats de mission généraux signés par le Directeur Général avec réf. unique.</p>
+                        <a href="/mandats.html" class="btn btn-danger btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module: Mission Orders (Ordres de Mission) -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/mission-requests.html'">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-box bg-primary text-white mx-auto mb-3">
+                            <i class="fa-solid fa-file-pen"></i>
+                        </div>
+                        <h5 class="card-title fw-bold" data-i18n="modOrdresTitle">Ordres de Mission</h5>
+                        <p class="card-text text-muted small" data-i18n="modOrdresDesc">Types précis, objectifs, étapes itinéraire, transport et frais (avec/sans).</p>
+                        <a href="/mission-requests.html" class="btn btn-primary btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module: Validation Portal -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/validation-portal.html'">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-box bg-warning text-dark mx-auto mb-3">
+                            <i class="fa-solid fa-user-check"></i>
+                        </div>
+                        <h5 class="card-title fw-bold" data-i18n="modValidationTitle">Guichet de Validation</h5>
+                        <p class="card-text text-muted small" data-i18n="modValidationDesc">Validation hiérarchique par les Chefs de Département et la Direction General.</p>
+                        <a href="/validation-portal.html" class="btn btn-warning text-dark btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module: HR Processing & Scanned Reports -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/hr-processing.html'">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-box bg-success text-white mx-auto mb-3">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <h5 class="card-title fw-bold" data-i18n="modReportsTitle">Impression & Rapports</h5>
+                        <p class="card-text text-muted small" data-i18n="modReportsDesc">Génération PDF officiels et numérisation des rapports de fin de mission.</p>
+                        <a href="/hr-processing.html" class="btn btn-success btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
                     </div>
                 </div>
             </div>
@@ -122,42 +200,55 @@
         </div>
 
         <!-- Live Statistics Summary Panel -->
-        <h4 class="mb-3 text-secondary fw-bold"><i class="fa-solid fa-chart-line me-2"></i>System Overview</h4>
+        <h5 class="mb-3 text-secondary fw-bold"><i class="fa-solid fa-chart-line me-2"></i><span data-i18n="sectionStats">Vue d'Ensemble du Système</span></h5>
         <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 bg-white">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="icon-box bg-danger bg-opacity-10 text-danger me-3">
+                            <i class="fa-solid fa-stamp"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-0 small" data-i18n="statMandats">Mandats DG Signés</h6>
+                            <h3 class="fw-bold mb-0" id="totalMandatesCount">--</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="card shadow-sm border-0 bg-white">
                     <div class="card-body d-flex align-items-center">
                         <div class="icon-box bg-info bg-opacity-10 text-info me-3">
                             <i class="fa-solid fa-folder-open"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted mb-0">Total Mission Requests</h6>
+                            <h6 class="text-muted mb-0 small" data-i18n="statOrders">Ordres de Mission</h6>
                             <h3 class="fw-bold mb-0" id="totalRequestsCount">--</h3>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card shadow-sm border-0 bg-white">
                     <div class="card-body d-flex align-items-center">
                         <div class="icon-box bg-warning bg-opacity-10 text-warning me-3">
                             <i class="fa-solid fa-clock"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted mb-0">Pending Approvals</h6>
+                            <h6 class="text-muted mb-0 small" data-i18n="statPending">En Attente de Validation</h6>
                             <h3 class="fw-bold mb-0" id="pendingRequestsCount">--</h3>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card shadow-sm border-0 bg-white">
                     <div class="card-body d-flex align-items-center">
                         <div class="icon-box bg-dark bg-opacity-10 text-dark me-3">
                             <i class="fa-solid fa-users"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted mb-0">Registered AD Accounts</h6>
+                            <h6 class="text-muted mb-0 small" data-i18n="statStaff">Personnel Inscrit (AD)</h6>
                             <h3 class="fw-bold mb-0" id="adUsersCount">--</h3>
                         </div>
                     </div>
@@ -167,20 +258,105 @@
 
     </div>
 
-   
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Language Translation Dictionary & Logic -->
     <script>
+        const i18n = {
+            fr: {
+                connectedSession: "Session Connectée",
+                logout: "Déconnexion",
+                mainHeader: "Système de Gestion des Ordres de Mission (SMOMA)",
+                mainSubheader: "Agence de Régulation des Télécommunications (ART) - Siège de Yaoundé. Plateforme centralisée pour la gestion des mandats signés du DG, des ordres de mission, de la structuration des départements, du personnel et du suivi budgétaire.",
+                sectionOrg: "Structure Organisationnelle & Personnel",
+                sectionMissions: "Gestion Opérationnelle des Missions",
+                sectionStats: "Vue d'Ensemble du Système",
+                modDepartmentsTitle: "Directions & Depts",
+                modDepartmentsDesc: "Gérer l'organigramme de l'ART (DRH, DGF, DT, DLCI, DPS, etc.).",
+                modPersonnelTitle: "Gestion du Personnel",
+                modPersonnelDesc: "Créer et mettre à jour le profil des agents, fonctions et matricules.",
+                modAdminTitle: "Admin & Synchro AD",
+                modAdminDesc: "Synchronisation Active Directory et comptes d'accès local.",
+                modAnnualDashboardTitle: "Bilan Annuel Agent",
+                modAnnualDashboardDesc: "Historique annuel des missions effectuées par agent pour l'exercice.",
+                modMandatsTitle: "Mandats (DG)",
+                modMandatsDesc: "Mandats de mission généraux signés par le Directeur Général avec réf. unique.",
+                modOrdresTitle: "Ordres de Mission",
+                modOrdresDesc: "Types précis, objectifs, étapes itinéraire, transport et frais (avec/sans).",
+                modValidationTitle: "Guichet de Validation",
+                modValidationDesc: "Validation hiérarchique par les Chefs de Département et la Direction Générale.",
+                modReportsTitle: "Impression & Rapports",
+                modReportsDesc: "Génération PDF officiels et numérisation des rapports de fin de mission.",
+                accessBtn: "Accéder au Module",
+                statMandats: "Mandats DG Signés",
+                statOrders: "Ordres de Mission",
+                statPending: "En Attente de Validation",
+                statStaff: "Personnel Inscrit (AD)"
+            },
+            en: {
+                connectedSession: "Connected Session",
+                logout: "Logout",
+                mainHeader: "Staff Mission Order Management Application (SMOMA)",
+                mainSubheader: "Telecommunications Regulatory Board (TRB/ART) - Yaoundé HQ. Centralized portal for DG general mandates, mission orders, department structures, personnel management, and fiscal reporting.",
+                sectionOrg: "Organizational Structure & Personnel",
+                sectionMissions: "Operational Mission Management",
+                sectionStats: "System Overview",
+                modDepartmentsTitle: "Departments & Units",
+                modDepartmentsDesc: "Manage TRB organizational units (HR, Finance, Tech, Legal, etc.).",
+                modPersonnelTitle: "Personnel Management",
+                modPersonnelDesc: "Create and update staff profiles, positions, and ID numbers.",
+                modAdminTitle: "Admin & AD Sync",
+                modAdminDesc: "Active Directory user synchronization and local access management.",
+                modAnnualDashboardTitle: "Staff Annual Report",
+                modAnnualDashboardDesc: "Annual breakdown of completed missions per employee for current fiscal year.",
+                modMandatsTitle: "GM Mandates",
+                modMandatsDesc: "General mission mandates signed by General Manager with unique reference numbers.",
+                modOrdresTitle: "Mission Orders",
+                modOrdresDesc: "Specific mission types, objectives, multi-step transport, and expense regimes.",
+                modValidationTitle: "Approval Desk",
+                modValidationDesc: "Multi-level validation routing for Heads of Department and General Management.",
+                modReportsTitle: "Printing & Scans",
+                modReportsDesc: "Official PDF order generation and uploading scanned post-mission reports.",
+                accessBtn: "Access Module",
+                statMandats: "Signed GM Mandates",
+                statOrders: "Mission Orders",
+                statPending: "Pending Approvals",
+                statStaff: "Registered Staff (AD)"
+            }
+        };
+
+        function switchLanguage(lang) {
+            document.getElementById('currentLangLabel').innerText = (lang === 'fr') ? 'Français (FR)' : 'English (EN)';
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (i18n[lang] && i18n[lang][key]) {
+                    element.innerText = i18n[lang][key];
+                }
+            });
+            // Persist preference in locale storage
+            localStorage.setItem('smoma_lang', lang);
+        }
+
         async function fetchDashboardStats() {
             try {
-                
+                // Fetch General Mandates Count
+                const mandateRes = await fetch('/api/mandats');
+                if (mandateRes.ok) {
+                    const mandats = await mandateRes.json();
+                    document.getElementById('totalMandatesCount').innerText = mandats.length;
+                }
+
+                // Fetch Mission Orders Count
                 const reqRes = await fetch('/api/mission-requests/my-requests');
                 if (reqRes.ok) {
                     const requests = await reqRes.json();
                     document.getElementById('totalRequestsCount').innerText = requests.length;
-                    const pending = requests.filter(r => r.status === 'INITIATED').length;
+                    const pending = requests.filter(r => r.status === 'INITIATED' || r.status === 'PENDING').length;
                     document.getElementById('pendingRequestsCount').innerText = pending;
                 }
 
-                
+                // Fetch Active Directory Registered Users Count
                 const userRes = await fetch('/api/admin/users');
                 if (userRes.ok) {
                     const users = await userRes.json();
@@ -191,7 +367,13 @@
             }
         }
 
-        fetchDashboardStats();
+        // Initialize saved language or default to French
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('smoma_lang') || 'fr';
+            switchLanguage(savedLang);
+            fetchDashboardStats();
+        });
     </script>
+    <script src="/js/auth-guard.js"></script>
 </body>
 </html>

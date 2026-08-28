@@ -16,11 +16,11 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() == 0) {
-            userRepository.save(new User("admin", "admin123", "System Administrator", "admin@art.cm", "IT", Role.ROLE_ADMIN));
-            userRepository.save(new User("gm_user", "password", "General Manager", "gm@art.cm", "Executive", Role.ROLE_GENERAL_MANAGER));
-            userRepository.save(new User("hr_officer", "password", "HR Officer", "hr@art.cm", "Human Resources", Role.ROLE_HR_OFFICER));
-            userRepository.save(new User("dept_rep", "password", "Dept Representative", "dept@art.cm", "Telecommunications", Role.ROLE_DEPARTMENT_REPRESENTATIVE));
-            userRepository.save(new User("staff_member", "password", "Staff Member", "staff@art.cm", "Network Engineering", Role.ROLE_STAFF_MEMBER));
+            userRepository.save(new User("admin@art.cm", "admin123", "System Administrator", "admin@art.cm", "IT", Role.ROLE_ADMIN));
+            userRepository.save(new User("gm@art.cm", "password123", "General Manager", "gm@art.cm", "Executive", Role.ROLE_GENERAL_MANAGER));
+            userRepository.save(new User("hr@art.cm", "password123", "HR Officer", "hr@art.cm", "Human Resources", Role.ROLE_HR_OFFICER));
+            userRepository.save(new User("dept@art.cm", "password123", "Dept Representative", "dept@art.cm", "Telecommunications", Role.ROLE_DEPARTMENT_REPRESENTATIVE));
+            userRepository.save(new User("staff@art.cm", "password123", "Staff Member", "staff@art.cm", "Network Engineering", Role.ROLE_STAFF_MEMBER));
         }
     }
 }

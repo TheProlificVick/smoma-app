@@ -41,6 +41,10 @@ public class MissionOrderService {
         request.setJustification(justification);
         request.setDestination(destination);
         request.setStatus(MissionRequest.MissionStatus.INITIATED);
+        request.setCurrentStage("INITIATED");
+        request.setPaymentStatus("PENDING");
+        request.setMandateApproved(false);
+        request.setMandateSignedByGeneralManager(false);
         request.setInitiator(initiator);
         request.setAssignedStaff(targetStaff);
 
@@ -65,7 +69,19 @@ public class MissionOrderService {
         MissionRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
 
-        request.setStatus(approve ? MissionRequest.MissionStatus.GM_APPROVED : MissionRequest.MissionStatus.REJECTED);
+        if (approve) {
+            request.setStatus(MissionRequest.MissionStatus.GM_APPROVED);
+            request.setCurrentStage("GM_APPROVED");
+            request.setMandateApproved(true);
+            request.setMandateSignedByGeneralManager(true);
+            request.setMandateReference("MANDAT-ART-" + request.getId());
+        } else {
+            request.setStatus(MissionRequest.MissionStatus.REJECTED);
+            request.setCurrentStage("REJECTED");
+            request.setMandateApproved(false);
+            request.setMandateSignedByGeneralManager(false);
+            request.setPaymentStatus("CANCELLED");
+        }
         MissionRequest updated = requestRepository.save(request);
 
         logAudit("GM_REVIEW", gmUsername, "Request ID " + requestId + " marked as " + request.getStatus());
@@ -77,8 +93,10 @@ public class MissionOrderService {
         MissionRequest request = requestRepository.findById(dto.getRequestId())
                 .orElseThrow(() -> new IllegalArgumentException("Request not found: " + dto.getRequestId()));
 
-        if (request.getStatus() != MissionRequest.MissionStatus.GM_APPROVED) {
-            throw new IllegalStateException("Only GM Approved requests can be processed by HR.");
+        if (request.getStatus() != MissionRequest.MissionStatus.GM_APPROVED
+                || !request.isMandateApproved()
+                || !request.isMandateSignedByGeneralManager()) {
+            throw new IllegalStateException("A mission cannot be issued without an approved and signed general manager mandate.");
         }
 
         MissionFormDetail formDetail = new MissionFormDetail();
@@ -97,6 +115,8 @@ public class MissionOrderService {
         order.setStatus(MissionRequest.MissionStatus.ISSUED);
 
         request.setStatus(MissionRequest.MissionStatus.FORM_COMPLETED);
+        request.setCurrentStage("HR_FORM_COMPLETED");
+        request.setPaymentStatus("PENDING");
         requestRepository.save(request);
 
         MissionOrder savedOrder = orderRepository.save(order);

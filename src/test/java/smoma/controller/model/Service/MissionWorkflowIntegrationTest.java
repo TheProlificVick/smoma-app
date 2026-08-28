@@ -73,6 +73,7 @@ public class MissionWorkflowIntegrationTest {
                 "System Inspection", 
                 "Douala"
         );
+
         assertNotNull(request.getId());
         assertEquals(MissionRequest.MissionStatus.INITIATED, request.getStatus());
 
