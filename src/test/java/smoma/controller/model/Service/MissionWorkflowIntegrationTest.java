@@ -100,4 +100,14 @@ public class MissionWorkflowIntegrationTest {
         assertEquals(MissionRequest.MissionStatus.ISSUED, order.getStatus());
         assertEquals(4, order.getFormDetail().getDurationDays());
     }
+
+    @Test
+    void testRequiredRoleRulesAreEnforced() {
+        assertEquals(true, missionOrderService.canCreateMissionRequest(Role.ROLE_DEPARTMENT_REPRESENTATIVE));
+        assertEquals(false, missionOrderService.canCreateMissionRequest(Role.ROLE_HR_OFFICER));
+        assertEquals(true, missionOrderService.canCompleteHrForm(Role.ROLE_HR_OFFICER));
+        assertEquals(false, missionOrderService.canCompleteHrForm(Role.ROLE_STAFF_MEMBER));
+        assertEquals(true, missionOrderService.canReviewMission(Role.ROLE_GENERAL_MANAGER));
+        assertEquals(false, missionOrderService.canReviewMission(Role.ROLE_STAFF_MEMBER));
+    }
 }

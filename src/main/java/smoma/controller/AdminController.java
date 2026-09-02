@@ -1,12 +1,15 @@
 package smoma.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.Department;
 import smoma.controller.model.User;
 import smoma.controller.model.Service.AdUserSyncService;
+import smoma.controller.model.Service.LdapDirectoryService;
 import smoma.controller.model.Service.Role;
+import smoma.dto.AdDirectoryEntryDTO;
 import smoma.dto.CreateDepartmentRequest;
 import smoma.dto.CreateUserRequest;
 import smoma.repository.DepartmentRepository;
@@ -15,6 +18,7 @@ import smoma.repository.UserRepository;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -24,10 +28,16 @@ public class AdminController {
     private AdUserSyncService adUserSyncService;
 
     @Autowired
+    private LdapDirectoryService ldapDirectoryService;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private DepartmentRepository departmentRepository;
+
+    @Value("${spring.ldap.urls:ldap://192.168.0.101:389}")
+    private String ldapServer;
 
     @PostMapping("/sync-ad")
     public ResponseEntity<?> syncActiveDirectory() {
@@ -42,6 +52,90 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userRepository.findAll());
+    }
+
+    /**
+     * Returns the ENTIRE contents of the Active Directory as exposed by the configured
+     * spring.ldap.urls. This includes users, groups, OUs, contacts, computers and domains.
+     * Used by the Admin & AD Sync module to fortify role-based access.
+     */
+    @GetMapping("/ad-directory")
+    public ResponseEntity<?> getFullActiveDirectory() {
+        try {
+            List<AdDirectoryEntryDTO> entries = ldapDirectoryService.getAllDirectoryEntries();
+            return ResponseEntity.ok(Map.of(
+                "totalEntries", entries.size(),
+                "entries", entries,
+                "ldapServer", ldapServer
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Unable to read Active Directory: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/admin/ad-directory/users - Only the users from AD with role assignments.
+     */
+    @GetMapping("/ad-directory/users")
+    public ResponseEntity<?> getAdUsers() {
+        try {
+            List<Map<String, String>> users = ldapDirectoryService.searchUsers(null);
+            return ResponseEntity.ok(Map.of(
+                    "totalUsers", users.size(),
+                    "users", users
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Unable to read AD users: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/admin/ad-directory/groups - Returns only security groups & distribution groups.
+     */
+    @GetMapping("/ad-directory/groups")
+    public ResponseEntity<?> getAdGroups() {
+        try {
+            List<AdDirectoryEntryDTO> all = ldapDirectoryService.getAllDirectoryEntries();
+            List<AdDirectoryEntryDTO> groups = all.stream()
+                    .filter(e -> "GROUP".equalsIgnoreCase(e.getEntryType()))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(Map.of("totalGroups", groups.size(), "groups", groups));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Unable to read AD groups: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/admin/ad-directory/statistics - Summary stats of the whole directory.
+     */
+    @GetMapping("/ad-directory/statistics")
+    public ResponseEntity<?> getAdStatistics() {
+        try {
+            List<AdDirectoryEntryDTO> all = ldapDirectoryService.getAllDirectoryEntries();
+            Map<String, Long> byType = all.stream()
+                    .collect(Collectors.groupingBy(AdDirectoryEntryDTO::getEntryType, Collectors.counting()));
+            Map<String, Long> byDepartment = all.stream()
+                    .filter(e -> e.getDepartment() != null && !e.getDepartment().isBlank())
+                    .collect(Collectors.groupingBy(AdDirectoryEntryDTO::getDepartment, Collectors.counting()));
+            long activeUsers = all.stream()
+                    .filter(AdDirectoryEntryDTO::isAccountEnabled)
+                    .filter(e -> "USER".equalsIgnoreCase(e.getEntryType()))
+                    .count();
+            long disabledUsers = all.stream()
+                    .filter(e -> !e.isAccountEnabled())
+                    .filter(e -> "USER".equalsIgnoreCase(e.getEntryType()))
+                    .count();
+
+            return ResponseEntity.ok(Map.of(
+                    "totalEntries", all.size(),
+                    "entriesByType", byType,
+                    "entriesByDepartment", byDepartment,
+                    "activeUsers", activeUsers,
+                    "disabledUsers", disabledUsers
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Unable to compute AD statistics: " + e.getMessage()));
+        }
     }
 
     private User requireAdmin(Principal principal, String requestRole, String requestEmail) {

@@ -17,8 +17,10 @@ import smoma.controller.model.Service.MissionOrderService;
 import smoma.controller.model.Service.PdfGeneratorService;
 
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/missions")
@@ -60,6 +62,34 @@ public class MissionOrderController {
     @GetMapping
     public ResponseEntity<List<MissionRequest>> getAllRequests() {
         return ResponseEntity.ok(missionOrderService.getAllRequests());
+    }
+
+    @PutMapping("/request/{id}/payment")
+    public ResponseEntity<?> updateMissionPayment(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> payload,
+            Principal principal) {
+        try {
+            String paymentStage = String.valueOf(payload.getOrDefault("paymentStage", "PENDING"));
+            String paymentAmount = String.valueOf(payload.getOrDefault("paymentAmount", "0"));
+            String paymentCurrency = String.valueOf(payload.getOrDefault("paymentCurrency", "XAF"));
+            String paymentReference = String.valueOf(payload.getOrDefault("paymentReference", ""));
+            String reportStatus = String.valueOf(payload.getOrDefault("reportStatus", "NOT_SUBMITTED"));
+            String reportScanUrl = payload.get("reportScanUrl") != null ? payload.get("reportScanUrl").toString() : "";
+
+            MissionRequest updated = missionOrderService.updateMissionPayment(
+                    id,
+                    paymentStage,
+                    paymentAmount,
+                    paymentCurrency,
+                    paymentReference,
+                    reportStatus,
+                    reportScanUrl
+            );
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/order/{id}/pdf")

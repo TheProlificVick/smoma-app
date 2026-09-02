@@ -1,8 +1,19 @@
 HELP.md
 target/
+bin/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# Secrets — never commit these
+application-local.properties
+.env
+.env.*
+*.pem
+*.key
+
+# Compiled classes accidentally saved next to sources
+*.class
 
 ### STS ###
 .apt_generated

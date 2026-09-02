@@ -38,7 +38,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-art-navy shadow-sm">
         <div class="container-fluid px-4">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="/index.html">
-                <i class="fa-solid fa-plane-departure me-2 text-primary"></i>
+                <img src="/images/ART%20logo.jpg" alt="ART logo" style="width:42px;height:42px;object-fit:contain;border-radius:8px;background:#fff;padding:4px;margin-right:12px;" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
                 <span>SMOMA Portal - ART Yaoundé</span>
             </a>
             
@@ -197,6 +197,20 @@
                 </div>
             </div>
 
+            <!-- Module: Mission Payment -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/mission-payment.html'">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-box bg-info text-white mx-auto mb-3">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                        </div>
+                        <h5 class="card-title fw-bold" data-i18n="modPaymentsTitle">Paiements de Mission / Mission Payments</h5>
+                        <p class="card-text text-muted small" data-i18n="modPaymentsDesc">Suivi des frais, validation des paiements et contrôle de conformité pour les missions.</p>
+                        <a href="/mission-payment.html" class="btn btn-info btn-sm w-100 text-white" data-i18n="accessBtn">Accéder au Module</a>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- Live Statistics Summary Panel -->
@@ -288,6 +302,8 @@
                 modValidationDesc: "Validation hiérarchique par les Chefs de Département et la Direction Générale.",
                 modReportsTitle: "Impression & Rapports",
                 modReportsDesc: "Génération PDF officiels et numérisation des rapports de fin de mission.",
+                modPaymentsTitle: "Paiements de Mission",
+                modPaymentsDesc: "Suivi des frais, validation des paiements et contrôle de conformité pour les missions.",
                 accessBtn: "Accéder au Module",
                 statMandats: "Mandats DG Signés",
                 statOrders: "Ordres de Mission",
@@ -318,6 +334,8 @@
                 modValidationDesc: "Multi-level validation routing for Heads of Department and General Management.",
                 modReportsTitle: "Printing & Scans",
                 modReportsDesc: "Official PDF order generation and uploading scanned post-mission reports.",
+                modPaymentsTitle: "Mission Payments",
+                modPaymentsDesc: "Track mission fees, validate settlements, and review report compliance before payment.",
                 accessBtn: "Access Module",
                 statMandats: "Signed GM Mandates",
                 statOrders: "Mission Orders",

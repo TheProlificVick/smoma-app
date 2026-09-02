@@ -29,12 +29,28 @@ public class MissionOrderService {
     @Autowired
     private AuditLogRepository auditLogRepository;
 
+    public boolean canCreateMissionRequest(Role role) {
+        return role == Role.ROLE_DEPARTMENT_REPRESENTATIVE || role == Role.ROLE_GENERAL_MANAGER || role == Role.ROLE_ADMIN;
+    }
+
+    public boolean canCompleteHrForm(Role role) {
+        return role == Role.ROLE_HR_OFFICER || role == Role.ROLE_ADMIN;
+    }
+
+    public boolean canReviewMission(Role role) {
+        return role == Role.ROLE_GENERAL_MANAGER || role == Role.ROLE_ADMIN;
+    }
+
     @Transactional
     public MissionRequest initiateRequest(Long initiatorId, Long targetStaffId, String title, String justification, String destination) {
         User initiator = userRepository.findById(initiatorId)
                 .orElseThrow(() -> new IllegalArgumentException("Initiator not found: " + initiatorId));
         User targetStaff = userRepository.findById(targetStaffId)
                 .orElseThrow(() -> new IllegalArgumentException("Target staff not found: " + targetStaffId));
+
+        if (!canCreateMissionRequest(initiator.getRole())) {
+            throw new IllegalStateException("Seuls le directeur de département, le général manager ou l'administrateur peuvent initier une demande de mission.");
+        }
 
         MissionRequest request = new MissionRequest();
         request.setTitle(title);
@@ -69,6 +85,11 @@ public class MissionOrderService {
         MissionRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
 
+        User reviewUser = userRepository.findByUsername(gmUsername).orElse(null);
+        if (reviewUser != null && !canReviewMission(reviewUser.getRole())) {
+            throw new IllegalStateException("Seul le général manager ou l'administrateur peut approuver ou rejeter une mission.");
+        }
+
         if (approve) {
             request.setStatus(MissionRequest.MissionStatus.GM_APPROVED);
             request.setCurrentStage("GM_APPROVED");
@@ -92,6 +113,11 @@ public class MissionOrderService {
     public MissionOrder completeHRForm(HRFormDTO dto, String hrUsername) {
         MissionRequest request = requestRepository.findById(dto.getRequestId())
                 .orElseThrow(() -> new IllegalArgumentException("Request not found: " + dto.getRequestId()));
+
+        User hrUser = userRepository.findByUsername(hrUsername).orElse(null);
+        if (hrUser != null && !canCompleteHrForm(hrUser.getRole())) {
+            throw new IllegalStateException("Seuls le service RH ou l'administrateur peuvent compléter le formulaire de mission.");
+        }
 
         if (request.getStatus() != MissionRequest.MissionStatus.GM_APPROVED
                 || !request.isMandateApproved()
@@ -122,6 +148,35 @@ public class MissionOrderService {
         MissionOrder savedOrder = orderRepository.save(order);
         logAudit("HR_FORM_COMPLETE", hrUsername, "Issued Order ID: " + savedOrder.getId());
         return savedOrder;
+    }
+
+    @Transactional
+    public MissionRequest updateMissionPayment(Long requestId, String paymentStage, String paymentAmount,
+                                              String paymentCurrency, String paymentReference,
+                                              String reportStatus, String reportScanUrl) {
+        MissionRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
+
+        request.setPaymentStage(paymentStage);
+        request.setPaymentAmount(paymentAmount);
+        request.setPaymentCurrency(paymentCurrency);
+        request.setPaymentReference(paymentReference);
+        request.setReportStatus(reportStatus);
+        request.setReportScanUrl(reportScanUrl);
+
+        if ("PAID".equalsIgnoreCase(paymentStage) || "SETTLED".equalsIgnoreCase(paymentStage)) {
+            request.setPaymentStatus("PAID");
+        } else if ("PENDING".equalsIgnoreCase(paymentStage)) {
+            request.setPaymentStatus("PENDING");
+        } else {
+            request.setPaymentStatus("IN_REVIEW");
+        }
+
+        if (request.getStatus() == null || request.getStatus() == MissionRequest.MissionStatus.INITIATED) {
+            request.setStatus(MissionRequest.MissionStatus.FORM_COMPLETED);
+        }
+
+        return requestRepository.save(request);
     }
 
     public List<MissionRequest> getAllRequests() {

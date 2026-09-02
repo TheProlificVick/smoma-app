@@ -22,7 +22,10 @@ public class AdUserSyncService {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    
+    /**
+     * Synchronizes ALL active users from the Active Directory into the local database.
+     * Role assignment is fortified using AD group memberships (memberOf) and job titles.
+     */
     public int syncUsersFromActiveDirectory() throws NamingException {
         List<Map<String, String>> adUsers = ldapDirectoryService.searchUsers(null);
         int syncedCount = 0;
@@ -49,6 +52,7 @@ public class AdUserSyncService {
             user.setStructure(adUser.get("nomStructure"));
             user.setMatricule(matricule);
             user.setRole(assignedRole);
+            user.setActive(true);
 
             // Only set password if creating a new user
             if (user.getId() == null) {

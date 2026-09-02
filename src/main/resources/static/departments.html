@@ -1,15 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMOMA - Departments</title>
+    <title>ART - SMOMA | Départements & Structures</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        body { background: #f5f7fb; }
-        .art-header { background: #0B2545; color: white; }
+        body { background: #f5f7fb; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .art-header { background: linear-gradient(135deg, #0B2545 0%, #13315C 100%); color: white; }
         .logo-box { width: 72px; height: 72px; border-radius: 12px; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; }
         .logo-box img { width: 56px; height: 56px; object-fit: contain; }
+        
+        .section-title {
+            background: #0B2545;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dept-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 15px;
+            border-left: 4px solid #0B2545;
+        }
+        .dept-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        }
+        
+        .dept-card .card-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            color: #0B2545;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dept-card .card-header i {
+            color: #0B2545;
+            font-size: 1.2rem;
+        }
+        
+        .sub-dept {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid #6c757d;
+            font-size: 0.95rem;
+        }
+        
+        .sub-dept i {
+            color: #6c757d;
+            margin-right: 8px;
+        }
+        
+        .unit-badge {
+            background: #e9ecef;
+            color: #495057;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 0.8rem;
+            margin: 3px;
+            display: inline-block;
+        }
+        
+        .org-level {
+            background: #0B2545;
+            color: white;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .org-connector {
+            text-align: center;
+            color: #0B2545;
+            font-size: 1.5rem;
+            margin: -10px 0 10px;
+        }
+        
+        .accordion-button:not(.collapsed) {
+            background-color: #e8f0fe;
+            color: #0B2545;
+        }
+        
+        .accordion-button:focus {
+            box-shadow: none;
+            border-color: #0B2545;
+        }
+        
+        .accordion-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px !important;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        
+        .accordion-button {
+            font-weight: 600;
+            color: #0B2545;
+        }
+        
+        .accordion-button i {
+            margin-right: 10px;
+            color: #0B2545;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 15px;
+        }
+        
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0B2545;
+        }
+        
+        .stat-card .label {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+        
+        .stat-card i {
+            font-size: 1.5rem;
+            color: #0B2545;
+            margin-bottom: 8px;
+        }
+        
+        .directorate-header {
+            background: linear-gradient(135deg, #13315C 0%, #1d4e89 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .directorate-header i {
+            font-size: 1.3rem;
+        }
+        
+        .sub-directorate {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border-left: 3px solid #1d4e89;
+        }
+        
+        .sub-directorate .title {
+            font-weight: 600;
+            color: #13315C;
+            margin-bottom: 6px;
+        }
+        
+        .sub-directorate .title i {
+            margin-right: 8px;
+            color: #1d4e89;
+        }
+        
+        .unit-list {
+            padding-left: 25px;
+            margin-top: 5px;
+        }
+        
+        .unit-list li {
+            margin-bottom: 3px;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+        
+        .unit-list li i {
+            color: #6c757d;
+            margin-right: 6px;
+            font-size: 0.8rem;
+        }
+        
+        .badge-level {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .level-director {
+            background: #0B2545;
+            color: white;
+        }
+        
+        .level-subdirector {
+            background: #1d4e89;
+            color: white;
+        }
+        
+        .level-division {
+            background: #2d6a4f;
+            color: white;
+        }
+        
+        .level-cell {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .search-box {
+            max-width: 500px;
+            margin: 0 auto 30px;
+        }
+        
+        .search-box input {
+            border-radius: 25px;
+            padding: 10px 20px;
+            border: 2px solid #0B2545;
+        }
+        
+        .search-box input:focus {
+            box-shadow: 0 0 0 0.2rem rgba(11, 37, 69, 0.25);
+            border-color: #0B2545;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            display: none;
+        }
+        
+        .no-results i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #adb5bd;
+        }
+        
+        .print-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        @media print {
+            .print-btn, .search-box, .navbar { display: none !important; }
+            body { background: white; }
+            .dept-card { break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
@@ -21,25 +291,677 @@
                 </div>
                 <div>
                     <div class="fw-bold">ART - SMOMA</div>
-                    <small>Departments & Structures</small>
+                    <small>Organigramme & Structures</small>
                 </div>
             </div>
-            <a href="/index.html" class="btn btn-outline-light btn-sm">Back to Dashboard</a>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-light btn-sm" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>Imprimer
+                </button>
+                <a href="/index.html" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>Retour au Tableau de Bord
+                </a>
+            </div>
         </div>
     </nav>
 
-    <div class="container py-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Department Management</h4>
+    <div class="container py-4">
+        <!-- Page Header -->
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-dark mb-1">Organisation de l'Agence de Régulation des Télécommunications</h3>
+            <p class="text-muted">Structure organisationnelle conformément au décret n° 2020/727 du 03 décembre 2020</p>
+        </div>
+
+        <!-- Search -->
+        <div class="search-box">
+            <input type="text" id="searchInput" class="form-control" placeholder="Rechercher un département, une direction, une unité..." onkeyup="filterDepartments()">
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <i class="bi bi-building"></i>
+                    <div class="number">11</div>
+                    <div class="label">Directions Centrales</div>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">This module is available for authorized administrative use.</p>
-                <div class="alert alert-success">Department management access is active.</div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <i class="bi bi-diagram-3"></i>
+                    <div class="number">9</div>
+                    <div class="label">Services Rattachés</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <i class="bi bi-collection"></i>
+                    <div class="number">20+</div>
+                    <div class="label">Sous-Directions</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <i class="bi bi-geo-alt"></i>
+                    <div class="number">4</div>
+                    <div class="label">Services Déconcentrés</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- No results message -->
+        <div class="no-results" id="noResults">
+            <i class="bi bi-search"></i>
+            <h5>Aucun résultat trouvé</h5>
+            <p>Essayez avec un autre terme de recherche.</p>
+        </div>
+
+        <!-- ==================== TITRE I & II : GENERAL & BOARD ==================== -->
+        <div class="row mb-4" id="section-board">
+            <div class="col-12">
+                <div class="section-title">
+                    <i class="bi bi-bank"></i>
+                    <span>Gouvernance</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-bank2"></i>
+                        Conseil d'Administration
+                        <span class="badge level-director ms-auto">TITRE II</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-0 small">Organe de gouvernance de l'Agence de Régulation des Télécommunications (ART).</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-person-badge"></i>
+                        Direction Générale
+                        <span class="badge level-director ms-auto">TITRE III</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-0 small">Direction générale de l'Agence, responsable de l'administration et de la gestion courante.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== CHAPITRE I : SERVICES RATTACHES ==================== -->
+        <div class="row mb-4" id="section-attached">
+            <div class="col-12">
+                <div class="section-title">
+                    <i class="bi bi-paperclip"></i>
+                    <span>CHAPITRE I : Services Rattachés à la Direction Générale</span>
+                </div>
+            </div>
+
+            <!-- Section I: Conseillers Techniques -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-person-gear"></i>
+                        Conseillers Techniques
+                        <span class="badge level-division ms-auto">Section I</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Conseillers techniques auprès de la Direction Générale.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section II: Audit Interne -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-shield-check"></i>
+                        Audit Interne
+                        <span class="badge level-division ms-auto">Section II</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Audit interne de l'Agence.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section III: Division du Suivi -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-eye"></i>
+                        Division du Suivi
+                        <span class="badge level-division ms-auto">Section III</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Suivi des activités de l'Agence.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section IV: Contrôle de Gestion -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-clipboard-data"></i>
+                        Division du Contrôle de Gestion
+                        <span class="badge level-division ms-auto">Section IV</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Contrôle de gestion et performance.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section V: Attaché de Direction -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-person-lines-fill"></i>
+                        Attaché de Direction
+                        <span class="badge level-division ms-auto">Section V</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Attaché auprès de la Direction Générale.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section VI: Cellule des Systèmes d'Information -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-cpu"></i>
+                        Cellule des Systèmes d'Information
+                        <span class="badge level-cell ms-auto">Section VI</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Gestion des systèmes d'information de l'Agence.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section VII: Traduction & Bilingualisme -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-translate"></i>
+                        Cellule de la Traduction, de l'Interprétariat et de la Promotion du Bilinguisme
+                        <span class="badge level-cell ms-auto">Section VII</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Traduction, interprétariat et promotion du bilinguisme.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section VIII: Accueil, Courrier et Liaison -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-envelope-open"></i>
+                        Sous-Direction de l'Accueil, du Courrier et de Liaison
+                        <span class="badge level-subdirector ms-auto">Section VIII</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Accueil, gestion du courrier et liaison.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section IX: Comptables Matières -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-box-seam"></i>
+                        Comptables Matières
+                        <span class="badge level-cell ms-auto">Section IX</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Gestion des matières et des biens.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== CHAPITRE II : SERVICES CENTRAUX ==================== -->
+        <div class="row mb-4" id="section-central">
+            <div class="col-12">
+                <div class="section-title">
+                    <i class="bi bi-building-gear"></i>
+                    <span>CHAPITRE II : Services Centraux</span>
+                </div>
+            </div>
+
+            <!-- ===== SECTION I : DIRECTION TECHNIQUE ===== -->
+            <div class="col-12 mb-3">
+                <div class="directorate-header">
+                    <i class="bi bi-tools"></i>
+                    Direction Technique
+                    <span class="badge level-director ms-auto">Section I</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-diagram-2"></i>Sous-Direction de la Gestion des Ressources Techniques et du Service Universel</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-shield-lock"></i>Sous-Direction des Normes, de la Sécurité Électronique et des Agréments</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION II : DIRECTION DE LA GESTION DES FRÉQUENCES ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-radio"></i>
+                    Direction de la Gestion des Fréquences
+                    <span class="badge level-director ms-auto">Section II</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-graph-up"></i>Sous-Direction des Études, de la Planification et de l'Ingénierie du Spectre</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-sliders"></i>Sous-Direction de la Gestion Administrative du Spectre</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION III : DIRECTION DES LICENCES ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Direction des Licences, de la Concurrence et de l'Interconnexion
+                    <span class="badge level-director ms-auto">Section III</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-file-earmark-check"></i>Sous-Direction des Licences</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-graph-up-arrow"></i>Sous-Direction de l'Analyse et de l'Évaluation Économique</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-hdd-network"></i>Sous-Direction de l'Interconnexion et des Infrastructures des Communications Électroniques</div>
+                    <p class="text-muted small mb-0">Paragraphe III</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION IV : BRIGADE DES CONTROLES ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-shield-exclamation"></i>
+                    Brigade des Contrôles
+                    <span class="badge level-director ms-auto">Section IV</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-file-earmark-lock"></i>Unité de Contrôle des Titres d'Exploitation et des Ressources Rares</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-speedometer2"></i>Unité de Contrôle de la Qualité de Service et des Infrastructures</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-cash-coin"></i>Unité des Contrôles Administratifs et Tarifaires</div>
+                    <p class="text-muted small mb-0">Paragraphe III</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION V : DIRECTION DE LA STRATÉGIE ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-compass"></i>
+                    Direction de la Stratégie et de la Prospective
+                    <span class="badge level-director ms-auto">Section V</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-clipboard-check"></i>Sous-Direction de la Planification Stratégique et de la Prospective</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-lightbulb"></i>Sous-Direction du Développement des Communications Électroniques</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION VI : DIVISION DES AFFAIRES JURIDIQUES ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-bank"></i>
+                    Division des Affaires Juridiques et de la Protection du Consommateur
+                    <span class="badge level-division ms-auto">Section VI</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-journal-text"></i>Cellule de la Réglementation</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-gavel"></i>Cellule du Contentieux</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-person-heart"></i>Cellule de la Protection du Consommateur</div>
+                    <p class="text-muted small mb-0">Paragraphe III</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION VII : DIVISION DE LA COMMUNICATION ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-megaphone"></i>
+                    Division de la Communication et de la Coopération
+                    <span class="badge level-division ms-auto">Section VII</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-chat-dots"></i>Cellule de la Communication et des Relations Publiques</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-globe2"></i>Cellule de la Coopération</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-archive"></i>Centre de la Documentation et des Archives</div>
+                    <p class="text-muted small mb-0">Paragraphe III</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION VIII : DIRECTION DES FINANCES ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-cash-stack"></i>
+                    Direction des Finances
+                    <span class="badge level-director ms-auto">Section VIII</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-pie-chart"></i>Sous-Direction du Budget</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-calculator"></i>Sous-Direction de la Comptabilité</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-bank"></i>Sous-Direction de la Trésorerie</div>
+                    <p class="text-muted small mb-0">Paragraphe III</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-file-earmark-arrow-up"></i>Sous-Direction des Marchés</div>
+                    <p class="text-muted small mb-0">Paragraphe IV</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION IX : DIRECTION DU PATRIMOINE ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-building"></i>
+                    Direction du Patrimoine
+                    <span class="badge level-director ms-auto">Section IX</span>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-building-check"></i>Gestion du patrimoine immobilier et mobilier de l'Agence</div>
+                    <p class="text-muted small mb-0">Direction du patrimoine de l'Agence.</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION X : DIRECTION DU RECOUVREMENT ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-cash-coin"></i>
+                    Direction du Recouvrement
+                    <span class="badge level-director ms-auto">Section X</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-receipt"></i>Sous-Direction de la Facturation</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-arrow-repeat"></i>Sous-Direction du Suivi du Recouvrement</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION XI : DIRECTION DES RESSOURCES HUMAINES ===== -->
+            <div class="col-12 mb-3 mt-3">
+                <div class="directorate-header">
+                    <i class="bi bi-people"></i>
+                    Direction des Ressources Humaines
+                    <span class="badge level-director ms-auto">Section XI</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-person-gear"></i>Sous-Direction de la Gestion Administrative des Ressources Humaines</div>
+                    <p class="text-muted small mb-0">Paragraphe I</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-graph-up"></i>Sous-Direction du Développement des Ressources Humaines</div>
+                    <p class="text-muted small mb-0">Paragraphe II</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sub-directorate">
+                    <div class="title"><i class="bi bi-cash"></i>Sous-Direction de la Solde</div>
+                    <p class="text-muted small mb-0">Paragraphe III</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TITRE IV : SERVICES DECONCENTRÉS ==================== -->
+        <div class="row mb-4" id="section-deconcentrated">
+            <div class="col-12">
+                <div class="section-title">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>TITRE IV : Services Déconcentrés</span>
+                </div>
+            </div>
+
+            <!-- Chapitre I -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-tools"></i>
+                        Sous-Direction Technique
+                        <span class="badge level-subdirector ms-auto">Chapitre I</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Services techniques déconcentrés.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapitre II -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-people"></i>
+                        Sous-Direction des Ressources Humaines, Financières et du Patrimoine
+                        <span class="badge level-subdirector ms-auto">Chapitre II</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Gestion des RH, finances et patrimoine déconcentrés.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapitre III -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-bank"></i>
+                        Service des Affaires Juridiques, du Contentieux et de la Protection du Consommateur
+                        <span class="badge level-division ms-auto">Chapitre III</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Affaires juridiques et protection du consommateur déconcentrées.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapitre V -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card dept-card">
+                    <div class="card-header">
+                        <i class="bi bi-gear"></i>
+                        Centres d'Exploitation Spécialisés
+                        <span class="badge level-division ms-auto">Chapitre V</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">Centres d'exploitation spécialisés.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legal Reference -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body text-center text-muted small">
+                <i class="bi bi-journal-text me-2"></i>
+                Référence : Décret n° 2020/727 du 03 décembre 2020 portant réorganisation et fonctionnement de l'Agence de Régulation des Télécommunications (ART)
             </div>
         </div>
     </div>
 
+    <!-- Print Button -->
+    <button class="btn btn-primary print-btn" onclick="window.print()" title="Imprimer">
+        <i class="bi bi-printer"></i>
+    </button>
+
     <script src="/js/auth-guard.js"></script>
+    <script>
+        function filterDepartments() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const allCards = document.querySelectorAll('.dept-card, .sub-directorate, .directorate-header, .section-title');
+            const sections = document.querySelectorAll('#section-board, #section-attached, #section-central, #section-deconcentrated');
+            let visibleCount = 0;
+
+            // Remove previous highlights
+            document.querySelectorAll('.highlight').forEach(el => {
+                const parent = el.parentNode;
+                parent.replaceChild(document.createTextNode(el.textContent), el);
+                parent.normalize();
+            });
+
+            if (searchTerm === '') {
+                // Show everything
+                allCards.forEach(el => {
+                    el.closest('.col-md-6, .col-md-4, .col-md-3, .col-12, .col-md-6.col-lg-4, .col-md-6.col-lg-3')?.style.display = '';
+                    el.style.display = '';
+                });
+                sections.forEach(s => s.style.display = '');
+                document.getElementById('noResults').style.display = 'none';
+                return;
+            }
+
+            // Hide all sections first
+            sections.forEach(s => s.style.display = 'none');
+
+            // Search through cards
+            allCards.forEach(el => {
+                const text = el.textContent.toLowerCase();
+                const container = el.closest('.col-md-6, .col-md-4, .col-md-3, .col-12, .col-md-6.col-lg-4, .col-md-6.col-lg-3');
+                
+                if (text.includes(searchTerm)) {
+                    if (container) container.style.display = '';
+                    el.style.display = '';
+                    
+                    // Highlight matching text
+                    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+                    const nodes = [];
+                    while (walker.nextNode()) nodes.push(walker.currentNode);
+                    
+                    nodes.forEach(node => {
+                        const lower = node.textContent.toLowerCase();
+                        if (lower.includes(searchTerm)) {
+                            const span = document.createElement('span');
+                            span.className = 'highlight';
+                            const idx = lower.indexOf(searchTerm);
+                            const before = node.textContent.substring(0, idx);
+                            const match = node.textContent.substring(idx, idx + searchTerm.length);
+                            const after = node.textContent.substring(idx + searchTerm.length);
+                            
+                            const fragment = document.createDocumentFragment();
+                            fragment.appendChild(document.createTextNode(before));
+                            const highlightSpan = document.createElement('span');
+                            highlightSpan.className = 'highlight';
+                            highlightSpan.textContent = match;
+                            fragment.appendChild(highlightSpan);
+                            fragment.appendChild(document.createTextNode(after));
+                            
+                            node.parentNode.replaceChild(fragment, node);
+                        }
+                    });
+                    
+                    visibleCount++;
+                    
+                    // Show parent section
+                    const section = el.closest('[id^="section-"]');
+                    if (section) section.style.display = '';
+                } else {
+                    if (container) container.style.display = 'none';
+                    el.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results
+            document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    </script>
 </body>
 </html>

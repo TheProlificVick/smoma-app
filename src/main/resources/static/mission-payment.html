@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMOMA - Mission Payment Ledger</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: #f4f7fb;
+            color: #1f2937;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .art-header {
+            background: linear-gradient(135deg, #0B2545 0%, #13315C 100%);
+            color: white;
+        }
+        .logo-box {
+            width: 72px;
+            height: 72px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-box img {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+        }
+        .section-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(11, 37, 69, 0.08);
+            border: none;
+        }
+        .summary-box {
+            border-left: 5px solid #0B2545;
+            background: #f8fafc;
+        }
+        .badge-status {
+            font-size: 0.8rem;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body>
+    <header class="art-header py-3 mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="logo-box">
+                    <img src="/images/ART%20logo.jpg" alt="ART logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
+                </div>
+                <div>
+                    <div class="fw-bold fs-5">ART - SMOMA</div>
+                    <small>Mission Payment Ledger / Registre des paiements de mission</small>
+                </div>
+            </div>
+            <div>
+                <a href="/index.html" class="btn btn-light btn-sm">Back to dashboard / Retour au tableau de bord</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container pb-5">
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card summary-box h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Pending payments / Paiements en attente</div>
+                        <div class="fs-3 fw-bold" id="pendingCount">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-box h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Approved / Approuvés</div>
+                        <div class="fs-3 fw-bold" id="approvedCount">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-box h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Total to settle / Total à régler</div>
+                        <div class="fs-3 fw-bold" id="totalAmount">0 FCFA</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-box h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Finalized / Finalisés</div>
+                        <div class="fs-3 fw-bold" id="finalizedCount">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card section-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Staff mission payout register / Registre de paiement des missions</h3>
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                    <i class="bi bi-plus-circle"></i> Add record / Ajouter un enregistrement
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Staff / Personnel</th>
+                            <th>Mission</th>
+                            <th>Amount / Montant</th>
+                            <th>Stage / Étape</th>
+                            <th>Status / Statut</th>
+                            <th>Reference</th>
+                            <th>Action / Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Add mission payment record / Ajouter un enregistrement de paiement</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Staff / Personnel</label>
+                                <input class="form-control" id="staffName" required placeholder="e.g. Jean Dupont / Exemple">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mission title / Titre de mission</label>
+                                <input class="form-control" id="missionTitle" required placeholder="Monitoring mission / Mission de suivi">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Amount / Montant</label>
+                                <input type="number" class="form-control" id="amount" required min="0" step="1000" value="250000">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Currency / Devise</label>
+                                <select class="form-select" id="currency">
+                                    <option value="XAF" selected>XAF</option>
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Stage / Étape</label>
+                                <select class="form-select" id="paymentStage">
+                                    <option value="PENDING" selected>Pending / En attente</option>
+                                    <option value="APPROVED">Approved / Approuvé</option>
+                                    <option value="PAID">Paid / Payé</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Reference / Référence</label>
+                                <input class="form-control" id="reference" placeholder="PAY-ART-2026-001">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Report status / Statut du rapport</label>
+                                <select class="form-select" id="reportStatus">
+                                    <option value="NOT_SUBMITTED">Not submitted / Non soumis</option>
+                                    <option value="SUBMITTED">Submitted / Soumis</option>
+                                    <option value="APPROVED">Approved / Approuvé</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notes / Notes</label>
+                                <textarea class="form-control" id="notes" rows="3" placeholder="Mission completed, report validated, bank transfer arranged / Mission terminée, rapport validé, paiement au compte bancaire..."></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close / Fermer</button>
+                            <button type="submit" class="btn btn-primary">Save record / Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/auth-guard.js"></script>
+    <script>
+        const paymentRecords = [
+            {
+                staff: 'Alice Nnang',
+                mission: 'Monitoring mission / Mission de suivi',
+                amount: 250000,
+                currency: 'XAF',
+                stage: 'APPROVED',
+                status: 'APPROVED',
+                reference: 'PAY-ART-001',
+                notes: 'Validated after report review / Validé après revue du rapport'
+            },
+            {
+                staff: 'Pierre Tchoua',
+                mission: 'Training mission / Mission de formation',
+                amount: 180000,
+                currency: 'XAF',
+                stage: 'PENDING',
+                status: 'PENDING',
+                reference: 'PAY-ART-002',
+                notes: 'Awaiting final HR review / En attente de validation RH finale'
+            },
+            {
+                staff: 'Nadia Moukouri',
+                mission: 'Representation mission / Mission de représentation',
+                amount: 420000,
+                currency: 'XAF',
+                stage: 'PAID',
+                status: 'PAID',
+                reference: 'PAY-ART-003',
+                notes: 'Settlement completed through bank transfer / Règlement effectué par virement bancaire'
+            }
+        ];
+
+        function renderPayments() {
+            const tbody = document.getElementById('paymentTableBody');
+            tbody.innerHTML = paymentRecords.map((record, index) => {
+                const statusClass = record.status === 'PAID' ? 'bg-success' : record.status === 'APPROVED' ? 'bg-warning text-dark' : 'bg-secondary';
+                return `
+                    <tr>
+                        <td>${record.staff}</td>
+                        <td>${record.mission}</td>
+                        <td>${Number(record.amount).toLocaleString()} ${record.currency}</td>
+                        <td>${record.stage}</td>
+                        <td><span class="badge-status ${statusClass}">${record.status}</span></td>
+                        <td>${record.reference || '—'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" type="button" onclick="markPaid(${index})">Mark paid / Marquer payé</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const pending = paymentRecords.filter(r => r.status !== 'PAID').length;
+            const approved = paymentRecords.filter(r => r.status === 'APPROVED').length;
+            const finalized = paymentRecords.filter(r => r.status === 'PAID').length;
+            const total = paymentRecords.reduce((sum, r) => sum + (r.status !== 'PAID' ? Number(r.amount) : 0), 0);
+
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('approvedCount').textContent = approved;
+            document.getElementById('finalizedCount').textContent = finalized;
+            document.getElementById('totalAmount').textContent = `${total.toLocaleString()} FCFA`;
+        }
+
+        function markPaid(index) {
+            paymentRecords[index].status = 'PAID';
+            paymentRecords[index].stage = 'PAID';
+            paymentRecords[index].reference = paymentRecords[index].reference || `PAY-ART-${String(index + 1).padStart(3, '0')}`;
+            renderPayments();
+        }
+
+        document.getElementById('paymentForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const record = {
+                staff: document.getElementById('staffName').value,
+                mission: document.getElementById('missionTitle').value,
+                amount: Number(document.getElementById('amount').value),
+                currency: document.getElementById('currency').value,
+                stage: document.getElementById('paymentStage').value,
+                status: document.getElementById('paymentStage').value,
+                reference: document.getElementById('reference').value || `PAY-ART-${Date.now()}`,
+                notes: document.getElementById('notes').value || 'Reviewed for settlement / Vérifié pour règlement'
+            };
+            paymentRecords.unshift(record);
+            renderPayments();
+            bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+            this.reset();
+        });
+
+        renderPayments();
+    </script>
+</body>
+</html>

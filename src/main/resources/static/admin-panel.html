@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <title>SMOMA - Admin & AD Sync</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .badge-entry { font-size: 0.75rem; }
+        .table-responsive { max-height: 500px; overflow-y: auto; }
+        .ad-stats-card { border-left: 4px solid; }
+        .text-small { font-size: 0.8rem; }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container py-4">
@@ -12,7 +18,153 @@
         <button id="syncBtn" class="btn btn-primary">Trigger Active Directory Sync</button>
     </div>
 
-    <div class="row g-4 mb-4">
+    <!-- AD Statistics -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title m-0">Active Directory Overview</h5>
+            <span class="badge bg-light text-dark" id="ldapServerLabel">LDAP: loading...</span>
+        </div>
+        <div class="card-body">
+            <div class="row" id="adStatsRow">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card ad-box-card border-primary">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted m-0">Total Entries</h6>
+                            <h4 class="m-0" id="statTotalEntries">-</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card ad-box-card border-success">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted m-0">Active Users</h6>
+                            <h4 class="m-0" id="statActiveUsers">-</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card ad-box-card border-danger">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted m-0">Disabled Users</h6>
+                            <h4 class="m-0" id="statDisabledUsers">-</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card ad-box-card border-warning">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted m-0">Departments</h6>
+                            <h4 class="m-0" id="statDepartments">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    <h6 class="text-muted">Entries by Type</h6>
+                    <div id="statByType" class="text-small"></div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-muted">Entries by Department</h6>
+                    <div id="statByDept" class="text-small"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toggle Tabs: Users / Groups / Full Directory -->
+    <ul class="nav nav-tabs" id="adTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabUsers" type="button">AD Users w/ Roles</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabGroups" type="button">AD Groups</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabFullDirectory" type="button">Full Directory (All Objects)</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        <!-- AD Users with Roles -->
+        <div class="tab-pane fade show active" id="tabUsers">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white"><h5 class="card-title m-0">Active Directory Users (with role assignment)</h5></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Title</th>
+                                    <th>Department</th>
+                                    <th>Matricule</th>
+                                    <th>Role</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adUsersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AD Groups -->
+        <div class="tab-pane fade" id="tabGroups">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white"><h5 class="card-title m-0">Active Directory Groups</h5></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>CN</th>
+                                    <th>Distinguished Name</th>
+                                    <th>Description</th>
+                                    <th>Members</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adGroupsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Directory -->
+        <div class="tab-pane fade" id="tabFullDirectory">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between">
+                    <h5 class="card-title m-0">Entire Active Directory Contents</h5>
+                    <input type="text" id="directoryFilter" class="form-control form-control-sm w-25" placeholder="Filter by name/CN/department...">
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name / CN</th>
+                                    <th>sAMAccountName</th>
+                                    <th>UPN</th>
+                                    <th>Department</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>DN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullDirectoryTable"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-muted text-small" id="directoryCount"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1 mb-4">
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-primary text-white"><h5 class="card-title m-0">Create New User</h5></div>
@@ -90,23 +242,26 @@
     <div class="card shadow-sm">
         <div class="card-header bg-secondary text-white"><h5 class="card-title m-0">Synchronized Database Users</h5></div>
         <div class="card-body">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                        <th>Structure</th>
-                        <th>Role</th>
-                    </tr>
-                </thead>
-                <tbody id="userTable"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Structure</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTable"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function getAdminHeaders() {
         const role = localStorage.getItem('art_user_role');
@@ -117,6 +272,143 @@
         return headers;
     }
 
+    // ---------- Statistics ----------
+    async function loadAdStatistics() {
+        try {
+            const res = await fetch('/api/admin/ad-directory/statistics', { headers: getAdminHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            document.getElementById('statTotalEntries').textContent = data.totalEntries ?? 0;
+            document.getElementById('statActiveUsers').textContent = data.activeUsers ?? 0;
+            document.getElementById('statDisabledUsers').textContent = data.disabledUsers ?? 0;
+            document.getElementById('statDepartments').textContent = Object.keys(data.entriesByDepartment || {}).length;
+
+            // byType
+            const byTypeDiv = document.getElementById('statByType');
+            byTypeDiv.innerHTML = Object.entries(data.entriesByType || {})
+                .map(([k, v]) => `<span class="badge bg-secondary me-1 mb-1">${k}: ${v}</span>`)
+                .join('');
+
+            // byDept
+            const byDeptDiv = document.getElementById('statByDept');
+            byDeptDiv.innerHTML = Object.entries(data.entriesByDepartment || {})
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([k, v]) => `<div>${k}: <strong>${v}</strong></div>`)
+                .join('');
+        } catch (e) {
+            console.error('stats error', e);
+        }
+    }
+
+    // ---------- Full directory ----------
+    let fullDirectory = [];
+
+    async function loadFullDirectory() {
+        try {
+            const res = await fetch('/api/admin/ad-directory', { headers: getAdminHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            fullDirectory = data.entries || [];
+            document.getElementById('statServerLabel')?.remove();
+            document.getElementById('ldapServerLabel').textContent = 'LDAP: ' + (data.ldapServer || '-');
+            document.getElementById('directoryCount').textContent = fullDirectory.length + ' entries loaded from AD';
+            renderDirectory(fullDirectory);
+        } catch (e) {
+            console.error('directory error', e);
+            document.getElementById('directoryCount').textContent = 'Failed to load AD: ' + e.message;
+        }
+    }
+
+    function renderDirectory(list) {
+        const tbody = document.getElementById('fullDirectoryTable');
+        tbody.innerHTML = list.map(e => {
+            const type = e.entryType || 'N/A';
+            const typeBadge = {
+                'USER': 'badge bg-info text-dark',
+                'GROUP': 'badge bg-success',
+                'OU': 'badge bg-warning text-dark',
+                'CONTACT': 'badge bg-secondary',
+                'COMPUTER': 'badge bg-dark',
+                'DOMAIN': 'badge bg-danger',
+                'OTHER': 'badge bg-light text-dark'
+            }[type] || 'badge bg-light text-dark';
+
+            const status = e.accountEnabled ? '<span class="badge bg-success">ACTIVE</span>' : '<span class="badge bg-danger">DISABLED</span>';
+
+            return `<tr>
+                <td><span class="badge ${typeBadge} badge-entry">${type}</span></td>
+                <td>${escapeHtml(e.displayName || e.name || e.cn || '-')}</td>
+                <td>${escapeHtml(e.sAMAccountName || '-')}</td>
+                <td class="text-small">${escapeHtml(e.userPrincipalName || '-')}</td>
+                <td>${escapeHtml(e.department || '-')}</td>
+                <td class="text-small">${escapeHtml(e.title || '-')}</td>
+                <td>${status}</td>
+                <td class="text-small text-muted">${escapeHtml(e.distinguishedName || '-')}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    document.getElementById('directoryFilter').addEventListener('input', (e) => {
+        const q = (e.target.value || '').toLowerCase();
+        const filtered = fullDirectory.filter(x =>
+            (x.cn || '').toLowerCase().includes(q) ||
+            (x.name || '').toLowerCase().includes(q) ||
+            (x.department || '').toLowerCase().includes(q) ||
+            (x.displayName || '').toLowerCase().includes(q) ||
+            (x.sAMAccountName || '').toLowerCase().includes(q)
+        );
+        renderDirectory(filtered);
+        document.getElementById('directoryCount').textContent = `${filtered.length} / ${fullDirectory.length} entries`;
+    });
+
+    // ---------- AD Users with role ----------
+    async function loadAdUsers() {
+        try {
+            const res = await fetch('/api/admin/ad-directory/users', { headers: getAdminHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            const tbody = document.getElementById('adUsersTable');
+            tbody.innerHTML = (data.users || []).map(u => `
+                <tr>
+                    <td><strong>${u.login || '-'}</strong></td>
+                    <td>${(u.nom || '') + ' ' + (u.prenom || '')}</td>
+                    <td>${u.email || '-'}</td>
+                    <td>${u.codeFonction || '-'}</td>
+                    <td>${u.nomStructure || '-'}</td>
+                    <td>${u.matricule || '-'}</td>
+                    <td><span class="badge bg-dark">${u.role}</span></td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error('ad users error', e);
+        }
+    }
+
+    // ---------- AD Groups ----------
+    async function loadAdGroups() {
+        try {
+            const res = await fetch('/api/admin/ad-directory/groups', { headers: getAdminHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            const tbody = document.getElementById('adGroupsTable');
+            tbody.innerHTML = (data.groups || []).map(g => `
+                <tr>
+                    <td><strong>${g.cn || '-'}</strong></td>
+                    <td class="text-small">${g.distinguishedName || '-'}</td>
+                    <td class="text-small">${g.description || '-'}</td>
+                    <td>${(g.memberOf || []).length}</td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error('ad groups error', e);
+        }
+    }
+
+    // ---------- Database users ----------
     async function loadUsers() {
         const res = await fetch('/api/admin/users', { headers: getAdminHeaders() });
         const users = await res.json();
@@ -194,6 +486,9 @@
             const data = await res.json();
             alert(`Sync complete! ${data.syncedCount} accounts synchronized from Active Directory.`);
             loadUsers();
+            loadAdUsers();
+            loadAdStatistics();
+            loadFullDirectory();
         } catch (e) {
             alert('Error executing Active Directory sync.');
         } finally {
@@ -202,7 +497,19 @@
         }
     });
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // init
     loadUsers();
+    loadAdStatistics();
+    loadAdUsers();
+    loadAdGroups();
+    loadFullDirectory();
 </script>
 <script src="/js/auth-guard.js"></script>
 </body>

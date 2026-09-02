@@ -35,6 +35,26 @@ public class MissionRequest {
     @Column(length = 50)
     private String paymentStatus = "PENDING";
 
+    @Column(length = 50)
+    private String paymentStage = "PENDING";
+
+    @Column(length = 50)
+    private String paymentCurrency = "XAF";
+
+    @Column(length = 100)
+    private String paymentReference;
+
+    @Column(length = 50)
+    private String reportStatus = "NOT_SUBMITTED";
+
+    @Column(length = 255)
+    private String reportScanUrl;
+
+    @Column(length = 50)
+    private String paymentAmount;
+
+    private LocalDate paymentDate;
+
     private boolean mandateApproved = false;
     private boolean mandateSignedByGeneralManager = false;
     private String mandateReference;
@@ -87,6 +107,27 @@ public class MissionRequest {
 
     public String getPaymentStatus() { return paymentStatus; }
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+
+    public String getPaymentStage() { return paymentStage; }
+    public void setPaymentStage(String paymentStage) { this.paymentStage = paymentStage; }
+
+    public String getPaymentCurrency() { return paymentCurrency; }
+    public void setPaymentCurrency(String paymentCurrency) { this.paymentCurrency = paymentCurrency; }
+
+    public String getPaymentReference() { return paymentReference; }
+    public void setPaymentReference(String paymentReference) { this.paymentReference = paymentReference; }
+
+    public String getReportStatus() { return reportStatus; }
+    public void setReportStatus(String reportStatus) { this.reportStatus = reportStatus; }
+
+    public String getReportScanUrl() { return reportScanUrl; }
+    public void setReportScanUrl(String reportScanUrl) { this.reportScanUrl = reportScanUrl; }
+
+    public String getPaymentAmount() { return paymentAmount; }
+    public void setPaymentAmount(String paymentAmount) { this.paymentAmount = paymentAmount; }
+
+    public LocalDate getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(LocalDate paymentDate) { this.paymentDate = paymentDate; }
 
     public boolean isMandateApproved() { return mandateApproved; }
     public void setMandateApproved(boolean mandateApproved) { this.mandateApproved = mandateApproved; }

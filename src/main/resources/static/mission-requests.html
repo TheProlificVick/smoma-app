@@ -16,8 +16,15 @@
             <form id="requestForm">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Mission Title</label>
-                        <input type="text" id="title" class="form-control" required placeholder="e.g. Audit Mission">
+                        <label class="form-label">Mission Type / Type de mission</label>
+                        <select id="title" class="form-select" required>
+                            <option value="" disabled selected>-- Select Mission Type / Sélectionner le type de mission --</option>
+                            <option value="Monitoring mission / Mission de suivi">Monitoring mission / Mission de suivi</option>
+                            <option value="Training mission / Mission de formation">Training mission / Mission de formation</option>
+                            <option value="Study / Benchmarking mission / Mission d'étude et d'analyse comparative">Study / Benchmarking mission / Mission d'étude et d'analyse comparative</option>
+                            <option value="Internal monitoring mission / Mission de contrôle interne">Internal monitoring mission / Mission de contrôle interne</option>
+                            <option value="Representation mission / Mission de représentation">Representation mission / Mission de représentation</option>
+                        </select>
                     </div>
 
                     <!-- Automatic Dropdown Selection for Destination City -->

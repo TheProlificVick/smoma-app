@@ -1,0 +1,522 @@
+
+ REPUBLIQUE DU CAMEROUN
+REPUBLIC OF CAMEROON
+Paix - Travail -Patrie
+Peace - Work -Fatherland
+----------------
+----------------
+AGENCE DE REGULATION 
+TELECOMMUNICATIONS
+DES TELECOMMUNICATIONS
+---------------
+DELEGATION REGIONALE
+CENTRE-SUD-EST 
+-----------------
+REGULATORY  BOARD
+----------------
+REGIONAL DELEGATION
+CENTER-SOUTH-EAST 
+-----------------
+CAHIER DES CHARGES
+FONCTIONNEL ET TECHNIQUE
+Logiciel de gestion des mandats et ordres de mission du personnel
+(Mandats – Étapes – Ordres de mission – Indemnités et avances – Suivi et statistiques – Assistant IA)
+Table des matières
+TOC \h \o "1-3"Table des matières	 PAGEREF _Toc239157485 \h 2
+1. Introduction générale	 PAGEREF _Toc239157486 \h 4
+1.1 Contexte	 PAGEREF _Toc239157487 \h 4
+1.2 Objectifs du projet	 PAGEREF _Toc239157488 \h 4
+1.3 Périmètre du document	 PAGEREF _Toc239157489 \h 4
+2. Glossaire et définitions	 PAGEREF _Toc239157490 \h 5
+3. Acteurs du système et gestion des rôles	 PAGEREF _Toc239157491 \h 6
+3.1 Liste des acteurs	 PAGEREF _Toc239157492 \h 6
+3.2 Principe de gestion multi-rôles	 PAGEREF _Toc239157493 \h 6
+3.3 Matrice indicative rôles × fonctionnalités	 PAGEREF _Toc239157494 \h 6
+4. Spécifications fonctionnelles par module	 PAGEREF _Toc239157495 \h 8
+4.1 Module Paramétrage organisationnel	 PAGEREF _Toc239157496 \h 8
+4.2 Module Personnel	 PAGEREF _Toc239157497 \h 8
+4.3 Module Mandats de mission	 PAGEREF _Toc239157498 \h 8
+4.4 Module Étapes de mission	 PAGEREF _Toc239157499 \h 8
+4.5 Module Ordres de mission	 PAGEREF _Toc239157500 \h 9
+4.6 Module Frais, indemnités et avances	 PAGEREF _Toc239157501 \h 9
+4.7 Module Rapports de mission	 PAGEREF _Toc239157502 \h 9
+4.8 Module Suivi, statistiques et états de gestion	 PAGEREF _Toc239157503 \h 9
+4.9 Module Assistant IA	 PAGEREF _Toc239157504 \h 10
+4.10 Module Impression et export	 PAGEREF _Toc239157505 \h 10
+4.11 Module Authentification, utilisateurs, rôles et droits	 PAGEREF _Toc239157506 \h 10
+4.12 Module Administration	 PAGEREF _Toc239157507 \h 10
+5. Règles de gestion	 PAGEREF _Toc239157508 \h 11
+6. Exigences non fonctionnelles	 PAGEREF _Toc239157509 \h 12
+7. Architecture technique	 PAGEREF _Toc239157510 \h 13
+7.1 Vue d’ensemble	 PAGEREF _Toc239157511 \h 13
+7.2 Choix technologiques indicatifs	 PAGEREF _Toc239157512 \h 13
+7.3 Schéma de collaboration entre les acteurs	 PAGEREF _Toc239157513 \h 13
+Figure 1 – Schéma d’architecture technique	 PAGEREF _Toc239157514 \h 14
+Figure 2 – Schéma de collaboration entre les acteurs	 PAGEREF _Toc239157515 \h 15
+8. Modélisation des données	 PAGEREF _Toc239157516 \h 17
+8.1 Modèle conceptuel de données (MCD)	 PAGEREF _Toc239157517 \h 17
+8.2 Dictionnaire de données (extrait)	 PAGEREF _Toc239157518 \h 17
+Table PERSONNEL	 PAGEREF _Toc239157519 \h 17
+Table MANDAT_DE_MISSION	 PAGEREF _Toc239157520 \h 17
+Table ORDRE_DE_MISSION	 PAGEREF _Toc239157521 \h 17
+Figure 3 – Modèle conceptuel de données (MCD)	 PAGEREF _Toc239157522 \h 18
+9. Diagramme de classes	 PAGEREF _Toc239157523 \h 20
+Figure 4 – Diagramme de classes	 PAGEREF _Toc239157524 \h 21
+10. Diagramme des cas d’utilisation	 PAGEREF _Toc239157525 \h 23
+Figure 5 – Diagramme des cas d’utilisation	 PAGEREF _Toc239157526 \h 24
+11. Statuts et cycles de vie	 PAGEREF _Toc239157527 \h 26
+11.1 Cycle de vie du mandat de mission	 PAGEREF _Toc239157528 \h 26
+11.2 Cycle de vie de l’ordre de mission	 PAGEREF _Toc239157529 \h 26
+12. Phases de réalisation	 PAGEREF _Toc239157530 \h 26
+13. Annexes	 PAGEREF _Toc239157531 \h 26
+13.1 Hypothèses de travail	 PAGEREF _Toc239157532 \h 26
+13.2 Contraintes	 PAGEREF _Toc239157533 \h 26
+13.3 Points à valider avec la maîtrise d’ouvrage	 PAGEREF _Toc239157534 \h 26
+1. Introduction générale
+1.1 Contexte
+L’Agence de Régulation des Télécommunications (ART), basée à Yaoundé et forte d’environ 600 employés, gère actuellement les missions de son personnel de manière artisanale : élaboration des mandats par les différents départements, signature par le Directeur Général (DG), édition manuelle des ordres de mission (OM) individuels, calcul des indemnités et suivi des rapports de mission. Cette gestion, portée par la Direction des Ressources Humaines (DRH), devient difficile à fiabiliser et à tracer à l’échelle de l’Agence.
+Le présent document a pour objet de spécifier, sur le plan fonctionnel et technique, une application web centralisée de gestion des mandats et ordres de mission, depuis leur création jusqu’au règlement des indemnités et au dépôt des rapports de mission.
+1.2 Objectifs du projet
+Centraliser la création, la validation et le suivi des mandats et ordres de mission ;
+Automatiser la génération des ordres de mission individuels à partir d’un mandat validé ;
+Sécuriser et fiabiliser le calcul des indemnités, des avances et des soldes de frais de mission ;
+Assurer la traçabilité complète (mandat, étapes, OM, avances, justificatifs, rapports) ;
+Fournir à la DRH et à la Direction Générale des outils de suivi, de statistiques et d’états de gestion imprimables, assistés par intelligence artificielle ;
+Permettre une gestion souple des accès, un même utilisateur pouvant cumuler plusieurs rôles selon les fonctionnalités qui lui sont attribuées ;
+Rendre entièrement paramétrables les éléments organisationnels (structures/directions, fonctions, grades, rangs, motifs réglementaires, barèmes, logo).
+1.3 Périmètre du document
+Ce cahier des charges couvre les exigences fonctionnelles et non fonctionnelles, les règles de gestion, l’architecture technique cible, la modélisation des données (MCD, dictionnaire de données), le diagramme de classes, le diagramme des cas d’utilisation et les schémas de collaboration entre les acteurs du système. Il sert de base contractuelle et technique à la conception détaillée et au développement de la solution, réalisée en trois phases.
+2. Glossaire et définitions
+Terme
+Définition
+Mandat de mission
+Document officiel signé par le DG autorisant un ou plusieurs agents à effectuer une mission ; il peut comporter plusieurs étapes.
+Étape de mission
+Segment du mandat défini par un lieu, une période et les agents concernés ; ses dates sont incluses dans la période globale du mandat.
+Ordre de mission (OM)
+Document individuel généré pour chaque agent et chaque étape à partir d’un mandat validé.
+Mission interne / externe
+Mission se déroulant respectivement à l’intérieur ou à l’extérieur du pays.
+Avance sur frais
+Somme versée avant le départ (75 % en interne, 90 % en externe), sous réserve d’une demande antérieure au début de la mission.
+Reliquat / solde
+Part restante de l’indemnité (25 % ou 10 %), versée après dépôt du rapport de mission et des justificatifs.
+Mandat / OM « sans frais »
+Mandat ou ordre de mission ne donnant lieu à aucune indemnité, signalé par une mention en rouge « SANS FRAIS » sous forme de sceau.
+Régularisation (force majeure)
+Délivrance a posteriori d’un mandat/OM, dans un délai maximum de 48 heures après le départ de l’agent.
+Motif réglementaire
+Base réglementaire, paramétrable, justifiant l’émission d’un mandat.
+État de gestion
+Rapport de synthèse (statistiques, listes, indicateurs) généré par le système, le cas échéant avec l’assistance de l’IA, et imprimable.
+3. Acteurs du système et gestion des rôles
+3.1 Liste des acteurs
+Acteur
+Description
+Responsabilités principales
+Agent / Personnel
+Tout employé de l’ART susceptible d’être désigné dans un mandat.
+Consulte ses OM, son compte individuel ; sollicite les avances ; dépose rapports et justificatifs.
+Chef de département / Initiateur
+Responsable élaborant le mandat de mission de son périmètre.
+Crée le mandat, ajoute les étapes, affecte les agents, initie des OM directs.
+Directeur Général (DG)
+Autorité signataire des mandats.
+Valide/signe le mandat ; importe la version scannée signée.
+DRH / Gestionnaire des missions
+Pilote opérationnel du dispositif.
+Génère et gère les OM, les avances, les indemnités, le suivi, les statistiques et les états de gestion.
+Administrateur système
+Responsable du paramétrage et de la sécurité.
+Gère comptes, rôles, droits, structures, barèmes, motifs, logo, sauvegardes et imports/exports.
+Assistant IA (composant système)
+Module transverse d’assistance.
+Aide à la saisie et à la recherche ; génère des états de gestion sur critères.
+3.2 Principe de gestion multi-rôles
+Le système repose sur une gestion des accès basée sur des rôles et des droits (fonctionnalités) plutôt que sur une correspondance rigide « un utilisateur = un acteur ». Concrètement :
+Chaque fonctionnalité du système correspond à un droit (permission) unitaire, regroupé par module (Personnel, Mandats, Ordres de mission, Frais, Suivi, Configuration, etc.) ;
+Un rôle est un ensemble nommé de droits (ex. « Chef de département », « Gestionnaire DRH », « Valideur DG », « Administrateur ») ;
+Un compte utilisateur peut se voir affecter un ou plusieurs rôles simultanément (par exemple un chef de département peut également disposer du rôle « Agent » pour ses propres missions, ou un agent DRH peut cumuler « Gestionnaire » et « Consultation statistiques ») ;
+Les droits effectifs d’un utilisateur correspondent à l’union des droits de tous les rôles qui lui sont affectés ;
+Les rôles et les droits sont entièrement paramétrables par l’administrateur, sans modification du code applicatif.
+3.3 Matrice indicative rôles × fonctionnalités
+Cette matrice illustre la répartition par défaut ; elle reste entièrement modifiable via le module de configuration des rôles et droits (§5.11).
+Fonctionnalité
+Agent
+Chef Dpt
+DG
+DRH
+Admin
+Créer / modifier un mandat
+X
+X
+X
+X
+X
+Valider / signer un mandat
+–
+–
+X
+–
+–
+Générer les ordres de mission
+–
+–
+–
+X
+–
+Valider / signer les ordres de mission
+–
+–
+X
+–
+–
+Demander une avance
+X
+X
+–
+–
+–
+Valider une avance / indemnité
+–
+–
+–
+X
+–
+Déposer un rapport de mission
+X
+X
+–
+–
+–
+Consulter statistiques et états
+–
+X
+X
+X
+X
+Paramétrer structures / grades / rangs
+–
+–
+–
+–
+X
+Gérer comptes, rôles et droits
+–
+–
+–
+–
+X
+4. Spécifications fonctionnelles par module
+4.1 Module Paramétrage organisationnel
+Ce module transverse porte tous les référentiels utilisés par les autres modules ; il est entièrement administrable, sans intervention technique.
+Création, modification et archivage des structures / directions ;
+Création, modification des fonctions, des grades et des rangs, et association entre eux ;
+Paramétrage des motifs réglementaires justifiant un mandat de mission ;
+Paramétrage du catalogue des indemnités (barème interne/externe par grade, rang, fonction) ;
+Paramétrage du logo de l’entreprise, utilisé à la fois sur l’en-tête du système et au centre de l’ordre de mission imprimé ;
+Paramétrage des types de mission (contrôle, formation, étude, représentation, maintenance, suivi, autres) et des moyens de transport (avion, véhicule, autres).
+4.2 Module Personnel
+Gestion du référentiel des agents de l’ART, identifiés de manière unique par leur matricule.
+Création, mise à jour, consultation et archivage des fiches agent (matricule, nom, prénom, fonction, grade, rang, département, indemnités interne/externe) ;
+Recherche et filtrage optimisés d’un agent dans la liste du personnel (par matricule, nom, structure, fonction, grade…), avec tri et pagination pour fluidifier la gestion sur une liste de près de 600 agents ;
+Consultation de l’historique des missions d’un agent (mandats, OM, périodes, lieux) ;
+Compte individuel du personnel : vue consolidée, sur une période donnée, des mandats, ordres de mission et indemnités perçues par l’agent ;
+Calcul du nombre de jours de mission et du nombre de missions effectuées sur une période.
+4.3 Module Mandats de mission
+Gestion du cycle de vie complet du mandat, document cadre à partir duquel les ordres de mission sont générés.
+Création d’un mandat : référence, objet général, objectifs spécifiques, motif réglementaire, type de mission (interne/externe), moyen(s) de transport, équipe de personnel, période globale ;
+Ajout d’une ou plusieurs étapes de mission au mandat (cf. §4.4) ;
+Gestion des statuts du mandat : en attente de signature, prévu, en cours, exécuté, clôturé, en attente de dépôt du rapport ;
+Un mandat est considéré comme valide uniquement lorsque la version signée et scannée de l’ordre de mission correspondant du DG est remise ou importée dans le système ; jusque-là, il reste à l’état de projet ;
+Un mandat sans indemnité associée porte la mention « SANS FRAIS » en rouge, apposée sous forme de sceau sur le document généré et à l’écran ;
+Régularisation en cas de force majeure : création possible du mandat jusqu’à 48 heures après le départ effectif de l’agent, avec traçabilité du caractère régularisé ;
+Visualisation, côte à côte, de la version signée scannée et de la version générée par le système, lorsque celle-ci existe.
+4.4 Module Étapes de mission
+Une mission peut comporter une ou plusieurs étapes, chacune délimitée dans le temps et dans l’espace.
+Saisie, pour chaque étape, du lieu (ville ou pays), des dates de début et de fin, des agents concernés et du moyen de transport ;
+Contrôle automatique : les dates d’une étape doivent être comprises dans la période globale du mandat ;
+Un agent peut être concerné par plusieurs étapes d’un même mandat, ce qui génère automatiquement un ordre de mission par étape le concernant.
+4.5 Module Ordres de mission
+Génération, gestion et impression des ordres de mission individuels.
+Génération automatique d’un OM par agent et par étape, à partir d’un mandat validé, avec héritage de l’objet, de la période, du lieu et des informations du personnel concerné ;
+Création directe d’un ordre de mission, obligatoirement rattaché à un mandat de mission existant ;
+Un OM demeure modifiable tant qu’il n’est pas signé ; il devient un document valide uniquement lorsque sa version signée et scannée est importée dans le système ;
+Un OM sans indemnité porte la mention « SANS FRAIS » en rouge, sous forme de sceau ;
+Chaque OM contient : logo de l’entreprise, nom, prénom, fonction, service/département et matricule de l’agent, objet, période et lieu de mission, moyen de transport, date d’émission ;
+Impression avec en-tête officiel de l’ART, aperçu avant impression et export au format PDF ;
+Visualisation côte à côte de la version signée scannée et de la version générée par le système ;
+Contrôle d’exclusivité : le système empêche tout chevauchement de missions pour un même agent (un agent ne peut être engagé sur deux mandats à des dates qui se chevauchent).
+4.6 Module Frais, indemnités et avances
+Calcul et suivi des indemnités de mission et de leurs avances, selon un barème paramétrable.
+Calcul de l’indemnité selon le barème officiel, fonction du rang, du grade et de la fonction de l’agent, et du caractère interne ou externe de la mission ;
+Les montants du barème sont paramétrables dans le module de configuration ;
+Demande d’avance sur frais de mission, à hauteur de 75 % (mission interne) ou 90 % (mission externe) ;
+La demande d’avance n’est recevable que si elle est formulée avant la date de début d’exécution de la mission ; le système bloque et signale toute demande postérieure au départ ;
+Versement du solde (25 % ou 10 %) après présentation des pièces justificatives : rapport de mission, ordre de mission signé, justificatifs de déplacement ;
+Suivi des missions avec ou sans frais, et des avances en cours, régularisées ou en attente.
+4.7 Module Rapports de mission
+Chaque mission doit obligatoirement donner lieu à un rapport, condition du paiement du solde des frais.
+Dépôt du rapport de mission (fichier) dans les délais prescrits, lié à un ordre de mission ;
+Catégorisation des rapports par type / catégorie ;
+Consultation et recherche multicritère des rapports de mission : par type, catégorie, nom de l’agent, mandat, ordre de mission, date ou période ;
+Blocage du paiement du reliquat tant que le rapport et les justificatifs ne sont pas déposés.
+4.8 Module Suivi, statistiques et états de gestion
+Vision transversale de l’activité « missions » de l’Agence.
+Listes de missions par période, par direction/département, par agent, par type, avec ou sans frais ;
+Nombre de jours et de missions par agent, par structure ou pour l’ensemble de l’Agence ;
+Statistiques disponibles par jour, semaine, mois, année ou exercice budgétaire ;
+États de gestion imprimables, exportables en PDF ou Excel.
+4.9 Module Assistant IA
+Composant transverse d’assistance intégré à l’application.
+Assistance conversationnelle à l’utilisateur pour la saisie, la recherche et la navigation dans le système ;
+Génération assistée des états de gestion à partir de critères exprimés en langage naturel (période, structure, agent, type de mission…) ;
+Les états de gestion produits, avec ou sans assistance de l’IA, restent imprimables et exportables au même titre que les états standards.
+4.10 Module Impression et export
+Restitution officielle des documents produits par le système.
+Impression des mandats et ordres de mission avec le logo officiel de l’ART, aperçu avant impression ;
+Export des rapports et états de gestion en PDF ou Excel ;
+Import et export de la base de données complète à des fins de sauvegarde ou de migration.
+4.11 Module Authentification, utilisateurs, rôles et droits
+Sécurisation des accès et gestion fine des permissions (cf. §3.2 et §3.3).
+Authentification par nom d’utilisateur et mot de passe ;
+Création de comptes administrateurs par défaut pour la DRH ;
+Gestion des comptes, affectation d’un ou plusieurs rôles par utilisateur, gestion fine des droits d’accès par fonctionnalité.
+4.12 Module Administration
+Fonctions d’exploitation et de maintenance du système.
+Model/template de l’ordre de mission paramétrable et personnaliable
+Sauvegarde et restauration de la base de données ;
+Export et import des données (cf. §4.10) ;
+Gestion du logo de l’entreprise (§4.1) ;
+Sécurité, journalisation des actions sensibles et maintenance applicative.
+5. Règles de gestion
+Exclusivité des missions – un agent ne peut être engagé sur plusieurs mandats à des périodes qui se chevauchent ; le système bloque toute affectation en conflit.
+Cohérence des dates – les dates de chaque étape doivent être comprises dans la période globale du mandat.
+Génération des OM – un ordre de mission est généré pour chaque couple (agent, étape) ; un agent présent sur plusieurs étapes reçoit plusieurs OM.
+Barème des indemnités – le montant dépend du rang et le grade est lié à la fonction et au rang et du caractère interne/externe de la mission ; les montants sont paramétrables et lié au rang.
+Avance sur frais – 75 % pour une mission interne, 90 % pour une mission externe.
+Délai de demande d’avance – la demande d’avance n’est recevable que si elle est introduite avant la date de début d’exécution de la mission.
+Solde des frais – le reliquat (25 % ou 10 %) est versé après présentation du rapport de mission, de l’ordre de mission signé et des justificatifs de déplacement.
+Une mission à l’intérieur peut être effectué avec vehicule et/ou avion
+Exclusivité des missions – un agent ne peut être engagé sur plusieurs mandats à des périodes qui se chevauchent ; le système bloque toute affectation en conflit.
+Cohérence des dates – les dates de chaque étape doivent être comprises dans la période globale du mandat.
+Génération des OM – un ordre de mission est généré pour chaque couple (agent, étape) ; un agent présent sur plusieurs étapes reçoit plusieurs OM.
+Barème des indemnités – le montant dépend du rang et le grade est lié à la fonction et au rang et du caractère interne/externe de la mission ; les montants sont paramétrables et lié au rang.
+Avance sur frais – 75 % pour une mission interne, 90 % pour une mission externe.
+Délai de demande d’avance – la demande d’avance n’est recevable que si elle est introduite avant la date de début d’exécution de la mission.
+Solde des frais – le reliquat (25 % ou 10 %) est versé après présentation du rapport de mission, de l’ordre de mission signé et des justificatifs de déplacement.
+Une mission à l’intérieur peut être effectué avec véhicule et/ou avion
+Une mission à l’extérieur est effectué uniquement par avion
+Obligation de rapport – toute mission donne obligatoirement lieu à un rapport dans les délais prescrits ; à défaut, le solde n’est pas versé.
+Validité du mandat – un mandat est valide uniquement lorsque la version signée et scannée de l’ordre de mission (DG) est importée dans le système.
+Validité de l’OM – un ordre de mission est valide uniquement lorsque sa version signée et scannée est importée dans le système.
+Modifiabilité – tant qu’un ordre de mission n’est pas signé, il demeure modifiable ; dès l’import du scan signé, il devient figé (lecture seule).
+Création directe d’un OM – possible uniquement si l’OM est rattaché à un mandat de mission existant.
+Mention « sans frais » – tout mandat ou OM sans indemnité associée porte la mention en rouge « SANS FRAIS », apposée sous forme de sceau en couleur rouge.
+Force majeure – le mandat et l’OM peuvent être délivrés en régularisation dans un délai maximal de 48 heures après le départ de l’agent.
+Identification – chaque agent est identifiable de manière unique par son matricule.
+Paramétrage organisationnel – structures/directions, fonctions, grades, rangs et motifs réglementaires sont entièrement paramétrables par l’administrateur.
+Multi-rôles – un utilisateur peut cumuler plusieurs rôles ; ses droits effectifs correspondent à l’union des droits de ces rôles.
+6. Exigences non fonctionnelles
+Exigence
+Description
+Sécurité
+Authentification obligatoire, mots de passe chiffrés, gestion fine des droits par rôle, journalisation (audit trail) des actions sensibles (validation, signature, suppression).
+Disponibilité
+Application accessible aux heures ouvrées étendues ; sauvegardes régulières automatisées de la base de données.
+Performance
+Recherche et affichage d’un agent parmi ~600 en moins de 2 secondes ; génération d’un lot d’OM en quelques secondes.
+Ergonomie
+Interface en français, navigation simple, listes filtrables/triables, aperçu avant impression systématique.
+Traçabilité
+Historisation des statuts (mandat, OM, avance), horodatage des imports de scans signés et des validations.
+Compatibilité impression
+Mise en page conforme à l’en-tête officiel de l’ART, export PDF fidèle, gestion du sceau « SANS FRAIS » en rouge.
+Portabilité des données
+Import / export intégral de la base de données et des documents associés (scans, justificatifs, logo).
+Évolutivité
+Architecture modulaire permettant l’ajout de nouveaux rôles, droits, référentiels ou modules sans refonte.
+7. Architecture technique
+7.1 Vue d’ensemble
+L’application est structurée en couches : une couche de présentation (application web, consultable également depuis une tablette ou un mobile), une couche applicative exposée via une API REST portant les services métier (personnel, mandats et ordres de mission, indemnités/avances, suivi/rapports, génération documentaire), des services transverses (module assistant IA, notifications, import/export) et une couche de données (base relationnelle, stockage des fichiers scannés, journal d’audit). Le schéma d’architecture détaillé figure à la page suivante (Figure 1).
+7.2 Choix technologiques indicatifs
+Couche
+Technologies indicatives
+Frontend
+Application web responsive (framework SPA), compatible postes de travail, tablettes et mobiles.
+Backend / API
+API REST sécurisée (authentification par jeton), architecture modulaire par service métier.
+Base de données
+Système de gestion de base de données relationnelle (intégrité référentielle, transactions).
+Stockage documentaire
+Espace de stockage dédié aux scans signés, justificatifs et logo, lié aux enregistrements métier.
+Génération documentaire
+Moteur de génération et d’export PDF pour mandats, OM et états de gestion.
+Assistant IA
+Service d’intelligence artificielle interrogé par l’API pour l’assistance utilisateur et la production d’états de gestion.
+Sécurité
+Chiffrement des mots de passe, contrôle d’accès par rôle, journal d’audit.
+7.3 Schéma de collaboration entre les acteurs
+Le schéma de la Figure 2 illustre le flux de collaboration entre les acteurs (chef de département, DG, agent, DRH, administrateur) et le système, depuis le paramétrage initial jusqu’au suivi et à la production des états de gestion assistée par IA.
+Figure 1 – Schéma d’architecture technique
+Figure 1 – Architecture en couches : présentation, applicative (API REST et services métier), services transverses (IA, notifications, import/export) et données.
+Figure 2 – Schéma de collaboration entre les acteurs
+Figure 2 – Flux de collaboration entre le Chef de département, le DG, l’Agent, la DRH, l’Administrateur et le système (numérotation indicative des échanges).
+8. Modélisation des données
+8.1 Modèle conceptuel de données (MCD)
+Le modèle conceptuel de données ci-après (Figure 3) formalise, selon la notation Merise (entités / associations / cardinalités), les principales entités du domaine – personnel, référentiels organisationnels, mandats, étapes, ordres de mission, barème d’indemnités, avances, justificatifs et rapports – ainsi que la gestion des utilisateurs, rôles et droits supportée par le principe multi-rôles décrit au §3.2.
+8.2 Dictionnaire de données (extrait)
+Le dictionnaire complet sera détaillé en phase de conception détaillée ; les tables ci-dessous présentent les entités centrales du modèle.
+Table PERSONNEL
+Attribut
+Type
+Description
+matricule
+Chaîne (clé)
+Identifiant unique de l’agent
+nom, prénom
+Chaîne
+État civil
+structure, fonction, grade, rang
+Références
+Rattachements paramétrables
+statut
+Énuméré
+Actif / inactif
+Table MANDAT_DE_MISSION
+Attribut
+Type
+Description
+référence
+Chaîne (clé)
+Référence unique du mandat
+objet_général, objectifs_spécifiques
+Texte
+Objet de la mission
+type_mission
+Énuméré
+Interne / externe
+date_début_globale, date_fin_globale
+Date
+Période globale
+statut
+Énuméré
+Cf. §11 – cycle de vie
+sans_frais
+Booléen
+Déclenche la mention « SANS FRAIS »
+scan_signé
+Fichier
+Version signée importée (conditionne la validité)
+Table ORDRE_DE_MISSION
+Attribut
+Type
+Description
+numéro_OM
+Chaîne (clé)
+Identifiant unique de l’OM
+mandat, étape, agent
+Références
+Rattachements obligatoires
+statut
+Énuméré
+Modifiable / signé
+sans_frais
+Booléen
+Déclenche la mention « SANS FRAIS »
+scan_signé
+Fichier
+Version signée importée (conditionne la validité)
+date_émission
+Date
+Date de génération du document
+Figure 3 – Modèle conceptuel de données (MCD)
+Figure 3 – MCD (notation Merise) des entités Personnel, référentiels, Mandat/Étape/Ordre de mission, Barème/Avance/Justificatif/Rapport et gestion multi-rôles (Utilisateur/Rôle/Droit).
+9. Diagramme de classes
+Le diagramme de classes (Figure 4) traduit le MCD en classes applicatives, avec leurs attributs et leurs opérations principales. Il met en évidence les classes de référentiel (Structure, Fonction, Grade, Rang, MotifReglementaire), les classes de sécurité (Utilisateur, Role, Droit – support de la gestion multi-rôles), les classes métier centrales (MandatMission, EtapeMission, OrdreMission, BaremeIndemnite, AvanceFrais, Justificatif, RapportMission) et les classes du module transverse d’assistance (AssistantIA, EtatDeGestion).
+Figure 4 – Diagramme de classes
+Figure 4 – Diagramme de classes UML de l’application.
+10. Diagramme des cas d’utilisation
+Le diagramme des cas d’utilisation (Figure 5) recense, pour chaque acteur – Agent, Chef de département, Directeur Général, DRH, Administrateur et Assistant IA – les fonctionnalités auxquelles il accède. Conformément au principe multi-rôles (§3.2), un même utilisateur peut cumuler plusieurs de ces acteurs. Le tableau ci-dessous détaille les cas d’utilisation les plus structurants.
+Cas d’utilisation
+Acteur principal
+Description / relation
+Créer un mandat de mission
+Chef de département
+Saisie de l’objet, du motif, du type de mission, des étapes et de l’équipe.
+Valider / signer le mandat
+Directeur Général
+Approbation du mandat ; étend la création du mandat.
+Générer les ordres de mission
+DRH
+Inclut la vérification préalable de non-chevauchement.
+Créer un OM directement
+Chef de département
+Étend la création de mandat ; nécessite un mandat existant.
+Demander une avance sur frais
+Agent
+Recevable uniquement avant le début de la mission ; inclut la génération de l’OM.
+Déposer un rapport de mission
+Agent
+Condition du solde du reliquat.
+Rechercher un rapport
+DRH
+Par type, catégorie, agent, mandat, OM, date ou période.
+Consulter le compte individuel
+Agent / DRH
+Vue consolidée mandats, OM, indemnités sur une période.
+Générer un état de gestion assisté par IA
+DRH
+Sollicite l’assistant IA sur critères libres.
+Paramétrer structures / grades / rangs
+Administrateur
+Alimente les référentiels utilisés par tous les modules.
+Gérer comptes, rôles et droits
+Administrateur
+Support de la gestion multi-rôles.
+Figure 5 – Diagramme des cas d’utilisation
+Figure 5 – Cas d’utilisation par acteur, avec relations &lt;&lt;include&gt;&gt; / &lt;&lt;extend&gt;&gt; entre cas liés.
+11. Statuts et cycles de vie
+11.1 Cycle de vie du mandat de mission
+Statut
+Description
+En attente de signature
+Mandat créé, en attente de validation par le DG.
+Prévu
+Mandat signé (scan importé), dont la période n’a pas encore débuté.
+En cours
+Période du mandat en cours d’exécution.
+Exécuté
+Période du mandat terminée.
+En attente de dépôt du rapport
+Mandat exécuté, rapport(s) non encore déposé(s).
+Clôturé
+Rapport(s) déposé(s) et, le cas échéant, soldes versés.
+11.2 Cycle de vie de l’ordre de mission
+Statut
+Description
+Brouillon / modifiable
+OM créé ou généré, non encore signé : modifiable.
+Signé (validé)
+Scan de la version signée importé, document figeant l’OM.
+12. Phases de réalisation
+Phase
+Contenu
+Phase 1
+Personnel ; Mandats de mission ; Ordres de mission (y compris création directe, import des scans signés, règles de validité et de modifiabilité).
+Phase 2
+Suivi et rapports ; statistiques ; impression et export PDF/Excel ; compte individuel du personnel ; recherche avancée des rapports.
+Phase 3
+Paramétrage avancé (structures, grades, rangs, motifs, barèmes) ; sécurité et gestion fine des droits multi-rôles ; assistant IA ; import/export de la base de données.
+13. Annexes
+13.1 Hypothèses de travail
+Le volume de personnel est estimé à environ 600 agents ; le dimensionnement technique est calibré en conséquence.
+Les scans de documents signés sont fournis aux formats usuels (PDF, JPEG, PNG).
+Le logo et l’en-tête officiels de l’ART seront fournis en haute résolution pour l’impression.
+13.2 Contraintes
+Conformité aux règles de gestion financière interne relatives aux indemnités et avances de mission.
+Disponibilité d’une connexion réseau interne stable pour l’accès multi-sites (Yaoundé et éventuelles antennes).
+13.3 Points à valider avec la maîtrise d’ouvrage
+Format détaillé et gabarit officiel de l’ordre de mission imprimé (mise en page exacte de l’en-tête ART).
+Liste définitive des rôles prédéfinis et de leurs droits par défaut.
+Modèle de barème d’indemnités (valeurs initiales par grade/rang/fonction).
