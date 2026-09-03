@@ -123,14 +123,14 @@
 
             <!-- Module: Fiscal Year Annual Dashboard -->
             <div class="col-md-6 col-lg-3">
-                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/annual-dashboard.html'">
+                <div class="card h-100 shadow-sm module-card" onclick="new bootstrap.Modal(document.getElementById('modal-annual')).show()">
                     <div class="card-body p-4 text-center">
                         <div class="icon-box bg-dark text-white mx-auto mb-3">
                             <i class="fa-solid fa-chart-pie"></i>
                         </div>
                         <h5 class="card-title fw-bold" data-i18n="modAnnualDashboardTitle">Bilan Annuel Agent</h5>
                         <p class="card-text text-muted small" data-i18n="modAnnualDashboardDesc">Historique annuel des missions effectuées par agent pour l'exercice.</p>
-                        <a href="/annual-dashboard.html" class="btn btn-dark btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
+                        <a href="#" class="btn btn-dark btn-sm w-100" data-i18n="accessBtn" onclick="event.preventDefault(); new bootstrap.Modal(document.getElementById('modal-annual')).show()">Accéder au Module</a>
                     </div>
                 </div>
             </div>
@@ -358,27 +358,13 @@
 
         async function fetchDashboardStats() {
             try {
-                // Fetch General Mandates Count
-                const mandateRes = await fetch('/api/mandats');
-                if (mandateRes.ok) {
-                    const mandats = await mandateRes.json();
-                    document.getElementById('totalMandatesCount').innerText = mandats.length;
-                }
-
-                // Fetch Mission Orders Count
-                const reqRes = await fetch('/api/mission-requests/my-requests');
-                if (reqRes.ok) {
-                    const requests = await reqRes.json();
-                    document.getElementById('totalRequestsCount').innerText = requests.length;
-                    const pending = requests.filter(r => r.status === 'INITIATED' || r.status === 'PENDING').length;
-                    document.getElementById('pendingRequestsCount').innerText = pending;
-                }
-
-                // Fetch Active Directory Registered Users Count
-                const userRes = await fetch('/api/admin/users');
-                if (userRes.ok) {
-                    const users = await userRes.json();
-                    document.getElementById('adUsersCount').innerText = users.length;
+                const statsRes = await fetch('/api/statistiques/summary');
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    if (document.getElementById('totalMandatesCount')) document.getElementById('totalMandatesCount').innerText = stats.totalMandats || 0;
+                    if (document.getElementById('totalRequestsCount')) document.getElementById('totalRequestsCount').innerText = stats.totalOrdres || 0;
+                    if (document.getElementById('pendingRequestsCount')) document.getElementById('pendingRequestsCount').innerText = stats.ordresSansFrais || 0;
+                    if (document.getElementById('adUsersCount')) document.getElementById('adUsersCount').innerText = stats.totalPersonnel || 0;
                 }
             } catch (e) {
                 console.warn('Dashboard stats dynamic load skipped:', e);
@@ -393,5 +379,85 @@
         });
     </script>
     <script src="/js/auth-guard.js"></script>
+    <!-- Module Landing Modals -->
+    <div class="modal fade" id="modal-mandats" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="logo-box"><img src="/images/ART%20logo.jpg" alt="ART logo"></div>
+                        <div>
+                            <h5 class="mb-0">Mandats (DG)</h5>
+                            <small>Mandats de mission généraux signés par le Directeur Général</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Accès public au module des mandats. Présentation et références uniques.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-annual" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="logo-box"><img src="/images/ART%20logo.jpg" alt="ART logo"></div>
+                        <div>
+                            <h5 class="mb-0">Bilan Annuel Agent</h5>
+                            <small>Historique annuel des missions effectuées par agent</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Vue d'ensemble annuelle et statistiques des missions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-departments" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="logo-box"><img src="/images/ART%20logo.jpg" alt="ART logo"></div>
+                        <div>
+                            <h5 class="mb-0">Départements & Structures</h5>
+                            <small>Organigramme et structures de l'Agence</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Présentation publique des départements et sous-directions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-payments" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="logo-box"><img src="/images/ART%20logo.jpg" alt="ART logo"></div>
+                        <div>
+                            <h5 class="mb-0">Paiements de Mission</h5>
+                            <small>Suivi des paiements, validation et conformité</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Registre de paiement public (aperçu). Utilisez le module complet après authentification.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

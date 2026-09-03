@@ -2,6 +2,8 @@ package smoma.controller.model;
 
 import jakarta.persistence.*;
 import smoma.controller.model.Service.Role;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -29,11 +31,16 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private Set<Role> roles = new HashSet<>();
+
     private boolean active = true;
 
     public User() {}
 
-    // Constructor for legacy seeders and test cases (6 parameters)
     public User(String username, String password, String nom, String email, String structure, Role role) {
         this.username = username;
         this.password = password;
@@ -41,9 +48,11 @@ public class User {
         this.email = email;
         this.structure = structure;
         this.role = role;
+        if (role != null) {
+            this.roles.add(role);
+        }
     }
 
-    // Full constructor for Active Directory synchronization (9 parameters)
     public User(String username, String password, String email, String nom, String prenom, 
                 String matricule, String structure, String title, Role role) {
         this.username = username;
@@ -55,9 +64,11 @@ public class User {
         this.structure = structure;
         this.title = title;
         this.role = role;
+        if (role != null) {
+            this.roles.add(role);
+        }
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -78,7 +89,27 @@ public class User {
     public Department getDepartment() { return department; }
     public void setDepartment(Department department) { this.department = department; }
     public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
+    public void setRole(Role role) {
+        this.role = role;
+        if (role != null) {
+            this.roles.add(role);
+        }
+    }
+    public Set<Role> getRoles() {
+        if (roles.isEmpty() && role != null) {
+            roles.add(role);
+        }
+        return roles;
+    }
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+        if (roles != null && !roles.isEmpty()) {
+            this.role = roles.iterator().next();
+        }
+    }
+    public boolean hasRole(Role r) {
+        return getRoles().contains(r);
+    }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
 }

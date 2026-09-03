@@ -1,6 +1,6 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+ 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.dto.MissionRequestDTO;
@@ -12,8 +12,11 @@ import java.security.Principal;
 @RequestMapping("/api/missions")
 public class MissionWorkflowController {
 
-    @Autowired
-    private MissionOrderService missionOrderService;
+    private final MissionOrderService missionOrderService;
+
+    public MissionWorkflowController(MissionOrderService missionOrderService) {
+        this.missionOrderService = missionOrderService;
+    }
 
     @PostMapping("/initiate")
     public ResponseEntity<?> initiateRequest(@RequestBody MissionRequestDTO dto, Principal principal) {

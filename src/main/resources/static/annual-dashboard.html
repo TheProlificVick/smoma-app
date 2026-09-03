@@ -1,45 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMOMA - Annual Dashboard</title>
+    <title>SMOMA - Bilan Annuel des Missions</title>
+    <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f5f7fb; }
+        body { background: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .art-header { background: #0B2545; color: white; }
-        .logo-box { width: 72px; height: 72px; border-radius: 12px; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; }
-        .logo-box img { width: 56px; height: 56px; object-fit: contain; }
+        .logo-box { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; padding: 4px; }
+        .logo-box img { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark art-header shadow-sm">
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-dark art-header shadow-sm mb-4">
         <div class="container-fluid px-4">
             <div class="d-flex align-items-center gap-3">
                 <div class="logo-box">
-                    <img src="/images/ART%20logo.jpg" alt="ART logo">
+                    <img src="/images/ART%20logo.jpg" alt="ART logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
                 </div>
                 <div>
-                    <div class="fw-bold">ART - SMOMA</div>
-                    <small>Annual Performance Dashboard</small>
+                    <div class="fw-bold fs-5">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
+                    <small class="text-light opacity-75">Bilan Annuel & Suivi des Missions du Personnel</small>
                 </div>
             </div>
-            <a href="/index.html" class="btn btn-outline-light btn-sm">Back to Dashboard</a>
+            <div>
+                <a href="/index.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house me-1"></i> Tableau de bord</a>
+            </div>
         </div>
     </nav>
 
-    <div class="container py-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-dark text-white">
-                <h4 class="mb-0">Annual Dashboard</h4>
+    <!-- Main Container -->
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-pie text-dark me-2"></i>Bilan Annuel d'Activité des Missions (Exercice 2026)</h4>
+                <p class="text-muted small mb-0">Consolidation annuelle des mandats signés, effectifs déployés et indemnités budgétaires</p>
             </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">This module provides annual mission and staff overview.</p>
-                <div class="alert alert-dark">Annual dashboard access is active.</div>
+            <button class="btn btn-dark btn-sm px-3" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> Imprimer le Bilan</button>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm border-0 border-start border-4 border-danger">
+                    <small class="text-muted fw-bold">Mandats DG Signés</small>
+                    <h2 class="fw-bold mb-0 text-danger" id="bTotalMandats">--</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm border-0 border-start border-4 border-primary">
+                    <small class="text-muted fw-bold">Ordres de Mission Individuels</small>
+                    <h2 class="fw-bold mb-0 text-primary" id="bTotalOrdres">--</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm border-0 border-start border-4 border-success">
+                    <small class="text-muted fw-bold">Rapports de Mission Déposés</small>
+                    <h2 class="fw-bold mb-0 text-success" id="bTotalRapports">--</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm border-0 border-start border-4 border-warning">
+                    <small class="text-muted fw-bold">Missions SANS FRAIS (Sceau Rouge)</small>
+                    <h2 class="fw-bold mb-0 text-warning text-dark" id="bTotalSansFrais">--</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="fa-solid fa-table me-1"></i> Récapitulatif par Direction & Service
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted">Vue consolidée annuelle disponible pour l'exercice budgétaire 2026.</p>
             </div>
         </div>
     </div>
 
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        async function loadAnnualStats() {
+            try {
+                const res = await fetch('/api/statistiques/summary');
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('bTotalMandats').innerText = stats.totalMandats || 0;
+                    document.getElementById('bTotalOrdres').innerText = stats.totalOrdres || 0;
+                    document.getElementById('bTotalRapports').innerText = stats.totalRapports || 0;
+                    document.getElementById('bTotalSansFrais').innerText = stats.ordresSansFrais || 0;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAnnualStats);
+    </script>
     <script src="/js/auth-guard.js"></script>
 </body>
 </html>

@@ -2,14 +2,16 @@ package smoma.controller.model.Service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import smoma.controller.model.Service.Role;
 import smoma.dto.AdDirectoryEntryDTO;
-import smoma.dto.LdapUserDTO;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.*;
+import javax.naming.ldap.Control;
+import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.PagedResultsControl;
+import javax.naming.ldap.PagedResultsResponseControl;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -96,6 +98,8 @@ public class LdapDirectoryService {
         env.put(Context.SECURITY_CREDENTIALS, adminPass);
         env.put("com.sun.jndi.ldap.connect.pool", "true");
         env.put("java.naming.ldap.attributes.binary", "-");
+        // Follow referrals to avoid "Unprocessed Continuation Reference(s)" errors
+        env.put(Context.REFERRAL, "follow");
         return new InitialDirContext(env);
     }
 
@@ -304,7 +308,8 @@ public class LdapDirectoryService {
      * with AdUserSyncService and DashboardService.
      */
     public List<Map<String, String>> searchUsers(String customFilter) throws NamingException {
-        DirContext ctx = connect();
+        // Use LdapContext and the RFC 2696 paged results control to handle large directories
+        LdapContext ctx = (LdapContext) connect();
         List<Map<String, String>> resultList = new ArrayList<>();
 
         SearchControls controls = new SearchControls();
@@ -315,33 +320,58 @@ public class LdapDirectoryService {
                 ? "(&(objectClass=user)(objectCategory=person))"
                 : customFilter;
 
-        NamingEnumeration<SearchResult> results = ctx.search(baseDn, filter, controls);
+        int pageSize = 500; // reasonable batch size
+        byte[] cookie = null;
 
-        while (results.hasMore()) {
-            SearchResult sr = results.next();
-            Attributes attrs = sr.getAttributes();
-
-            if (isAccountActive(attrs)) {
-                String title = getAttributeValue(attrs, "title");
-                String username = getAttributeValue(attrs, "sAMAccountName");
-                List<String> groups = getAttributeValues(attrs, "memberOf");
-                Role assignedRole = mapAdAttributesToRole(title, username, groups);
-
-                Map<String, String> userRow = new LinkedHashMap<>();
-                userRow.put("matricule", extractMatricule(attrs));
-                userRow.put("nom", getAttributeValue(attrs, "givenName"));
-                userRow.put("prenom", getAttributeValue(attrs, "sn"));
-                userRow.put("email", getAttributeValue(attrs, "mail"));
-                userRow.put("codeFonction", title);
-                userRow.put("nomStructure", getAttributeValue(attrs, "department"));
-                userRow.put("login", username);
-                userRow.put("role", assignedRole.name());
-                userRow.put("groups", String.join(";", groups));
-                userRow.put("distinguishedName", sr.getNameInNamespace());
-
-                resultList.add(userRow);
+        do {
+            try {
+                ctx.setRequestControls(new Control[]{new PagedResultsControl(pageSize, cookie, Control.CRITICAL)});
+            } catch (java.io.IOException e) {
+                throw new NamingException("Failed to set paged results control: " + e.getMessage());
             }
-        }
+
+            NamingEnumeration<SearchResult> results = ctx.search(baseDn, filter, controls);
+
+            while (results.hasMore()) {
+                SearchResult sr = results.next();
+                Attributes attrs = sr.getAttributes();
+
+                if (isAccountActive(attrs)) {
+                    String title = getAttributeValue(attrs, "title");
+                    String username = getAttributeValue(attrs, "sAMAccountName");
+                    List<String> groups = getAttributeValues(attrs, "memberOf");
+                    Role assignedRole = mapAdAttributesToRole(title, username, groups);
+
+                    Map<String, String> userRow = new LinkedHashMap<>();
+                    userRow.put("matricule", extractMatricule(attrs));
+                    userRow.put("nom", getAttributeValue(attrs, "givenName"));
+                    userRow.put("prenom", getAttributeValue(attrs, "sn"));
+                    userRow.put("email", getAttributeValue(attrs, "mail"));
+                    userRow.put("codeFonction", title);
+                    userRow.put("nomStructure", getAttributeValue(attrs, "department"));
+                    userRow.put("login", username);
+                    userRow.put("role", assignedRole.name());
+                    userRow.put("groups", String.join(";", groups));
+                    userRow.put("distinguishedName", sr.getNameInNamespace());
+
+                    resultList.add(userRow);
+                }
+            }
+
+            // Examine response controls to obtain the cookie for the next page
+            cookie = null;
+            Control[] respControls = ctx.getResponseControls();
+            if (respControls != null) {
+                for (Control c : respControls) {
+                    if (c instanceof PagedResultsResponseControl) {
+                        PagedResultsResponseControl prrc = (PagedResultsResponseControl) c;
+                        cookie = prrc.getCookie();
+                    }
+                }
+            }
+
+        } while (cookie != null && cookie.length != 0);
+
         ctx.close();
         return resultList;
     }

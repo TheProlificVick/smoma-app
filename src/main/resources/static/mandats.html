@@ -1,45 +1,420 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMOMA - Mandates</title>
+    <title>SMOMA - Gestion des Mandats (DG)</title>
+    <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f5f7fb; }
+        body { background: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .art-header { background: #0B2545; color: white; }
-        .logo-box { width: 72px; height: 72px; border-radius: 12px; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; }
-        .logo-box img { width: 56px; height: 56px; object-fit: contain; }
+        .logo-box { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; padding: 4px; }
+        .logo-box img { width: 100%; height: 100%; object-fit: contain; }
+        .badge-sans-frais { background-color: #dc3545; color: white; font-weight: bold; padding: 4px 8px; border-radius: 4px; letter-spacing: 1px; }
+        .badge-signed { background-color: #198754; color: white; }
+        .badge-pending { background-color: #ffc107; color: #000; }
+        .side-by-side-container { display: flex; gap: 15px; height: 500px; }
+        .side-pane { flex: 1; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+        .side-pane-header { background: #0B2545; color: white; padding: 10px; font-weight: bold; font-size: 0.9rem; text-align: center; }
+        .side-pane-body { flex: 1; padding: 15px; overflow-y: auto; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark art-header shadow-sm">
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-dark art-header shadow-sm mb-4">
         <div class="container-fluid px-4">
             <div class="d-flex align-items-center gap-3">
                 <div class="logo-box">
-                    <img src="/images/ART%20logo.jpg" alt="ART logo">
+                    <img src="/images/ART%20logo.jpg" alt="ART logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
                 </div>
                 <div>
-                    <div class="fw-bold">ART - SMOMA</div>
-                    <small>General Mandates</small>
+                    <div class="fw-bold fs-5">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
+                    <small class="text-light opacity-75">Module Mandats de Mission du Directeur Général (DG)</small>
                 </div>
             </div>
-            <a href="/index.html" class="btn btn-outline-light btn-sm">Back to Dashboard</a>
+            <div>
+                <a href="/index.html" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-house me-1"></i> Tableau de bord</a>
+                <a href="/login.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> Déconnexion</a>
+            </div>
         </div>
     </nav>
 
-    <div class="container py-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-danger text-white">
-                <h4 class="mb-0">General Manager Mandates</h4>
+    <!-- Main Container -->
+    <div class="container-fluid px-4">
+        
+        <!-- Header Actions -->
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-stamp text-danger me-2"></i>Registre des Mandats de Mission</h4>
+                <p class="text-muted small mb-0">Gestion centralisée des mandats cadres signés du DG et génération des ordres de mission individuels</p>
             </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">This module handles signed mandates and approval evidence before mission issuance.</p>
-                <div class="alert alert-danger">Mandate access is active.</div>
+            <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalCreateMandat">
+                <i class="fa-solid fa-plus-circle me-1"></i> Créer un Nouveau Mandat
+            </button>
+        </div>
+
+        <!-- Mandats Table Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="mandatsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Référence</th>
+                                <th>Objet Général</th>
+                                <th>Motif Réglementaire</th>
+                                <th>Type & Transport</th>
+                                <th>Période Globale</th>
+                                <th>Régime Financier</th>
+                                <th>Statut & Scan</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mandatsTbody">
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Chargement des mandats...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal: Create Mandat -->
+    <div class="modal fade" id="modalCreateMandat" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-stamp me-2"></i>Créer un Nouveau Mandat de Mission</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="formMandat">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Référence du Mandat</label>
+                                <input type="text" class="form-control" id="mRef" placeholder="Ex: MANDAT-ART-2026-001">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Motif Réglementaire</label>
+                                <select class="form-select" id="mMotif">
+                                    <option value="Décision DG n° 2026/ART">Décision DG n° 2026/ART</option>
+                                    <option value="Contrôle et Régulation des Réseaux">Contrôle et Régulation des Réseaux</option>
+                                    <option value="Séminaire et Représentation Officielle">Séminaire et Représentation Officielle</option>
+                                    <option value="Autre motif dûment habilité">Autre motif dûment habilité</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Objet Général de la Mission</label>
+                            <input type="text" class="form-control" id="mObjet" required placeholder="Description globale de l'objectif...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Objectifs Spécifiques</label>
+                            <textarea class="form-control" id="mObjectifs" rows="2" placeholder="Détails opérationnels et résultats attendus..."></textarea>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Type de Mission</label>
+                                <select class="form-select" id="mType">
+                                    <option value="INTERNE">Interne (Cameroun)</option>
+                                    <option value="EXTERNE">Externe (International)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Moyen(s) de Transport</label>
+                                <div class="pt-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="tVehicule" value="Vehicule" checked>
+                                        <label class="form-check-label" for="tVehicule">Véhicule</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="tAvion" value="Avion">
+                                        <label class="form-check-label" for="tAvion">Avion</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Date de Début Globale</label>
+                                <input type="date" class="form-control" id="mDateDebut" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Date de Fin Globale</label>
+                                <input type="date" class="form-control" id="mDateFin" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3 bg-light p-3 rounded border">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="mSansFrais">
+                                    <label class="form-check-label fw-bold text-danger" for="mSansFrais">Mandat SANS FRAIS (Sceau Rouge)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="mForceMajeure">
+                                    <label class="form-check-label fw-bold text-warning" for="mForceMajeure">Régularisation Force Majeure (&lt; 48h)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personnel Team Selection -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Équipe d'Agents Concernés</label>
+                            <select class="form-select" id="mStaffSelect" multiple style="height: 110px;">
+                                <!-- Dynamically filled from /api/personnel -->
+                            </select>
+                            <small class="text-muted">Maintenez la touche Ctrl (ou Cmd) pour sélectionner plusieurs agents.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary btn-sm px-4" onclick="saveMandat()"><i class="fa-solid fa-save me-1"></i> Enregistrer le Mandat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Upload Scan -->
+    <div class="modal fade" id="modalUploadScan" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-arrow-up me-2"></i>Importer Scan Signé (DG)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="uploadMandatId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fichier PDF ou Image du Mandat Signé par le DG</label>
+                        <input type="file" class="form-control" id="scanFile" accept="application/pdf,image/*">
+                    </div>
+                    <div class="alert alert-info small mb-0">
+                        <i class="fa-solid fa-info-circle me-1"></i> L'importation du scan signé active officiellement le mandat et génère automatiquement les Ordres de Mission individuels par agent et par étape.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-success btn-sm px-4" onclick="submitScan()"><i class="fa-solid fa-check me-1"></i> Valider et Générer les OM</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Side by Side Preview -->
+    <div class="modal fade" id="modalSideBySide" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-columns me-2"></i>Visualisation Côte à Côte - Mandat & Scan Signé</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="side-by-side-container">
+                        <div class="side-pane">
+                            <div class="side-pane-header"><i class="fa-solid fa-file-contract me-1"></i> Version Générée par le Système</div>
+                            <div class="side-pane-body" id="systemDocContent">
+                                <!-- Dynamic details -->
+                            </div>
+                        </div>
+                        <div class="side-pane">
+                            <div class="side-pane-header"><i class="fa-solid fa-file-pdf me-1"></i> Scan Signé Importé</div>
+                            <div class="side-pane-body p-0" id="scanDocContent">
+                                <!-- Dynamic PDF/Image view -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let allStaff = [];
+
+        async function loadStaff() {
+            try {
+                const res = await fetch('/api/personnel');
+                if (res.ok) {
+                    allStaff = await res.json();
+                    const select = document.getElementById('mStaffSelect');
+                    select.innerHTML = allStaff.map(s => `<option value="${s.id}">${s.nom} ${s.prenom || ''} (${s.matricule || 'N/A'}) - ${s.departement || ''}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Staff load error:', e);
+            }
+        }
+
+        async function loadMandats() {
+            const tbody = document.getElementById('mandatsTbody');
+            try {
+                const res = await fetch('/api/mandats');
+                if (res.ok) {
+                    const mandats = await res.json();
+                    if (mandats.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Aucun mandat de mission enregistre. Cliquez sur "Créer un Nouveau Mandat".</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = mandats.map(m => {
+                        const sansFraisBadge = m.sansFrais ? `<span class="badge badge-sans-frais"><i class="fa-solid fa-stamp me-1"></i>SANS FRAIS</span>` : `<span class="badge bg-success">AVEC FRAIS</span>`;
+                        const scanStatus = m.scanSignedPath 
+                            ? `<span class="badge badge-signed"><i class="fa-solid fa-file-circle-check me-1"></i>Scan Valide</span>`
+                            : `<span class="badge badge-pending"><i class="fa-solid fa-clock me-1"></i>En attente scan</span>`;
+
+                        return `
+                            <tr>
+                                <td class="fw-bold text-navy">${m.referenceMandat || 'MANDAT-#' + m.id}</td>
+                                <td>
+                                    <div class="fw-bold">${m.objetGeneral || 'Sans objet'}</div>
+                                    <small class="text-muted">${m.objectifsSpecifiques || ''}</small>
+                                </td>
+                                <td><small class="text-secondary">${m.motifReglementaire || 'N/A'}</small></td>
+                                <td>
+                                    <span class="badge bg-primary">${m.typeMission || 'INTERNE'}</span>
+                                    <small class="d-block text-muted mt-1">${(m.transportModes || []).join(', ') || 'Vehicule'}</small>
+                                </td>
+                                <td><small class="fw-bold">${m.dateDebut || ''} au ${m.dateFin || ''}</small></td>
+                                <td>${sansFraisBadge}</td>
+                                <td>${scanStatus}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-outline-info btn-sm me-1" onclick="viewSideBySide(${m.id})" title="Voir côte à côte"><i class="fa-solid fa-columns"></i></button>
+                                    <button class="btn btn-outline-success btn-sm" onclick="openUploadModal(${m.id})" title="Importer Scan Signé"><i class="fa-solid fa-file-arrow-up"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Erreur de chargement des mandats.</td></tr>`;
+            }
+        }
+
+        async function saveMandat() {
+            const mandat = {
+                referenceMandat: document.getElementById('mRef').value,
+                objetGeneral: document.getElementById('mObjet').value,
+                objectifsSpecifiques: document.getElementById('mObjectifs').value,
+                motifReglementaire: document.getElementById('mMotif').value,
+                typeMission: document.getElementById('mType').value,
+                transportModes: Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value),
+                dateDebut: document.getElementById('mDateDebut').value,
+                dateFin: document.getElementById('mDateFin').value,
+                sansFrais: document.getElementById('mSansFrais').checked,
+                forceMajeure: document.getElementById('mForceMajeure').checked
+            };
+
+            const select = document.getElementById('mStaffSelect');
+            const personnelIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+
+            try {
+                const res = await fetch('/api/mandats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mandat, personnelIds, etapes: [] })
+                });
+
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalCreateMandat')).hide();
+                    loadMandats();
+                } else {
+                    const err = await res.json();
+                    alert('Erreur: ' + (err.error || 'Impossible d\'enregistrer le mandat'));
+                }
+            } catch (e) {
+                alert('Erreur réseau lors de la création du mandat.');
+            }
+        }
+
+        function openUploadModal(id) {
+            document.getElementById('uploadMandatId').value = id;
+            new bootstrap.Modal(document.getElementById('modalUploadScan')).show();
+        }
+
+        async function submitScan() {
+            const id = document.getElementById('uploadMandatId').value;
+            try {
+                const res = await fetch(`/api/mandats/${id}/upload-scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scanPath: `/uploads/scans/mandat_${id}_signed.pdf` })
+                });
+
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalUploadScan')).hide();
+                    alert('Scan signé importé avec succès! Ordres de Mission générés.');
+                    loadMandats();
+                }
+            } catch (e) {
+                alert('Erreur lors de l\'importation du scan.');
+            }
+        }
+
+        async function viewSideBySide(id) {
+            try {
+                const res = await fetch(`/api/mandats/${id}`);
+                if (res.ok) {
+                    const m = await res.json();
+                    document.getElementById('systemDocContent').innerHTML = `
+                        <div class="text-center mb-3">
+                            <h6 class="fw-bold">AGENCE DE REGULATION DES TELECOMMUNICATIONS</h6>
+                            <small>Mandat Officiel de Mission N° ${m.referenceMandat || m.id}</small>
+                        </div>
+                        ${m.sansFrais ? '<div class="alert alert-danger text-center fw-bold p-2 mb-3"><i class="fa-solid fa-stamp me-1"></i>SCEAU SANS FRAIS</div>' : ''}
+                        <p><strong>Objet :</strong> ${m.objetGeneral || ''}</p>
+                        <p><strong>Motif :</strong> ${m.motifReglementaire || ''}</p>
+                        <p><strong>Période :</strong> ${m.dateDebut} au ${m.dateFin}</p>
+                        <p><strong>Type :</strong> ${m.typeMission}</p>
+                        <p><strong>Agents (${(m.personnelList || []).length}) :</strong></p>
+                        <ul>${(m.personnelList || []).map(p => `<li>${p.nom} ${p.prenom || ''} (${p.matricule || ''})</li>`).join('')}</ul>
+                    `;
+
+                    if (m.scanSignedPath) {
+                        document.getElementById('scanDocContent').innerHTML = `
+                            <div class="p-4 text-center">
+                                <i class="fa-solid fa-file-pdf text-danger fa-4x mb-3"></i>
+                                <h6 class="fw-bold">Scan Signé Importé</h6>
+                                <p class="text-muted small">${m.scanSignedPath}</p>
+                                <span class="badge bg-success">Document Valide & Signé DG</span>
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('scanDocContent').innerHTML = `
+                            <div class="p-4 text-center text-muted">
+                                <i class="fa-solid fa-clock fa-3x mb-2"></i>
+                                <p>Aucun scan signé n'a été importé pour ce mandat.</p>
+                            </div>
+                        `;
+                    }
+
+                    new bootstrap.Modal(document.getElementById('modalSideBySide')).show();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStaff();
+            loadMandats();
+        });
+    </script>
     <script src="/js/auth-guard.js"></script>
 </body>
 </html>

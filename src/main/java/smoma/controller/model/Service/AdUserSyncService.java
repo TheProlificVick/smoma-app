@@ -1,9 +1,7 @@
 package smoma.controller.model.Service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import smoma.controller.model.Service.Role;
 import smoma.controller.model.User;
 import smoma.repository.UserRepository;
 
@@ -14,13 +12,16 @@ import java.util.Map;
 @Service
 public class AdUserSyncService {
 
-    @Autowired
-    private LdapDirectoryService ldapDirectoryService;
+    private final LdapDirectoryService ldapDirectoryService;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public AdUserSyncService(LdapDirectoryService ldapDirectoryService, UserRepository userRepository) {
+        this.ldapDirectoryService = ldapDirectoryService;
+        this.userRepository = userRepository;
+    }
 
     /**
      * Synchronizes ALL active users from the Active Directory into the local database.

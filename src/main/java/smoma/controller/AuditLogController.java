@@ -1,6 +1,5 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.Service.AuditService;
@@ -9,8 +8,11 @@ import smoma.controller.model.Service.AuditService;
 @RequestMapping("/api/audit-logs")
 public class AuditLogController {
 
-    @Autowired
-    private AuditService auditLogService;
+    private final AuditService auditLogService;
+
+    public AuditLogController(AuditService auditLogService) {
+        this.auditLogService = auditLogService;
+    }
 
     @GetMapping
     public ResponseEntity<?> getAllLogs() {

@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,9 +33,11 @@ public class Personnel {
     private Grade grade;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private Statut statut;
 
     private String fonction;
+    private String rang;
     private LocalDate dateEmbauche;
     private LocalDate dateNaissance;
     private String adresse;
@@ -147,6 +150,14 @@ public class Personnel {
 
     public void setFonction(String fonction) {
         this.fonction = fonction;
+    }
+
+    public String getRang() {
+        return rang;
+    }
+
+    public void setRang(String rang) {
+        this.rang = rang;
     }
 
     public LocalDate getDateEmbauche() {

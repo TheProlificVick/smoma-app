@@ -1,6 +1,6 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+ 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.MissionRequest;
@@ -15,11 +15,14 @@ import java.util.Map;
 @RequestMapping("/api/mission-requests")
 public class MissionRequestController {
 
-    @Autowired
-    private MissionOrderService missionOrderService;
+    private final MissionOrderService missionOrderService;
 
-    @Autowired
-    private MissionRequestRepository missionRequestRepository;
+    private final MissionRequestRepository missionRequestRepository;
+
+    public MissionRequestController(MissionOrderService missionOrderService, MissionRequestRepository missionRequestRepository) {
+        this.missionOrderService = missionOrderService;
+        this.missionRequestRepository = missionRequestRepository;
+    }
 
     @PostMapping("/create")
     public ResponseEntity<?> createRequest(@RequestBody Map<String, Object> payload, Principal principal) {
@@ -31,13 +34,13 @@ public class MissionRequestController {
             String feeType = String.valueOf(payload.getOrDefault("feeType", "WITHOUT_FEES"));
             String missionType = String.valueOf(payload.getOrDefault("missionType", "INTERNE"));
 
-            Long initiatorId = payload.containsKey("initiatorId")
+                Long initiatorId = payload.containsKey("initiatorId")
                     ? Long.parseLong(payload.get("initiatorId").toString())
                     : 1L;
 
-            MissionRequest request = missionOrderService.initiateRequest(
+                MissionRequest request = missionOrderService.initiateRequest(
                     initiatorId, targetStaffId, title, objective, destination
-            );
+                );
             request.setMissionType(missionType);
             request.setFeeType(feeType);
             request.setCurrentStage("INITIATED");

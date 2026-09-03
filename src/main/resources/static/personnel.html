@@ -1,45 +1,373 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMOMA - Personnel</title>
+    <title>SMOMA - Référentiel du Personnel ART</title>
+    <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f5f7fb; }
+        body { background: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .art-header { background: #0B2545; color: white; }
-        .logo-box { width: 72px; height: 72px; border-radius: 12px; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; }
-        .logo-box img { width: 56px; height: 56px; object-fit: contain; }
+        .logo-box { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; padding: 4px; }
+        .logo-box img { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark art-header shadow-sm">
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-dark art-header shadow-sm mb-4">
         <div class="container-fluid px-4">
             <div class="d-flex align-items-center gap-3">
                 <div class="logo-box">
-                    <img src="/images/ART%20logo.jpg" alt="ART logo">
+                    <img src="/images/ART%20logo.jpg" alt="ART logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
                 </div>
                 <div>
-                    <div class="fw-bold">ART - SMOMA</div>
-                    <small>Personnel & Staff</small>
+                    <div class="fw-bold fs-5">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
+                    <small class="text-light opacity-75">Gestion du Personnel & Compte Individuel (~600 Agents)</small>
                 </div>
             </div>
-            <a href="/index.html" class="btn btn-outline-light btn-sm">Back to Dashboard</a>
+            <div>
+                <a href="/index.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house me-1"></i> Tableau de bord</a>
+            </div>
         </div>
     </nav>
 
-    <div class="container py-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-info text-white">
-                <h4 class="mb-0">Personnel & Staff Administration</h4>
+    <!-- Main Container -->
+    <div class="container-fluid px-4">
+        
+        <!-- Header & Action Row -->
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-address-book text-info me-2"></i>Répertoire du Personnel</h4>
+                <p class="text-muted small mb-0">Gestion des fiches agents, affectations organisationnelles, grades et consultation du compte individuel</p>
             </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">This module is available for active staff management and directory review.</p>
-                <div class="alert alert-info">Personnel access is active.</div>
+            <button class="btn btn-info text-white btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalCreateAgent">
+                <i class="fa-solid fa-user-plus me-1"></i> Ajouter un Agent
+            </button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body bg-light p-3">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" class="form-control" id="searchQuery" placeholder="Rechercher par nom, prénom ou matricule..." oninput="searchPersonnel()">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="filterDept" onchange="searchPersonnel()">
+                            <option value="">Toutes les directions / structures</option>
+                            <option value="DRH">Direction des Ressources Humaines (DRH)</option>
+                            <option value="DGF">Direction Gestion & Finances (DGF)</option>
+                            <option value="DT">Direction Technique (DT)</option>
+                            <option value="DLCI">Direction Juridique (DLCI)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="filterGrade" onchange="searchPersonnel()">
+                            <option value="">Tous les grades</option>
+                            <option value="A">Grade A</option>
+                            <option value="B">Grade B</option>
+                            <option value="C">Grade C</option>
+                            <option value="D">Grade D</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()"><i class="fa-solid fa-rotate me-1"></i> Réinitialiser</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personnel Table Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Matricule</th>
+                                <th>Agent (Nom & Prénom)</th>
+                                <th>Structure / Direction</th>
+                                <th>Fonction & Rang</th>
+                                <th>Grade</th>
+                                <th>Contact & Email</th>
+                                <th>Statut</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personnelTbody">
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Chargement du personnel...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal: Create Agent -->
+    <div class="modal fade" id="modalCreateAgent" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Ajouter un Nouvel Agent ART</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="formAgent">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Matricule Unique</label>
+                                <input type="text" class="form-control" id="pMatricule" required placeholder="Ex: ART-2026-88">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Nom</label>
+                                <input type="text" class="form-control" id="pNom" required placeholder="Ex: MBARGA">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Prénom</label>
+                                <input type="text" class="form-control" id="pPrenom" placeholder="Ex: Paul Emmanuel">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Structure / Direction</label>
+                                <input type="text" class="form-control" id="pDept" placeholder="Ex: Direction des Ressources Humaines">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Fonction</label>
+                                <input type="text" class="form-control" id="pFonction" placeholder="Ex: Chef de Service Formation">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Grade</label>
+                                <select class="form-select" id="pGrade">
+                                    <option value="A">Grade A (Cadre Supérieur)</option>
+                                    <option value="B">Grade B (Cadre)</option>
+                                    <option value="C">Grade C (Maîtrise)</option>
+                                    <option value="D">Grade D (Exécution)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Rang Habilitation</label>
+                                <input type="text" class="form-control" id="pRang" placeholder="Ex: Directeur / Sous-Directeur / Chef de Service">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Adresse Email</label>
+                                <input type="email" class="form-control" id="pEmail" placeholder="nom.prenom@art.cm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Téléphone</label>
+                                <input type="text" class="form-control" id="pTel" placeholder="+237 6XX XX XX XX">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-info text-white btn-sm px-4" onclick="saveAgent()"><i class="fa-solid fa-save me-1"></i> Enregistrer l'Agent</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Compte Individuel -->
+    <div class="modal fade" id="modalCompteIndividuel" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-id-card-clip me-2"></i>Compte Individuel du Personnel</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="compteBody">
+                    <div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Chargement du compte individuel...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        async function searchPersonnel() {
+            const query = document.getElementById('searchQuery').value;
+            const structure = document.getElementById('filterDept').value;
+            const grade = document.getElementById('filterGrade').value;
+
+            const url = new URL('/api/personnel', window.location.origin);
+            if (query) url.searchParams.append('query', query);
+            if (structure) url.searchParams.append('structure', structure);
+            if (grade) url.searchParams.append('grade', grade);
+
+            const tbody = document.getElementById('personnelTbody');
+            try {
+                const res = await fetch(url);
+                if (res.ok) {
+                    const staff = await res.json();
+                    if (staff.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Aucun agent ne correspond aux critères de recherche.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = staff.map(p => `
+                        <tr>
+                            <td class="fw-bold text-navy">${p.matricule || 'N/A'}</td>
+                            <td>
+                                <div class="fw-bold">${p.nom} ${p.prenom || ''}</div>
+                            </td>
+                            <td><small class="fw-bold text-secondary">${p.departement || 'Non affecté'}</small></td>
+                            <td>
+                                <small>${p.fonction || 'Agent ART'}</small>
+                                <span class="d-block text-muted small">${p.rang ? 'Rang: ' + p.rang : ''}</span>
+                            </td>
+                            <td><span class="badge bg-primary">Grade ${p.grade || 'A'}</span></td>
+                            <td>
+                                <small>${p.email || 'N/A'}</small>
+                                <span class="d-block text-muted small">${p.telephone || ''}</span>
+                            </td>
+                            <td><span class="badge bg-success">ACTIF</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-outline-info btn-sm" onclick="openCompteIndividuel(${p.id})" title="Consulter le Compte Individuel"><i class="fa-solid fa-chart-line me-1"></i> Compte</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Erreur de chargement du personnel.</td></tr>`;
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('searchQuery').value = '';
+            document.getElementById('filterDept').value = '';
+            document.getElementById('filterGrade').value = '';
+            searchPersonnel();
+        }
+
+        async function saveAgent() {
+            const agent = {
+                matricule: document.getElementById('pMatricule').value,
+                nom: document.getElementById('pNom').value,
+                prenom: document.getElementById('pPrenom').value,
+                departement: document.getElementById('pDept').value,
+                fonction: document.getElementById('pFonction').value,
+                grade: document.getElementById('pGrade').value,
+                rang: document.getElementById('pRang').value,
+                email: document.getElementById('pEmail').value,
+                telephone: document.getElementById('pTel').value,
+                statut: 'ACTIF'
+            };
+
+            try {
+                const res = await fetch('/api/personnel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(agent)
+                });
+
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalCreateAgent')).hide();
+                    document.getElementById('formAgent').reset();
+                    searchPersonnel();
+                }
+            } catch (e) {
+                alert('Erreur lors de l\'enregistrement de l\'agent.');
+            }
+        }
+
+        async function openCompteIndividuel(id) {
+            const modal = new bootstrap.Modal(document.getElementById('modalCompteIndividuel'));
+            modal.show();
+            const body = document.getElementById('compteBody');
+
+            try {
+                const res = await fetch(`/api/personnel/${id}/compte-individuel`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const p = data.personnel;
+
+                    body.innerHTML = `
+                        <div class="p-3 bg-light rounded border mb-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="fw-bold mb-1">${p.nom} ${p.prenom || ''}</h5>
+                                    <p class="text-muted small mb-0">Matricule: ${p.matricule || 'N/A'} | Grade ${p.grade || 'A'}</p>
+                                    <p class="text-muted small">Structure: ${p.departement || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <span class="badge bg-dark p-2 mb-1">Missions Effectuées : ${data.totalMissions}</span>
+                                    <h4 class="fw-bold text-primary mb-0">${data.totalJoursMission} Jours en Mission</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="card border-primary p-3 text-center">
+                                    <small class="text-muted">Total Indemnités</small>
+                                    <h5 class="fw-bold text-primary mb-0">${(data.totalIndemnites || 0).toLocaleString()} XAF</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-success p-3 text-center">
+                                    <small class="text-muted">Avances Perçues</small>
+                                    <h5 class="fw-bold text-success mb-0">${(data.totalAvancesPerçues || 0).toLocaleString()} XAF</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-warning p-3 text-center">
+                                    <small class="text-muted">Soldes Restants</small>
+                                    <h5 class="fw-bold text-warning mb-0">${(data.totalSoldesRestants || 0).toLocaleString()} XAF</h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mb-2">Historique des Ordres de Mission</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Réf OM</th>
+                                        <th>Période</th>
+                                        <th>Indemnité</th>
+                                        <th>Régime</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${(data.ordresDeMission || []).map(o => `
+                                        <tr>
+                                            <td>${o.referenceOrdre || 'OM-#' + o.id}</td>
+                                            <td>${o.dateDebut} au ${o.dateFin}</td>
+                                            <td>${o.montantIndemnite || 0} XAF</td>
+                                            <td>${o.sansFrais ? '<span class="badge bg-danger">SANS FRAIS</span>' : '<span class="badge bg-success">AVEC FRAIS</span>'}</td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="4" class="text-center text-muted">Aucune mission enregistrée sur la période.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                body.innerHTML = `<div class="alert alert-danger">Erreur de chargement du compte individuel.</div>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', searchPersonnel);
+    </script>
     <script src="/js/auth-guard.js"></script>
 </body>
 </html>

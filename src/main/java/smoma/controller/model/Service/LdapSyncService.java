@@ -1,6 +1,6 @@
 package smoma.controller.model.Service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+ 
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.stereotype.Service;
@@ -14,8 +14,11 @@ import java.util.List;
 @Service
 public class LdapSyncService {
 
-    @Autowired
-    private LdapTemplate ldapTemplate;
+    private final LdapTemplate ldapTemplate;
+
+    public LdapSyncService(LdapTemplate ldapTemplate) {
+        this.ldapTemplate = ldapTemplate;
+    }
 
     public List<LdapUserDTO> searchUsers(String searchTerm) {
         // LDAP Bitwise filter: (!(userAccountControl:1.2.840.113556.1.4.803:=2)) ensures account is active

@@ -1,6 +1,5 @@
 package smoma.controller.model.Service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import smoma.dto.HRFormDTO;
@@ -14,20 +13,27 @@ import java.util.List;
 @Service
 public class MissionOrderService {
 
-    @Autowired
-    private MissionRequestRepository requestRepository;
+    private final MissionRequestRepository requestRepository;
 
-    @Autowired
-    private MissionFormDetailRepository formDetailRepository;
+    private final MissionFormDetailRepository formDetailRepository;
 
-    @Autowired
-    private MissionOrderRepository orderRepository;
+    private final MissionOrderRepository orderRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+    private final AuditLogRepository auditLogRepository;
+
+    public MissionOrderService(MissionRequestRepository requestRepository,
+                               MissionFormDetailRepository formDetailRepository,
+                               MissionOrderRepository orderRepository,
+                               UserRepository userRepository,
+                               AuditLogRepository auditLogRepository) {
+        this.requestRepository = requestRepository;
+        this.formDetailRepository = formDetailRepository;
+        this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
+        this.auditLogRepository = auditLogRepository;
+    }
 
     public boolean canCreateMissionRequest(Role role) {
         return role == Role.ROLE_DEPARTMENT_REPRESENTATIVE || role == Role.ROLE_GENERAL_MANAGER || role == Role.ROLE_ADMIN;
@@ -194,7 +200,15 @@ public class MissionOrderService {
     }
 
     public Object initiateRequest(MissionRequestDTO dto, String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'initiateRequest'");
+        User initiator = userRepository.findByUsername(name)
+            .orElseThrow(() -> new IllegalArgumentException("Initiator not found: " + name));
+
+        return initiateRequest(
+            initiator.getId(),
+            dto.getAssignedStaffId(),
+            dto.getTitle(),
+            dto.getJustification(),
+            dto.getDestination()
+        );
     }
 }

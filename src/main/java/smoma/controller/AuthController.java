@@ -1,6 +1,5 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.Service.Role;
@@ -16,11 +15,14 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private LdapDirectoryService ldapDirectoryService;
+    private final LdapDirectoryService ldapDirectoryService;
+
+    public AuthController(UserRepository userRepository, LdapDirectoryService ldapDirectoryService) {
+        this.userRepository = userRepository;
+        this.ldapDirectoryService = ldapDirectoryService;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {

@@ -1,6 +1,6 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+ 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,26 +18,33 @@ import smoma.repository.UserRepository;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    @Autowired
-    private AdUserSyncService adUserSyncService;
+    private final AdUserSyncService adUserSyncService;
 
-    @Autowired
-    private LdapDirectoryService ldapDirectoryService;
+    private final LdapDirectoryService ldapDirectoryService;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private DepartmentRepository departmentRepository;
+    private final DepartmentRepository departmentRepository;
 
     @Value("${spring.ldap.urls:ldap://192.168.0.101:389}")
     private String ldapServer;
+
+    public AdminController(AdUserSyncService adUserSyncService,
+                           LdapDirectoryService ldapDirectoryService,
+                           UserRepository userRepository,
+                           DepartmentRepository departmentRepository) {
+        this.adUserSyncService = adUserSyncService;
+        this.ldapDirectoryService = ldapDirectoryService;
+        this.userRepository = userRepository;
+        this.departmentRepository = departmentRepository;
+    }
 
     @PostMapping("/sync-ad")
     public ResponseEntity<?> syncActiveDirectory() {
@@ -112,19 +119,28 @@ public class AdminController {
     public ResponseEntity<?> getAdStatistics() {
         try {
             List<AdDirectoryEntryDTO> all = ldapDirectoryService.getAllDirectoryEntries();
-            Map<String, Long> byType = all.stream()
-                    .collect(Collectors.groupingBy(AdDirectoryEntryDTO::getEntryType, Collectors.counting()));
-            Map<String, Long> byDepartment = all.stream()
-                    .filter(e -> e.getDepartment() != null && !e.getDepartment().isBlank())
-                    .collect(Collectors.groupingBy(AdDirectoryEntryDTO::getDepartment, Collectors.counting()));
-            long activeUsers = all.stream()
-                    .filter(AdDirectoryEntryDTO::isAccountEnabled)
-                    .filter(e -> "USER".equalsIgnoreCase(e.getEntryType()))
-                    .count();
-            long disabledUsers = all.stream()
-                    .filter(e -> !e.isAccountEnabled())
-                    .filter(e -> "USER".equalsIgnoreCase(e.getEntryType()))
-                    .count();
+                    Map<String, Long> byType = all.stream()
+                        .filter(Objects::nonNull)
+                        .map(e -> e.getEntryType())
+                        .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+
+                    Map<String, Long> byDepartment = all.stream()
+                        .filter(Objects::nonNull)
+                        .filter(e -> e.getDepartment() != null && !e.getDepartment().isBlank())
+                        .map(e -> e.getDepartment())
+                        .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+
+                    long activeUsers = all.stream()
+                        .filter(Objects::nonNull)
+                        .filter(e -> e.isAccountEnabled())
+                        .filter(e -> "USER".equalsIgnoreCase(e.getEntryType()))
+                        .count();
+
+                    long disabledUsers = all.stream()
+                        .filter(Objects::nonNull)
+                        .filter(e -> !e.isAccountEnabled())
+                        .filter(e -> "USER".equalsIgnoreCase(e.getEntryType()))
+                        .count();
 
             return ResponseEntity.ok(Map.of(
                     "totalEntries", all.size(),

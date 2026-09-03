@@ -1,6 +1,6 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+ 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.MissionRequest;
@@ -12,8 +12,11 @@ import java.util.Map;
 @RequestMapping("/api/validation")
 public class ValidationController {
 
-    @Autowired
-    private MissionOrderService missionOrderService;
+    private final MissionOrderService missionOrderService;
+
+    public ValidationController(MissionOrderService missionOrderService) {
+        this.missionOrderService = missionOrderService;
+    }
 
     @PostMapping("/gm-review")
     public ResponseEntity<?> gmReview(@RequestBody Map<String, Object> payload) {

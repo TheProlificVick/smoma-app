@@ -1,6 +1,6 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+ 
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,7 +17,6 @@ import smoma.controller.model.Service.MissionOrderService;
 import smoma.controller.model.Service.PdfGeneratorService;
 
 import java.io.ByteArrayInputStream;
-import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -26,14 +25,19 @@ import java.util.Map;
 @RequestMapping("/api/missions")
 public class MissionOrderController {
 
-    @Autowired
-    private MissionOrderService missionOrderService;
+    private final MissionOrderService missionOrderService;
 
-    @Autowired
-    private PdfGeneratorService pdfGeneratorService;
+    private final PdfGeneratorService pdfGeneratorService;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+
+    public MissionOrderController(MissionOrderService missionOrderService,
+                                  PdfGeneratorService pdfGeneratorService,
+                                  UserRepository userRepository) {
+        this.missionOrderService = missionOrderService;
+        this.pdfGeneratorService = pdfGeneratorService;
+        this.userRepository = userRepository;
+    }
 
     @PostMapping("/request")
     public ResponseEntity<MissionRequest> createRequest(@RequestBody MissionRequestDTO dto, Principal principal) {

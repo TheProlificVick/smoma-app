@@ -1,6 +1,6 @@
 package smoma.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+ 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.MissionOrder;
@@ -13,8 +13,11 @@ import java.util.Map;
 @RequestMapping("/api/hr")
 public class HrController {
 
-    @Autowired
-    private MissionOrderService missionOrderService;
+    private final MissionOrderService missionOrderService;
+
+    public HrController(MissionOrderService missionOrderService) {
+        this.missionOrderService = missionOrderService;
+    }
 
     @PostMapping("/complete-order")
     public ResponseEntity<?> completeHRForm(@RequestBody HRFormDTO hrFormDTO, @RequestParam(defaultValue = "hr_officer") String hrUsername) {
