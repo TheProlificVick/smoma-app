@@ -1,6 +1,7 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -63,6 +64,7 @@ public class OrdreDeMission {
     private StatutOrdre statut;
 
     @OneToMany(mappedBy = "ordreDeMission", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<EtapeMission> etapes = new ArrayList<>();
 
     public OrdreDeMission() {

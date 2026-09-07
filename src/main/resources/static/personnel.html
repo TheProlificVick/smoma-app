@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMOMA - Référentiel du Personnel ART</title>
-    <!-- Bootstrap 5 CSS -->
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <!-- FontAwesome Icons -->
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -26,7 +26,7 @@
                 </div>
                 <div>
                     <div class="fw-bold fs-5">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
-                    <small class="text-light opacity-75">Gestion du Personnel & Compte Individuel (~600 Agents)</small>
+                    <small class="text-light opacity-75">Gestion du Personnel & Compte Individuel (<800 Agents)</small>
                 </div>
             </div>
             <div>
@@ -34,6 +34,19 @@
             </div>
         </div>
     </nav>
+    <!-- Main Container -->
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            
+        </div>
+        
+    </div>
+
+    
+
+    
+    
 
     <!-- Main Container -->
     <div class="container-fluid px-4">
@@ -367,6 +380,65 @@
         }
 
         document.addEventListener('DOMContentLoaded', searchPersonnel);
+        async function fetchPersonnelTable() {
+            const tableBody = document.getElementById('personnelTableBody');
+            
+            try {
+                // Call your Spring Boot API endpoint for agents
+                const response = await fetch('/api/agents');
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                
+                const agents = await response.json();
+
+                // If Active Directory synced but MySQL returned zero records
+                if (!agents || agents.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                Aucun agent trouvé dans la base de données.
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                // Render Active Directory agents in the table
+                tableBody.innerHTML = agents.map(agent => `
+                    <tr>
+                        <td><strong>${agent.matricule || '-'}</strong></td>
+                        <td>${agent.nom || ''} ${agent.prenom || ''}</td>
+                        <td>${agent.direction ? (agent.direction.nom || agent.direction) : '-'}</td>
+                        <td>${agent.fonction || '-'}</td>
+                        <td>${agent.grade || '-'}</td>
+                        <td>${agent.email || '-'}</td>
+                        <td><span class="badge bg-success">${agent.statut || 'Actif'}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (error) {
+                console.error('Erreur de chargement du personnel:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-danger">
+                            Impossible de charger la liste du personnel. Vérifiez la connexion API.
+                        </td>
+                    </tr>`;
+            }
+        }
+
+        // Trigger fetch on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('smoma_lang') || 'fr';
+            switchLanguage(savedLang);
+            fetchPersonnelTable();
+        });
     </script>
     <script src="/js/auth-guard.js"></script>
 </body>

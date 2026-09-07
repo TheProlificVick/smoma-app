@@ -9,6 +9,7 @@ import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.*;
 import javax.naming.ldap.Control;
+import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.PagedResultsControl;
 import javax.naming.ldap.PagedResultsResponseControl;
@@ -16,12 +17,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Service that connects to the ART Active Directory and returns the ENTIRE contents
- * of the directory (users, groups, distributors, Organizational Units, contacts, computers...)
- * using the ldap.url configured in application.properties (spring.ldap.*).
- * This is used by the Admin and AD Sync modules to fortify role-based access.
- */
 @Service
 public class LdapDirectoryService {
 
@@ -86,7 +81,7 @@ public class LdapDirectoryService {
         }
     }
 
-    private DirContext connect() throws NamingException {
+    private LdapContext connect() throws NamingException {
         if (ldapUrls == null || ldapUrls.isBlank()) {
             throw new NamingException("LDAP is not configured. Set spring.ldap.urls in application-local.properties.");
         }
@@ -100,7 +95,7 @@ public class LdapDirectoryService {
         env.put("java.naming.ldap.attributes.binary", "-");
         // Follow referrals to avoid "Unprocessed Continuation Reference(s)" errors
         env.put(Context.REFERRAL, "follow");
-        return new InitialDirContext(env);
+        return new InitialLdapContext(env, null);
     }
 
     private boolean isAccountActive(Attributes attrs) {
@@ -162,7 +157,7 @@ public class LdapDirectoryService {
             return Role.ROLE_ADMIN;
         }
 
-        // AD group based mapping — هذهالمجموعات تعادل الأدوار
+        // AD group based mapping
         if (memberOf != null) {
             String groups = String.join(",", memberOf).toLowerCase();
             if (groups.contains("smoma-admin") || groups.contains("domain admins") || groups.contains("administrators")) {
@@ -215,7 +210,7 @@ public class LdapDirectoryService {
      * This includes ALL object classes: users, groups, OUs, contacts, computers, etc.
      */
     public List<AdDirectoryEntryDTO> getAllDirectoryEntries() throws NamingException {
-        DirContext ctx = connect();
+        LdapContext ctx = connect();
         List<AdDirectoryEntryDTO> entries = new ArrayList<>();
 
         SearchControls controls = new SearchControls();
@@ -308,8 +303,8 @@ public class LdapDirectoryService {
      * with AdUserSyncService and DashboardService.
      */
     public List<Map<String, String>> searchUsers(String customFilter) throws NamingException {
-        // Use LdapContext and the RFC 2696 paged results control to handle large directories
-        LdapContext ctx = (LdapContext) connect();
+        // Now safely calling connect() without invalid class casting
+        LdapContext ctx = connect();
         List<Map<String, String>> resultList = new ArrayList<>();
 
         SearchControls controls = new SearchControls();

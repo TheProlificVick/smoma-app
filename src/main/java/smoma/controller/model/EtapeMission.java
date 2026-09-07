@@ -1,6 +1,7 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,7 @@ public class EtapeMission {
         joinColumns = @JoinColumn(name = "etape_id"),
         inverseJoinColumns = @JoinColumn(name = "personnel_id")
     )
+    @JsonIgnore
     private List<Personnel> personnelList = new ArrayList<>();
 
     public EtapeMission() {

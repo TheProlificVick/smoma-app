@@ -9,6 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,10 +47,12 @@ public class Personnel {
     private String pays;
     private Long superieurHierarchiqueId;
 
-    @OneToMany(mappedBy = "personnel")
+    @OneToMany(mappedBy = "personnel", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<OrdreDeMission> ordresDeMission = new ArrayList<>();
 
-    @OneToMany(mappedBy = "personnel")
+    @OneToMany(mappedBy = "personnel", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<MandatDeMission> mandatsDeMission = new ArrayList<>();
 
     public Personnel() {
