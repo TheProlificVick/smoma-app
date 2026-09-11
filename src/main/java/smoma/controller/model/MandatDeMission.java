@@ -29,8 +29,19 @@ public class MandatDeMission {
     @Column(name = "motif_reglementaire")
     private String motifReglementaire;
 
+    /** Direction / structure that initiates the mandate (chosen from the referential, never typed). */
+    @Column(name = "direction_initiatrice")
+    private String directionInitiatrice;
+
+    /**
+     * Reference of the administrative act that justifies / authorises the mission request,
+     * e.g. "ART/DG/CSI/001" (Agence / Direction Générale / structure initiatrice / n° d'ordre).
+     */
+    @Column(name = "reference_justification")
+    private String referenceJustification;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "type_mission")
+    @Column(name = "type_mission", length = 64)
     private TypeMission typeMission;
 
     @ElementCollection
@@ -76,7 +87,7 @@ public class MandatDeMission {
     private List<Personnel> personnelList = new ArrayList<>();
 
     @OneToMany(mappedBy = "mandatDeMission", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"ordreDeMission", "mandatDeMission"})
     private List<EtapeMission> etapes = new ArrayList<>();
 
     @OneToMany(mappedBy = "mandatDeMission")
@@ -142,6 +153,22 @@ public class MandatDeMission {
 
     public void setMotifReglementaire(String motifReglementaire) {
         this.motifReglementaire = motifReglementaire;
+    }
+
+    public String getDirectionInitiatrice() {
+        return directionInitiatrice;
+    }
+
+    public void setDirectionInitiatrice(String directionInitiatrice) {
+        this.directionInitiatrice = directionInitiatrice;
+    }
+
+    public String getReferenceJustification() {
+        return referenceJustification;
+    }
+
+    public void setReferenceJustification(String referenceJustification) {
+        this.referenceJustification = referenceJustification;
     }
 
     public TypeMission getTypeMission() {

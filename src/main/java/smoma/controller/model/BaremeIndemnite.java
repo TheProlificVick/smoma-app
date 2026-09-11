@@ -16,6 +16,7 @@ public class BaremeIndemnite {
     private String fonction;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private OrdreDeMission.TypeMission typeMission;
 
     @Column(name = "montant_journalier")

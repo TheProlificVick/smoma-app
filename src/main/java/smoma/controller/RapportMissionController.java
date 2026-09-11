@@ -3,6 +3,8 @@ package smoma.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.RapportMission;
+import smoma.controller.model.User;
+import smoma.controller.model.Service.AccessPolicy;
 import smoma.controller.model.Service.RapportMissionService;
 
 import java.util.List;
@@ -13,9 +15,11 @@ import java.util.Map;
 public class RapportMissionController {
 
     private final RapportMissionService rapportService;
+    private final AccessPolicy accessPolicy;
 
-    public RapportMissionController(RapportMissionService rapportService) {
+    public RapportMissionController(RapportMissionService rapportService, AccessPolicy accessPolicy) {
         this.rapportService = rapportService;
+        this.accessPolicy = accessPolicy;
     }
 
     public static class DepositReportRequest {
@@ -46,7 +50,12 @@ public class RapportMissionController {
     }
 
     @PostMapping("/{id}/valider")
-    public ResponseEntity<?> validateReport(@PathVariable Long id) {
+    public ResponseEntity<?> validateReport(@PathVariable Long id,
+                                            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        User user = accessPolicy.resolve(userEmail);
+        if (!accessPolicy.canValidateReport(user)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeReportRule()));
+        }
         try {
             RapportMission validated = rapportService.validateReport(id);
             return ResponseEntity.ok(validated);

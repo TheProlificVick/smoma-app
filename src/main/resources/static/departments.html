@@ -287,19 +287,20 @@
         <div class="container-fluid px-4">
             <div class="d-flex align-items-center gap-3">
                 <div class="logo-box">
-                    <img src="/images/ART%20logo.jpg" alt="ART logo">
+                    <img src="/images/ART%20logo.jpg" alt="ART logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
                 </div>
                 <div>
                     <div class="fw-bold">ART - SMOMA</div>
-                    <small>Organigramme & Structures</small>
+                    <small data-i18n="deptsBrandSub">Organigramme &amp; Structures</small>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <div id="langContainer"></div>
                 <button class="btn btn-outline-light btn-sm" onclick="window.print()">
-                    <i class="bi bi-printer me-1"></i>Imprimer
+                    <i class="bi bi-printer me-1"></i><span data-i18n="btnPrintShort">Imprimer</span>
                 </button>
                 <a href="/index.html" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-arrow-left me-1"></i>Retour au Tableau de Bord
+                    <i class="bi bi-arrow-left me-1"></i><span data-i18n="navBackDashboard">Retour au Tableau de Bord</span>
                 </a>
             </div>
         </div>
@@ -308,13 +309,13 @@
     <div class="container py-4">
         <!-- Page Header -->
         <div class="text-center mb-4">
-            <h3 class="fw-bold text-dark mb-1">Organisation de l'Agence de Régulation des Télécommunications</h3>
-            <p class="text-muted">Structure organisationnelle conformément au décret n° 2020/727 du 03 décembre 2020</p>
+            <h3 class="fw-bold text-dark mb-1" data-i18n="deptsPageTitle">Organisation de l'Agence de Régulation des Télécommunications</h3>
+            <p class="text-muted" data-i18n="deptsPageSub">Structure organisationnelle conformément au décret n° 2020/727 du 03 décembre 2020</p>
         </div>
 
         <!-- Search -->
         <div class="search-box">
-            <input type="text" id="searchInput" class="form-control" placeholder="Rechercher un département, une direction, une unité..." onkeyup="filterDepartments()">
+            <input type="text" id="searchInput" class="form-control" placeholder="Rechercher un département, une direction, une unité..." data-i18n-placeholder="deptsSearchPlaceholder" onkeyup="filterDepartments()">
         </div>
 
         <!-- Statistics -->
@@ -323,28 +324,28 @@
                 <div class="stat-card">
                     <i class="bi bi-building"></i>
                     <div class="number">11</div>
-                    <div class="label">Directions Centrales</div>
+                    <div class="label" data-i18n="deptsStatCentral">Directions Centrales</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <i class="bi bi-diagram-3"></i>
                     <div class="number">9</div>
-                    <div class="label">Services Rattachés</div>
+                    <div class="label" data-i18n="deptsStatAttached">Services Rattachés</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <i class="bi bi-collection"></i>
                     <div class="number">20+</div>
-                    <div class="label">Sous-Directions</div>
+                    <div class="label" data-i18n="deptsStatSub">Sous-Directions</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <i class="bi bi-geo-alt"></i>
                     <div class="number">4</div>
-                    <div class="label">Services Déconcentrés</div>
+                    <div class="label" data-i18n="deptsStatRegional">Services Déconcentrés</div>
                 </div>
             </div>
         </div>
@@ -352,8 +353,8 @@
         <!-- No results message -->
         <div class="no-results" id="noResults">
             <i class="bi bi-search"></i>
-            <h5>Aucun résultat trouvé</h5>
-            <p>Essayez avec un autre terme de recherche.</p>
+            <h5 data-i18n="deptsNoResults">Aucun résultat trouvé</h5>
+            <p data-i18n="deptsNoResultsHint">Essayez avec un autre terme de recherche.</p>
         </div>
 
         <!-- ==================== TITRE I & II : GENERAL & BOARD ==================== -->
@@ -962,6 +963,18 @@
             // Show/hide no results
             document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof smomaI18n !== 'undefined') {
+                smomaI18n.injectLanguageSwitcher('#langContainer');
+                smomaI18n.applyTranslations();
+            }
+        });
+        window.addEventListener('smoma_lang_changed', () => {
+            if (typeof smomaI18n !== 'undefined') smomaI18n.applyTranslations();
+        });
     </script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/auth-guard.js"></script>
 </body>
 </html>

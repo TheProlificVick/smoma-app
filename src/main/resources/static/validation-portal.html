@@ -25,12 +25,13 @@
                     <img src="/images/ART%20logo.jpg" alt="ART logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
                 </div>
                 <div>
-                    <div class="fw-bold fs-5">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
-                    <small class="text-light opacity-75">Guichet de Validation Hiérarchique & Direction Générale (DG)</small>
+                    <div class="fw-bold fs-5" data-i18n="appTitle">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
+                    <small class="text-light opacity-75" data-i18n="hdrValidationSub">Guichet de Validation Hiérarchique & Direction Générale (DG)</small>
                 </div>
             </div>
-            <div>
-                <a href="/index.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house me-1"></i> Tableau de bord</a>
+            <div class="d-flex align-items-center">
+                <div id="langContainer" class="me-3"></div>
+                <a href="/index.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house me-1"></i> <span data-i18n="navDashboard">Tableau de bord</span></a>
             </div>
         </div>
     </nav>
@@ -39,31 +40,31 @@
     <div class="container-fluid px-4">
         <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
             <div>
-                <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-user-check text-warning me-2"></i>Guichet de Validation & Signatures</h4>
-                <p class="text-muted small mb-0">Validation des mandats de mission en attente de signature par le Directeur Général</p>
+                <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-user-check text-warning me-2"></i><span data-i18n="valDeskHeading">Guichet de Validation &amp; Signatures</span></h4>
+                <p class="text-muted small mb-0" data-i18n="valDeskSub">Validation des mandats de mission en attente de signature par le Directeur Général</p>
             </div>
         </div>
 
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-warning text-dark fw-bold">
-                <i class="fa-solid fa-clock-history me-1"></i> Mandats en Attente de Signature
+                <i class="fa-solid fa-clock-history me-1"></i> <span data-i18n="valPendingCard">Mandats en Attente de Signature</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-dark">
                             <tr>
-                                <th>Référence</th>
-                                <th>Objet Général</th>
-                                <th>Motif Réglementaire</th>
-                                <th>Période</th>
-                                <th>Régime</th>
-                                <th class="text-end">Actions</th>
+                                <th data-i18n="thRef">Référence</th>
+                                <th data-i18n="thObject">Objet Général</th>
+                                <th data-i18n="thMotif">Motif Réglementaire</th>
+                                <th data-i18n="thPeriod">Période</th>
+                                <th data-i18n="thRegime">Régime</th>
+                                <th class="text-end" data-i18n="thActions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="pendingTbody">
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Chargement des dossiers en attente...</td>
+                                <td colspan="6" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i><span data-i18n="commonLoading">Chargement...</span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -85,7 +86,7 @@
                     const pending = mandats.filter(m => !m.scanSignedPath);
 
                     if (pending.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Aucun mandat en attente de validation.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">${t('valNoPending')}</td></tr>`;
                         return;
                     }
 
@@ -94,21 +95,26 @@
                             <td class="fw-bold text-navy">${m.referenceMandat || 'MANDAT-#' + m.id}</td>
                             <td>${m.objetGeneral || ''}</td>
                             <td><small>${m.motifReglementaire || 'N/A'}</small></td>
-                            <td><small>${m.dateDebut} au ${m.dateFin}</small></td>
-                            <td>${m.sansFrais ? '<span class="badge bg-danger">SANS FRAIS</span>' : '<span class="badge bg-success">AVEC FRAIS</span>'}</td>
+                            <td><small>${m.dateDebut} ${t('commonTo')} ${m.dateFin}</small></td>
+                            <td>${m.sansFrais ? `<span class="badge bg-danger">${t('badgeNoFeesShort')}</span>` : `<span class="badge bg-success">${t('badgeWithFeesShort')}</span>`}</td>
                             <td class="text-end">
-                                <a href="/mandats.html" class="btn btn-warning btn-sm text-dark"><i class="fa-solid fa-stamp me-1"></i> Traiter dans le Module Mandats</a>
+                                <a href="/mandats.html" class="btn btn-warning btn-sm text-dark"><i class="fa-solid fa-stamp me-1"></i> ${t('valProcessBtn')}</a>
                             </td>
                         </tr>
                     `).join('');
                 }
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Erreur de chargement.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${t('commonLoadError')}</td></tr>`;
             }
         }
 
-        document.addEventListener('DOMContentLoaded', loadPending);
+        document.addEventListener('DOMContentLoaded', () => {
+            smomaI18n.injectLanguageSwitcher('#langContainer');
+            loadPending();
+        });
+        window.addEventListener('smoma_lang_changed', () => { smomaI18n.applyTranslations(); loadPending(); });
     </script>
+    <script src="/js/i18n.js"></script>
     <script src="/js/auth-guard.js"></script>
 </body>
 </html>

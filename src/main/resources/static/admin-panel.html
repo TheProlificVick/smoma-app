@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>SMOMA - Admin & AD Sync</title>
+    <!-- Admin-only gate: run before the page renders. -->
+    <script>
+        (function () {
+            var authed = localStorage.getItem('art_authenticated') === 'true';
+            var role = (localStorage.getItem('art_user_role') || '').toUpperCase();
+            if (!authed) { window.location.replace('/login.html'); return; }
+            if (role !== 'ROLE_ADMIN') {
+                alert("Accès refusé : ce module est réservé à l'administrateur de l'application.");
+                window.location.replace('/index.html');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .badge-entry { font-size: 0.75rem; }
         .table-responsive { max-height: 500px; overflow-y: auto; }
@@ -12,109 +25,49 @@
     </style>
 </head>
 <body class="bg-light">
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>System Administration & Directory Synchronization</h2>
-        <button id="syncBtn" class="btn btn-primary">Trigger Active Directory Sync</button>
-    </div>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-dark bg-dark shadow-sm mb-4" style="background:#0B2545 !important;">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:42px;height:42px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:3px;">
+                    <img src="/images/ART%20logo.jpg" alt="ART logo" style="max-height:36px;width:auto;" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
+                </div>
+                <div>
+                    <div class="fw-bold text-white fs-5" data-i18n="appTitle">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
+                    <small class="text-light opacity-75" data-i18n="hdrAdminSub">Comptes, Rôles, Droits et Synchronisation Active Directory</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center">
+                <div id="langContainer" class="me-3"></div>
+                <a href="/index.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house me-1"></i> <span data-i18n="navDashboard">Tableau de bord</span></a>
+            </div>
+        </div>
+    </nav>
 
-    <!-- AD Statistics -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h5 class="card-title m-0">Active Directory Overview</h5>
-            <span class="badge bg-light text-dark" id="ldapServerLabel">LDAP: loading...</span>
-        </div>
-        <div class="card-body">
-            <div class="row" id="adStatsRow">
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="card ad-box-card border-primary">
-                        <div class="card-body py-2">
-                            <h6 class="text-muted m-0">Total Entries</h6>
-                            <h4 class="m-0" id="statTotalEntries">-</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="card ad-box-card border-success">
-                        <div class="card-body py-2">
-                            <h6 class="text-muted m-0">Active Users</h6>
-                            <h4 class="m-0" id="statActiveUsers">-</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="card ad-box-card border-danger">
-                        <div class="card-body py-2">
-                            <h6 class="text-muted m-0">Disabled Users</h6>
-                            <h4 class="m-0" id="statDisabledUsers">-</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="card ad-box-card border-warning">
-                        <div class="card-body py-2">
-                            <h6 class="text-muted m-0">Departments</h6>
-                            <h4 class="m-0" id="statDepartments">-</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-2">
-                <div class="col-md-6">
-                    <h6 class="text-muted">Entries by Type</h6>
-                    <div id="statByType" class="text-small"></div>
-                </div>
-                <div class="col-md-6">
-                    <h6 class="text-muted">Entries by Department</h6>
-                    <div id="statByDept" class="text-small"></div>
-                </div>
-            </div>
-        </div>
+<div class="container py-2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold" data-i18n="adminTitle">Administration &amp; Synchronisation Active Directory</h2>
+        <button id="syncBtn" class="btn btn-primary btn-sm" data-i18n="adTriggerSync">Lancer la Synchronisation Active Directory</button>
     </div>
 
     <!-- Toggle Tabs: Users / Groups / Full Directory -->
     <ul class="nav nav-tabs" id="adTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabUsers" type="button">AD Users w/ Roles</button>
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabUsers" type="button" data-i18n="tabUsers">Utilisateurs Synchronisés</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabGroups" type="button">AD Groups</button>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabGroups" type="button" data-i18n="tabGroups">Groupes & Rôles AD</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabFullDirectory" type="button">Full Directory (All Objects)</button>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabFullDirectory" type="button" data-i18n="tabDirectory">Annuaire Complet AD</button>
         </li>
     </ul>
 
     <div class="tab-content mt-3">
-        <!-- AD Users with Roles -->
-        <div class="tab-pane fade show active" id="tabUsers">
-            <div class="card shadow-sm">
-                <div class="card-header bg-secondary text-white"><h5 class="card-title m-0">Active Directory Users (with role assignment)</h5></div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Username</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th>Title</th>
-                                    <th>Department</th>
-                                    <th>Matricule</th>
-                                    <th>Role</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adUsersTable"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- AD Groups -->
+        
         <div class="tab-pane fade" id="tabGroups">
             <div class="card shadow-sm">
-                <div class="card-header bg-secondary text-white"><h5 class="card-title m-0">Active Directory Groups</h5></div>
+                <div class="card-header bg-secondary text-white"><h5 class="card-title m-0"></h5></div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped table-hover align-middle">
@@ -137,8 +90,8 @@
         <div class="tab-pane fade" id="tabFullDirectory">
             <div class="card shadow-sm">
                 <div class="card-header bg-secondary text-white d-flex justify-content-between">
-                    <h5 class="card-title m-0">Entire Active Directory Contents</h5>
-                    <input type="text" id="directoryFilter" class="form-control form-control-sm w-25" placeholder="Filter by name/CN/department...">
+                    <h5 class="card-title m-0" data-i18n="tabDirectory">Annuaire Complet AD</h5>
+                    <input type="text" id="directoryFilter" class="form-control form-control-sm w-25" placeholder="Filtrer par nom / CN / département..." data-i18n-placeholder="adFilterPlaceholder">
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -167,24 +120,27 @@
     <div class="row g-4 mt-1 mb-4">
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-primary text-white"><h5 class="card-title m-0">Create New User</h5></div>
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title m-0" data-i18n="adCreateUser">Créer un Nouvel Utilisateur</h5>
+                    <small class="opacity-75" data-i18n="adAccessNoteCreate">Création réservée à l'administrateur système et au personnel DRH.</small>
+                </div>
                 <div class="card-body">
                     <form id="createUserForm">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Username</label>
+                                <label class="form-label" data-i18n="adUsername">Nom d'utilisateur</label>
                                 <input type="text" id="newUsername" class="form-control" placeholder="hr@art.cm" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Password</label>
+                                <label class="form-label" data-i18n="adPassword">Mot de passe</label>
                                 <input type="text" id="newPassword" class="form-control" placeholder="password123" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Email</label>
+                                <label class="form-label" data-i18n="adEmailLabel">Email</label>
                                 <input type="email" id="newEmail" class="form-control" placeholder="user@art.cm">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Role</label>
+                                <label class="form-label" data-i18n="adRole">Rôle</label>
                                 <select id="newRole" class="form-select">
                                     <option value="ROLE_ADMIN">ROLE_ADMIN</option>
                                     <option value="ROLE_GENERAL_MANAGER">ROLE_GENERAL_MANAGER</option>
@@ -195,19 +151,19 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">First Name</label>
+                                <label class="form-label" data-i18n="adFirstName">Prénom</label>
                                 <input type="text" id="newNom" class="form-control" placeholder="John">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Last Name</label>
+                                <label class="form-label" data-i18n="adLastName">Nom</label>
                                 <input type="text" id="newPrenom" class="form-control" placeholder="Doe">
                             </div>
                             <div class="col-md-12">
-                                <label class="form-label">Department / Structure</label>
+                                <label class="form-label" data-i18n="adDeptStructure">Direction / Structure</label>
                                 <input type="text" id="newStructure" class="form-control" placeholder="Human Resources">
                             </div>
                             <div class="col-12">
-                                <button type="submit" class="btn btn-success w-100">Create User</button>
+                                <button type="submit" class="btn btn-success w-100" data-i18n="adCreateUserBtn">Créer l'Utilisateur</button>
                             </div>
                         </div>
                     </form>
@@ -217,22 +173,25 @@
 
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-dark text-white"><h5 class="card-title m-0">Create New Department</h5></div>
+                <div class="card-header bg-dark text-white">
+                    <h5 class="card-title m-0" data-i18n="adCreateDept">Créer une Nouvelle Direction</h5>
+                    <small class="opacity-75" data-i18n="adAccessNoteCreate">Création réservée à l'administrateur système et au personnel DRH.</small>
+                </div>
                 <div class="card-body">
                     <form id="createDepartmentForm">
                         <div class="mb-3">
-                            <label class="form-label">Department Name</label>
-                            <input type="text" id="deptName" class="form-control" placeholder="Finance Department" required>
+                            <label class="form-label" data-i18n="adDeptName">Nom de la Direction</label>
+                            <input type="text" id="deptName" class="form-control" placeholder="Direction des Finances" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Acronym</label>
-                            <input type="text" id="deptAcronym" class="form-control" placeholder="FIN">
+                            <label class="form-label" data-i18n="adAcronym">Sigle</label>
+                            <input type="text" id="deptAcronym" class="form-control" placeholder="DGF">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Head of Department</label>
-                            <input type="text" id="deptHead" class="form-control" placeholder="Mr. Smith">
+                            <label class="form-label" data-i18n="adHeadOfDept">Responsable de la Direction</label>
+                            <input type="text" id="deptHead" class="form-control" placeholder="M. MBARGA">
                         </div>
-                        <button type="submit" class="btn btn-warning text-dark w-100">Create Department</button>
+                        <button type="submit" class="btn btn-warning text-dark w-100" data-i18n="adCreateDeptBtn">Créer la Direction</button>
                     </form>
                 </div>
             </div>
@@ -240,18 +199,22 @@
     </div>
 
     <div class="card shadow-sm">
-        <div class="card-header bg-secondary text-white"><h5 class="card-title m-0">Synchronized Database Users</h5></div>
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title m-0" data-i18n="adSyncedDbUsers">Utilisateurs de la Base Synchronisés</h5>
+            <span class="small" data-i18n="adAccessNoteDelete">Suppression réservée à l'administrateur système.</span>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-striped align-middle">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Full Name</th>
-                            <th>Email</th>
-                            <th>Structure</th>
-                            <th>Role</th>
+                            <th data-i18n="thId">ID</th>
+                            <th data-i18n="adUsername">Nom d'utilisateur</th>
+                            <th data-i18n="thFullName">Nom Complet</th>
+                            <th data-i18n="thEmail">Email</th>
+                            <th data-i18n="thStructure">Structure</th>
+                            <th data-i18n="adRole">Rôle</th>
+                            <th class="text-end" data-i18n="adColActions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="userTable"></tbody>
@@ -259,9 +222,43 @@
             </div>
         </div>
     </div>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title m-0" data-i18n="adDeptListTitle">Directions / Structures</h5>
+            <span class="small" data-i18n="adAccessNoteDelete">Suppression réservée à l'administrateur système.</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th data-i18n="thId">ID</th>
+                            <th data-i18n="adDeptName">Nom de la Direction</th>
+                            <th data-i18n="adAcronym">Sigle</th>
+                            <th data-i18n="adColHead">Responsable</th>
+                            <th class="text-end" data-i18n="adColActions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deptTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/i18n.js"></script>
+<script>
+    // Kept in its own script block so a failure in the main admin script cannot stop the FR/EN switcher.
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            smomaI18n.injectLanguageSwitcher('#langContainer');
+            smomaI18n.applyTranslations();
+        } catch (e) { console.warn('i18n init skipped:', e); }
+    });
+    window.addEventListener('smoma_lang_changed', () => { try { smomaI18n.applyTranslations(); } catch (e) {} });
+</script>
 <script>
     function getAdminHeaders() {
         const role = localStorage.getItem('art_user_role');
@@ -409,10 +406,15 @@
     }
 
     // ---------- Database users ----------
+    function isAdminActor() {
+        return (localStorage.getItem('art_user_role') || '').toUpperCase() === 'ROLE_ADMIN';
+    }
+
     async function loadUsers() {
         const res = await fetch('/api/admin/users', { headers: getAdminHeaders() });
         const users = await res.json();
         const tbody = document.getElementById('userTable');
+        const canDelete = isAdminActor();
         tbody.innerHTML = users.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -421,8 +423,45 @@
                 <td>${u.email || ''}</td>
                 <td>${u.structure || 'N/A'}</td>
                 <td><span class="badge bg-dark">${u.role}</span></td>
+                <td class="text-end">
+                    ${canDelete ? `<button class="btn btn-outline-danger btn-sm" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash me-1"></i>${(typeof t === 'function') ? t('adDelete') : 'Delete'}</button>` : '<span class="text-muted small">—</span>'}
+                </td>
             </tr>
         `).join('');
+    }
+
+    async function loadDepartments() {
+        const res = await fetch('/api/admin/departments', { headers: getAdminHeaders() });
+        const depts = res.ok ? await res.json() : [];
+        const tbody = document.getElementById('deptTable');
+        const canDelete = isAdminActor();
+        tbody.innerHTML = depts.map(d => `
+            <tr>
+                <td>${d.id}</td>
+                <td><strong>${d.name || ''}</strong></td>
+                <td>${d.acronym || ''}</td>
+                <td>${d.headName || ''}</td>
+                <td class="text-end">
+                    ${canDelete ? `<button class="btn btn-outline-danger btn-sm" onclick="deleteDepartment(${d.id})"><i class="fa-solid fa-trash me-1"></i>${(typeof t === 'function') ? t('adDelete') : 'Delete'}</button>` : '<span class="text-muted small">—</span>'}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function deleteUser(id) {
+        if (!confirm((typeof t === 'function') ? t('adDeleteConfirm') : 'Confirm deletion?')) return;
+        const res = await fetch('/api/admin/users/' + id, { method: 'DELETE', headers: getAdminHeaders() });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { alert(data.error || 'Delete failed'); return; }
+        loadUsers();
+    }
+
+    async function deleteDepartment(id) {
+        if (!confirm((typeof t === 'function') ? t('adDeleteConfirm') : 'Confirm deletion?')) return;
+        const res = await fetch('/api/admin/departments/' + id, { method: 'DELETE', headers: getAdminHeaders() });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { alert(data.error || 'Delete failed'); return; }
+        loadDepartments();
     }
 
     document.getElementById('createUserForm').addEventListener('submit', async (e) => {
@@ -474,12 +513,14 @@
 
         alert('Department created successfully: ' + payload.name);
         document.getElementById('createDepartmentForm').reset();
+        loadDepartments();
     });
 
     document.getElementById('syncBtn').addEventListener('click', async () => {
         const btn = document.getElementById('syncBtn');
+        if (!btn) return;
         btn.disabled = true;
-        btn.innerText = "Synchronizing...";
+        btn.innerText = (typeof t === 'function') ? t('adSyncing') : 'Synchronizing...';
         
         try {
             const res = await fetch('/api/admin/sync-ad', { method: 'POST' });
@@ -493,7 +534,7 @@
             alert('Error executing Active Directory sync.');
         } finally {
             btn.disabled = false;
-            btn.innerText = "Trigger Active Directory Sync";
+            btn.innerText = (typeof t === 'function') ? t('adTriggerSync') : 'Trigger Active Directory Sync';
         }
     });
 
@@ -506,6 +547,7 @@
 
     // init
     loadUsers();
+    loadDepartments();
     loadAdStatistics();
     loadAdUsers();
     loadAdGroups();

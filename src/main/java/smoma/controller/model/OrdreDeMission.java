@@ -23,6 +23,7 @@ public class OrdreDeMission {
 
     @ManyToOne
     @JoinColumn(name = "etape_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"ordreDeMission", "mandatDeMission", "personnelList"})
     private EtapeMission etape;
 
     @ManyToOne
@@ -30,6 +31,7 @@ public class OrdreDeMission {
     private Personnel personnel;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private TypeMission typeMission;
 
     @Column(columnDefinition = "TEXT")
@@ -46,6 +48,14 @@ public class OrdreDeMission {
     private String lieuDepart;
     private String lieuDestination;
     private String moyenTransport;
+
+    /** Direction / structure that issues the mission order (chosen from the referential). */
+    @Column(name = "direction_initiatrice")
+    private String directionInitiatrice;
+
+    /** Reference of the act justifying the mission, inherited from the mandate, e.g. "ART/DG/CSI/001". */
+    @Column(name = "reference_justification")
+    private String referenceJustification;
 
     private LocalDate dateDebut;
     private LocalDate dateFin;
@@ -64,7 +74,7 @@ public class OrdreDeMission {
     private StatutOrdre statut;
 
     @OneToMany(mappedBy = "ordreDeMission", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"ordreDeMission", "mandatDeMission"})
     private List<EtapeMission> etapes = new ArrayList<>();
 
     public OrdreDeMission() {
@@ -291,6 +301,22 @@ public class OrdreDeMission {
 
     public void setMoyenTransport(String moyenTransport) {
         this.moyenTransport = moyenTransport;
+    }
+
+    public String getDirectionInitiatrice() {
+        return directionInitiatrice;
+    }
+
+    public void setDirectionInitiatrice(String directionInitiatrice) {
+        this.directionInitiatrice = directionInitiatrice;
+    }
+
+    public String getReferenceJustification() {
+        return referenceJustification;
+    }
+
+    public void setReferenceJustification(String referenceJustification) {
+        this.referenceJustification = referenceJustification;
     }
 
     public boolean isModifiable() {

@@ -16,17 +16,23 @@ public class OrdreDeMissionService {
     private final PersonnelRepository personnelRepository;
     private final EtapeMissionRepository etapeRepository;
     private final AuditLogRepository auditLogRepository;
+    private final IndemniteService indemniteService;
+    private final NotificationService notificationService;
 
     public OrdreDeMissionService(OrdreDeMissionRepository ordreRepository,
                                  MandatDeMissionRepository mandatRepository,
                                  PersonnelRepository personnelRepository,
                                  EtapeMissionRepository etapeRepository,
-                                 AuditLogRepository auditLogRepository) {
+                                 AuditLogRepository auditLogRepository,
+                                 IndemniteService indemniteService,
+                                 NotificationService notificationService) {
         this.ordreRepository = ordreRepository;
         this.mandatRepository = mandatRepository;
         this.personnelRepository = personnelRepository;
         this.etapeRepository = etapeRepository;
         this.auditLogRepository = auditLogRepository;
+        this.indemniteService = indemniteService;
+        this.notificationService = notificationService;
     }
 
     public void checkAgentOverlap(Long personnelId, LocalDate dateDebut, LocalDate dateFin, Long excludeOmId) {
@@ -49,11 +55,19 @@ public class OrdreDeMissionService {
     }
 
     @Transactional
-    public OrdreDeMission createDirectOrdre(OrdreDeMission om, Long mandatId, Long personnelId, Long etapeId) {
+    public OrdreDeMission createDirectOrdre(OrdreDeMission om, Long mandatId, Long personnelId, Long etapeId, List<EtapeMission> etapes) {
         if (mandatId != null) {
             MandatDeMission mandat = mandatRepository.findById(mandatId)
                     .orElseThrow(() -> new IllegalArgumentException("Mandat rattache introuvable: " + mandatId));
             om.setMandatDeMission(mandat);
+            // Inherit the initiating directorate and the authorising-act reference from the mandate
+            // when the direct-OM form did not set them explicitly.
+            if (om.getDirectionInitiatrice() == null || om.getDirectionInitiatrice().isBlank()) {
+                om.setDirectionInitiatrice(mandat.getDirectionInitiatrice());
+            }
+            if (om.getReferenceJustification() == null || om.getReferenceJustification().isBlank()) {
+                om.setReferenceJustification(mandat.getReferenceJustification());
+            }
         } else {
             throw new IllegalArgumentException("Tout ordre de mission doit être obligatoirement rattaché à un mandat de mission existant.");
         }
@@ -78,10 +92,35 @@ public class OrdreDeMissionService {
 
         om.setDateEmission(LocalDate.now());
         om.setStatut(OrdreDeMission.StatutOrdre.BROUILLON_MODIFIABLE);
+
+        // Automatic indemnity computation from the official barème (spec 4.6).
+        java.math.BigDecimal indemnite = om.isSansFrais()
+                ? java.math.BigDecimal.ZERO
+                : indemniteService.calculateTotalIndemnite(om);
+        om.setMontantIndemnite(indemnite);
+        if (om.getMontantAvance() == null) om.setMontantAvance(java.math.BigDecimal.ZERO);
+        om.setMontantSolde(indemnite.subtract(om.getMontantAvance()));
+
         OrdreDeMission saved = ordreRepository.save(om);
 
+        if (etapes != null && !etapes.isEmpty()) {
+            for (EtapeMission st : etapes) {
+                st.setOrdreDeMission(saved);
+                if (saved.getMandatDeMission() != null) {
+                    st.setMandatDeMission(saved.getMandatDeMission());
+                }
+                etapeRepository.save(st);
+            }
+        }
+
         auditLogRepository.save(new AuditLog("CREATE_DIRECT_OM", "SYSTEM", "Création direct OM: " + saved.getReferenceOrdre()));
+        notificationService.notifyMissionAssigned(saved);
         return saved;
+    }
+
+    @Transactional
+    public OrdreDeMission createDirectOrdre(OrdreDeMission om, Long mandatId, Long personnelId, Long etapeId) {
+        return createDirectOrdre(om, mandatId, personnelId, etapeId, null);
     }
 
     @Transactional
@@ -113,6 +152,16 @@ public class OrdreDeMissionService {
         om.setSansFrais(updatedDetails.isSansFrais());
         om.setDateDebut(updatedDetails.getDateDebut());
         om.setDateFin(updatedDetails.getDateFin());
+        if (updatedDetails.getTypeMission() != null) om.setTypeMission(updatedDetails.getTypeMission());
+        if (updatedDetails.getMoyenTransport() != null) om.setMoyenTransport(updatedDetails.getMoyenTransport());
+
+        // Recompute the indemnity so the financial figures stay consistent with the edited period/type.
+        java.math.BigDecimal indemnite = om.isSansFrais()
+                ? java.math.BigDecimal.ZERO
+                : indemniteService.calculateTotalIndemnite(om);
+        om.setMontantIndemnite(indemnite);
+        if (om.getMontantAvance() == null) om.setMontantAvance(java.math.BigDecimal.ZERO);
+        om.setMontantSolde(indemnite.subtract(om.getMontantAvance()));
 
         return ordreRepository.save(om);
     }

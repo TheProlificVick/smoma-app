@@ -64,6 +64,64 @@ public class DataLoader implements CommandLineRunner {
         this.ldapDirectoryService = ldapDirectoryService;
     }
 
+    /**
+     * Ensures a demo account exists and carries the given designation (title). Creates it when
+     * missing; otherwise only fills in a blank title / role / structure without touching a
+     * password an administrator may have changed.
+     */
+    private void ensureUser(String username, String password, String displayName,
+                            String structure, smoma.controller.model.Service.Role role, String designation) {
+        ensureUser(username, password, displayName, structure, role, designation, null);
+    }
+
+    private void ensureUser(String username, String password, String displayName,
+                            String structure, smoma.controller.model.Service.Role role,
+                            String designation, String matricule) {
+        User u = userRepository.findByUsername(username).orElse(null);
+        if (u == null) {
+            u = new User(username, password, displayName, username, structure, role);
+            u.setTitle(designation);
+            if (matricule != null) u.setMatricule(matricule);
+            userRepository.save(u);
+            return;
+        }
+        boolean dirty = false;
+        if (u.getTitle() == null || u.getTitle().isBlank()) { u.setTitle(designation); dirty = true; }
+        if (u.getRole() == null) { u.setRole(role); dirty = true; }
+        if (u.getStructure() == null || u.getStructure().isBlank()) { u.setStructure(structure); dirty = true; }
+        if (matricule != null && (u.getMatricule() == null || u.getMatricule().isBlank())) { u.setMatricule(matricule); dirty = true; }
+        if (dirty) userRepository.save(u);
+    }
+
+    /**
+     * Ensures a directorate / structure exists (matched by exact name). Creates it if missing;
+     * otherwise backfills a blank acronym / head designation without touching a real value
+     * (e.g. a manager name imported from the Active Directory).
+     */
+    private void ensureDepartment(String name, String acronym, String headName) {
+        if (name == null || name.isBlank()) return;
+        Department d = departmentRepository.findByName(name).orElse(null);
+        if (d == null) {
+            d = new Department();
+            d.setName(name);
+            d.setAcronym(acronym);
+            d.setHeadName(headName);
+            departmentRepository.save(d);
+            return;
+        }
+        boolean dirty = false;
+        if ((d.getAcronym() == null || d.getAcronym().isBlank()) && acronym != null) { d.setAcronym(acronym); dirty = true; }
+        if ((d.getHeadName() == null || d.getHeadName().isBlank()) && headName != null) { d.setHeadName(headName); dirty = true; }
+        if (dirty) departmentRepository.save(d);
+    }
+
+    /** Ensures a regulatory-justification motif exists (matched by code), creating it if missing. */
+    private void ensureMotif(String code, String libelle) {
+        if (code == null || code.isBlank()) return;
+        if (motifRepository.findByCode(code).isPresent()) return;
+        motifRepository.save(new MotifReglementaire(code, libelle, ""));
+    }
+
     @Override
     public void run(String... args) throws Exception {
 
@@ -80,22 +138,149 @@ public class DataLoader implements CommandLineRunner {
             settingsRepository.save(settings);
         }
 
-        // 2. Users
+        // 2. Users — each carries a "designation" (title) so the mandate-initiation and
+        //    report-validation rules from the ART organigramme can be exercised end-to-end.
         if (userRepository.count() == 0) {
-            userRepository.save(new User("admin@art.cm", "admin123", "Administrateur Système", "admin@art.cm", "IT", Role.ROLE_ADMIN));
-            userRepository.save(new User("gm@art.cm", "password123", "Directeur Général (DG)", "gm@art.cm", "Direction Générale", Role.ROLE_GENERAL_MANAGER));
-            userRepository.save(new User("hr@art.cm", "password123", "Responsable RH", "hr@art.cm", "Ressources Humaines", Role.ROLE_HR_OFFICER));
-            userRepository.save(new User("dept@art.cm", "password123", "Chef de Département", "dept@art.cm", "Direction Technique", Role.ROLE_DEPARTMENT_REPRESENTATIVE));
-            userRepository.save(new User("staff@art.cm", "password123", "Agent de Mission", "staff@art.cm", "Contrôle & Régulation", Role.ROLE_STAFF_MEMBER));
+            User admin = new User("admin@art.cm", "admin123", "Administrateur Système", "admin@art.cm", "IT", Role.ROLE_ADMIN);
+            admin.setTitle("Administrateur");
+            userRepository.save(admin);
+
+            User gm = new User("gm@art.cm", "password123", "Directeur Général (DG)", "gm@art.cm", "Direction Générale", Role.ROLE_GENERAL_MANAGER);
+            gm.setTitle("Directeur Général");
+            userRepository.save(gm);
+
+            // DRH officer, Service du Personnel (designation "SP") — validates mission reports.
+            User hr = new User("hr@art.cm", "password123", "Responsable Service du Personnel", "hr@art.cm", "Direction des Ressources Humaines", Role.ROLE_HR_OFFICER);
+            hr.setTitle("SP");
+            userRepository.save(hr);
+
+            // Directeur — allowed to initiate a mission mandate.
+            User dept = new User("dept@art.cm", "password123", "Directeur Technique", "dept@art.cm", "Direction Technique", Role.ROLE_DEPARTMENT_REPRESENTATIVE);
+            dept.setTitle("Directeur");
+            userRepository.save(dept);
+
+            // Sous-Directeur — allowed to initiate a mission mandate.
+            User sd = new User("sd@art.cm", "password123", "Sous-Directeur des Licences", "sd@art.cm", "Direction des Licences, de la Concurrence et de l'Interconnexion", Role.ROLE_DEPARTMENT_REPRESENTATIVE);
+            sd.setTitle("Sous-Directeur");
+            userRepository.save(sd);
+
+            // Chargé d'Études Assistant (CEA) — allowed to initiate a mission mandate.
+            User cea = new User("cea@art.cm", "password123", "Chargé d'Études Assistant", "cea@art.cm", "Direction de la Stratégie et de la Prospective", Role.ROLE_STAFF_MEMBER);
+            cea.setTitle("Chargé d'Études Assistant (CEA)");
+            userRepository.save(cea);
+
+            // Plain agent — may be assigned missions but cannot initiate a mandate.
+            User staff = new User("staff@art.cm", "password123", "Agent de Mission", "staff@art.cm", "Contrôle & Régulation", Role.ROLE_STAFF_MEMBER);
+            staff.setTitle("Agent Technique");
+            userRepository.save(staff);
         }
 
-        // 3. Departments / Structures
-        if (departmentRepository.count() == 0) {
-            departmentRepository.save(new Department("Direction des Ressources Humaines", "DRH", "M. MBARGA Lucien"));
-            departmentRepository.save(new Department("Direction Technique", "DT", "Mme NNANG Alice"));
-            departmentRepository.save(new Department("Direction de la Gestion Financière", "DGF", "M. KOUAM Emmanuel"));
-            departmentRepository.save(new Department("Direction de la Législation et Coopération", "DLCI", "Mme MOUKOURI Nadia"));
-            departmentRepository.save(new Department("Direction des Prestations et Suivi", "DPS", "M. FOTSING Joseph"));
+        // 2b. Idempotent designation backfill — runs on every startup so an existing database
+        //     (seeded before designations were introduced) also gets the demo accounts and titles.
+        ensureUser("admin@art.cm", "admin123", "Administrateur Système", "IT", Role.ROLE_ADMIN, "Administrateur");
+        ensureUser("gm@art.cm", "password123", "Directeur Général (DG)", "Direction Générale", Role.ROLE_GENERAL_MANAGER, "Directeur Général");
+        ensureUser("hr@art.cm", "password123", "Responsable Service du Personnel", "Direction des Ressources Humaines", Role.ROLE_HR_OFFICER, "SP");
+        // Direction des Finances — approves advance / balance requests and decides the payment channel.
+        ensureUser("finance@art.cm", "password123", "Agent Direction des Finances", "Direction des Finances", Role.ROLE_FINANCE_OFFICER, "DF");
+        ensureUser("dept@art.cm", "password123", "Directeur Technique", "Direction Technique", Role.ROLE_DEPARTMENT_REPRESENTATIVE, "Directeur");
+        ensureUser("sd@art.cm", "password123", "Sous-Directeur des Licences", "Direction des Licences, de la Concurrence et de l'Interconnexion", Role.ROLE_DEPARTMENT_REPRESENTATIVE, "Sous-Directeur");
+        // cea@ and staff@ are linked to seeded personnel matricules so "Mes Missions" shows data immediately.
+        ensureUser("cea@art.cm", "password123", "Chargé d'Études Assistant", "Direction de la Stratégie et de la Prospective", Role.ROLE_STAFF_MEMBER, "Chargé d'Études Assistant (CEA)", "ART-2026-002");
+        ensureUser("staff@art.cm", "password123", "Agent de Mission", "Contrôle & Régulation", Role.ROLE_STAFF_MEMBER, "Agent Technique", "ART-2026-003");
+
+        // 3. Directions / Structures — the full ART organisational chart (decree n° 2020/727 of
+        //    03 December 2020). Seeded idempotently on every startup so the "Direction initiatrice"
+        //    dropdown of the mission-mandate module always lists every structure of the organigramme.
+        String[][] artStructures = {
+            // {name, sigle, responsable/head} — the "responsable" is the head's official designation
+            // from the organigramme (Article 129 rank + structure). A real name imported from the
+            // Active Directory is never overwritten.
+            // Gouvernance / Direction Générale
+            {"Conseil d'Administration", "CA", "Président du Conseil d'Administration"},
+            {"Direction Générale", "DG", "Directeur Général"},
+            // Services rattachés à la Direction Générale
+            {"Conseillers Techniques", "CT", "Conseiller Technique"},
+            {"Audit Interne", "AI", "Responsable de l'Audit Interne"},
+            {"Division du Suivi", "DS", "Chef de la Division du Suivi"},
+            {"Division du Contrôle de Gestion", "DCG", "Chef de la Division du Contrôle de Gestion"},
+            {"Attaché de Direction", "AD", "Attaché de Direction"},
+            {"Cellule des Systèmes d'Information", "CSI", "Chef de la Cellule des Systèmes d'Information"},
+            {"Cellule de la Traduction, de l'Interprétariat et de la Promotion du Bilinguisme", "CTIB", "Chef de la Cellule de la Traduction, de l'Interprétariat et de la Promotion du Bilinguisme"},
+            {"Sous-Direction de l'Accueil, du Courrier et de la Liaison", "SDACL", "Sous-Directeur de l'Accueil, du Courrier et de la Liaison"},
+            {"Comptables Matières", "CM", "Comptable-Matières Principal"},
+            // Services centraux — Direction Technique
+            {"Direction Technique", "DT", "Directeur Technique"},
+            {"Sous-Direction de la Gestion des Ressources Techniques et du Service Universel", "SDGRTSU", "Sous-Directeur de la Gestion des Ressources Techniques et du Service Universel"},
+            {"Sous-Direction des Normes, de la Sécurité Électronique et des Agréments", "SDNSEA", "Sous-Directeur des Normes, de la Sécurité Électronique et des Agréments"},
+            // Direction de la Gestion des Fréquences
+            {"Direction de la Gestion des Fréquences", "DGF", "Directeur de la Gestion des Fréquences"},
+            {"Sous-Direction des Études, de la Planification et de l'Ingénierie du Spectre", "SDEPIS", "Sous-Directeur des Études, de la Planification et de l'Ingénierie du Spectre"},
+            {"Sous-Direction de la Gestion Administrative du Spectre", "SDGAS", "Sous-Directeur de la Gestion Administrative du Spectre"},
+            // Direction des Licences, de la Concurrence et de l'Interconnexion
+            {"Direction des Licences, de la Concurrence et de l'Interconnexion", "DLCI", "Directeur des Licences, de la Concurrence et de l'Interconnexion"},
+            {"Sous-Direction des Licences", "SDL", "Sous-Directeur des Licences"},
+            {"Sous-Direction de l'Analyse et de l'Évaluation Économique", "SDAEE", "Sous-Directeur de l'Analyse et de l'Évaluation Économique"},
+            {"Sous-Direction de l'Interconnexion et des Infrastructures des Communications Électroniques", "SDIICE", "Sous-Directeur de l'Interconnexion et des Infrastructures des Communications Électroniques"},
+            // Brigade des Contrôles
+            {"Brigade des Contrôles", "BC", "Chef de la Brigade des Contrôles"},
+            {"Unité de Contrôle des Titres d'Exploitation et des Ressources Rares", "UCTERR", "Chef de l'Unité de Contrôle des Titres d'Exploitation et des Ressources Rares"},
+            {"Unité de Contrôle de la Qualité de Service et des Infrastructures", "UCQSI", "Chef de l'Unité de Contrôle de la Qualité de Service et des Infrastructures"},
+            {"Unité des Contrôles Administratifs et Tarifaires", "UCAT", "Chef de l'Unité des Contrôles Administratifs et Tarifaires"},
+            // Direction de la Stratégie et de la Prospective
+            {"Direction de la Stratégie et de la Prospective", "DSP", "Directeur de la Stratégie et de la Prospective"},
+            {"Sous-Direction de la Planification Stratégique et de la Prospective", "SDPSP", "Sous-Directeur de la Planification Stratégique et de la Prospective"},
+            {"Sous-Direction du Développement des Communications Électroniques", "SDDCE", "Sous-Directeur du Développement des Communications Électroniques"},
+            // Division des Affaires Juridiques et de la Protection du Consommateur
+            {"Division des Affaires Juridiques et de la Protection du Consommateur", "DAJPC", "Chef de la Division des Affaires Juridiques et de la Protection du Consommateur"},
+            {"Cellule de la Réglementation", "CR", "Chef de la Cellule de la Réglementation"},
+            {"Cellule du Contentieux", "CC", "Chef de la Cellule du Contentieux"},
+            {"Cellule de la Protection du Consommateur", "CPC", "Chef de la Cellule de la Protection du Consommateur"},
+            // Division de la Communication et de la Coopération
+            {"Division de la Communication et de la Coopération", "DCC", "Chef de la Division de la Communication et de la Coopération"},
+            {"Cellule de la Communication et des Relations Publiques", "CCRP", "Chef de la Cellule de la Communication et des Relations Publiques"},
+            {"Cellule de la Coopération", "CCoop", "Chef de la Cellule de la Coopération"},
+            {"Centre de la Documentation et des Archives", "CDA", "Chef du Centre de la Documentation et des Archives"},
+            // Direction des Finances
+            {"Direction des Finances", "DF", "Directeur des Finances"},
+            {"Sous-Direction du Budget", "SDB", "Sous-Directeur du Budget"},
+            {"Sous-Direction de la Comptabilité", "SDC", "Sous-Directeur de la Comptabilité"},
+            {"Sous-Direction de la Trésorerie", "SDT", "Sous-Directeur de la Trésorerie"},
+            {"Sous-Direction des Marchés", "SDM", "Sous-Directeur des Marchés"},
+            // Direction du Patrimoine
+            {"Direction du Patrimoine", "DP", "Directeur du Patrimoine"},
+            // Direction du Recouvrement
+            {"Direction du Recouvrement", "DR", "Directeur du Recouvrement"},
+            {"Sous-Direction de la Facturation", "SDFac", "Sous-Directeur de la Facturation"},
+            {"Sous-Direction du Suivi du Recouvrement", "SDSR", "Sous-Directeur du Suivi du Recouvrement"},
+            // Direction des Ressources Humaines
+            {"Direction des Ressources Humaines", "DRH", "Directeur des Ressources Humaines"},
+            {"Sous-Direction de la Gestion Administrative des Ressources Humaines", "SDGARH", "Sous-Directeur de la Gestion Administrative des Ressources Humaines"},
+            {"Sous-Direction du Développement des Ressources Humaines", "SDDRH", "Sous-Directeur du Développement des Ressources Humaines"},
+            {"Sous-Direction de la Solde", "SDS", "Sous-Directeur de la Solde"},
+            // Services déconcentrés — Délégations Régionales
+            {"Délégation Régionale de Douala", "DR-DLA", "Délégué Régional de Douala"},
+            {"Délégation Régionale de Yaoundé", "DR-YDE", "Délégué Régional de Yaoundé"},
+            {"Délégation Régionale de Garoua", "DR-GAR", "Délégué Régional de Garoua"},
+            {"Délégation Régionale de Bamenda", "DR-BDA", "Délégué Régional de Bamenda"},
+            {"Sous-Direction Technique (Services Déconcentrés)", "SDT-D", "Sous-Directeur Technique (Services Déconcentrés)"},
+            {"Sous-Direction des Ressources Humaines, Financières et du Patrimoine (Services Déconcentrés)", "SDRHFP-D", "Sous-Directeur des Ressources Humaines, Financières et du Patrimoine (Services Déconcentrés)"},
+            {"Service des Affaires Juridiques, du Contentieux et de la Protection du Consommateur (Services Déconcentrés)", "SAJCPC-D", "Chef du Service des Affaires Juridiques, du Contentieux et de la Protection du Consommateur (Services Déconcentrés)"},
+            {"Centres d'Exploitation Spécialisés", "CES", "Chef de Centre d'Exploitation Spécialisé"}
+        };
+        for (String[] s : artStructures) {
+            ensureDepartment(s[0], s[1], s.length > 2 ? s[2] : null);
+        }
+        // Drop the three placeholder directorates from the very first prototype seed (they are not
+        // part of the organigramme) — only when no user account is attached to them.
+        for (String legacyName : new String[]{
+                "Direction de la Gestion Financière",
+                "Direction de la Législation et Coopération",
+                "Direction des Prestations et Suivi"}) {
+            departmentRepository.findByName(legacyName).ifPresent(dep -> {
+                boolean referenced = userRepository.findAll().stream()
+                        .anyMatch(u -> u.getDepartment() != null && u.getDepartment().getId().equals(dep.getId()));
+                if (!referenced) departmentRepository.delete(dep);
+            });
         }
 
         // 4. Referentiels: Functions, Grades, Rangs, Motifs
@@ -115,11 +300,63 @@ public class DataLoader implements CommandLineRunner {
             rangRepository.save(new Rang("RANG_3", "Cadre / Agent de Contrôle", 3));
         }
 
-        if (motifRepository.count() == 0) {
-            motifRepository.save(new MotifReglementaire("CTRL_4G5G", "Contrôle de la Qualité de Service & Couverture Réseau 4G/5G", ""));
-            motifRepository.save(new MotifReglementaire("CONF_UIT", "Représentation à la Conférence de l'Union Internationale des Télécommunications", ""));
-            motifRepository.save(new MotifReglementaire("AUDIT_REG", "Inspection et Audit Technique des Installations Régionales", ""));
-            motifRepository.save(new MotifReglementaire("SEMINAIRE_JUR", "Séminaire d'harmonisation de la législation télécom", ""));
+        // Motifs / justifications réglementaires — catalogue complet des types de mission
+        // (cf. cahier des charges §4.1 : contrôle, formation, étude, représentation, maintenance,
+        // suivi, autres) enrichi des motifs propres à la régulation télécom. Idempotent.
+        String[][] motifsReglementaires = {
+            // --- Contrôle & surveillance ---
+            {"CTRL_QOS",        "Contrôle de la qualité de service (QoS)"},
+            {"CTRL_COUVERTURE", "Contrôle de la couverture réseau (2G / 3G / 4G / 5G)"},
+            {"CTRL_INFRA",      "Contrôle des infrastructures et installations techniques"},
+            {"MONITORING",      "Monitoring / surveillance du spectre des fréquences"},
+            {"CTRL_TITRES",     "Contrôle des titres d'exploitation et des ressources rares"},
+            {"CTRL_ADMIN_TARIF","Contrôles administratifs et tarifaires"},
+            {"CTRL_CONFORMITE", "Contrôle de conformité des équipements et agréments"},
+            {"CTRL_INOPINE",    "Contrôle inopiné / mission de constat sur site"},
+            // --- Inspection / audit / enquête ---
+            {"INSPECTION",      "Inspection technique des installations régionales"},
+            {"AUDIT",           "Audit technique et réglementaire"},
+            {"ENQUETE",         "Enquête / investigation (brouillage, plainte, litige)"},
+            {"EXPERTISE",       "Expertise technique et relevés de mesures"},
+            // --- Études ---
+            {"ETUDE",           "Étude et analyse technique"},
+            {"BENCHMARKING",    "Benchmarking / étude comparative (parangonnage)"},
+            {"ETUDE_ECO",       "Étude et évaluation économique du secteur"},
+            {"ETUDE_MARCHE",    "Étude de marché / observatoire du secteur des télécommunications"},
+            {"PROSPECTIVE",     "Étude prospective et planification stratégique"},
+            {"VEILLE_TECHNO",   "Veille technologique et réglementaire"},
+            // --- Formation & renforcement des capacités ---
+            {"FORMATION",       "Formation / stage / perfectionnement"},
+            {"RENFORCEMENT",    "Renforcement des capacités"},
+            {"ATELIER",         "Atelier / groupe de travail technique"},
+            // --- Représentation & coopération ---
+            {"REPRESENTATION",  "Représentation officielle de l'Agence"},
+            {"CONF_UIT",        "Participation aux travaux de l'UIT et conférences internationales"},
+            {"COOPERATION",     "Mission de coopération bilatérale ou multilatérale"},
+            {"SEMINAIRE",       "Séminaire / colloque / conférence"},
+            {"NEGOCIATION",     "Négociation / réunion institutionnelle"},
+            // --- Exploitation & maintenance ---
+            {"MAINTENANCE",     "Maintenance des équipements et systèmes techniques"},
+            {"DEPLOIEMENT",     "Déploiement / installation d'équipements"},
+            {"SUIVI_PROJET",    "Suivi et évaluation de projet"},
+            {"SUPERVISION",     "Supervision et coordination d'activités régionales"},
+            // --- Autres missions réglementaires ---
+            {"SENSIBILISATION", "Sensibilisation et protection du consommateur"},
+            {"RECOUVREMENT",    "Mission de recouvrement / facturation"},
+            {"CONTENTIEUX",     "Mission liée au contentieux et aux affaires juridiques"},
+            {"APPUI",           "Appui technique aux délégations régionales"},
+            {"MISSION_SERVICE", "Mission de service (motif général)"},
+            {"REGULARISATION",  "Régularisation (force majeure)"},
+            {"DECISION_DG",     "Décision du Directeur Général"},
+            {"AUTRE",           "Autre motif dûment habilité"}
+        };
+        for (String[] mtf : motifsReglementaires) {
+            ensureMotif(mtf[0], mtf[1]);
+        }
+        // Retire the first-prototype motif codes now superseded by the full catalogue above.
+        // Mandats store the motif as a plain label, so removing the referential row is harmless.
+        for (String legacyCode : new String[]{"CTRL_4G5G", "AUDIT_REG", "SEMINAIRE_JUR"}) {
+            motifRepository.findByCode(legacyCode).ifPresent(motifRepository::delete);
         }
 
         // 5. Rate Scales (BaremeIndemnite)
@@ -379,7 +616,9 @@ public class DataLoader implements CommandLineRunner {
                     String display = row.getOrDefault("nom", login);
                     String email = row.getOrDefault("email", "");
                     String structure = row.getOrDefault("nomStructure", "");
-                    User u = new User(login, "ldap-managed", display, email, structure, mappedRole);
+                    // AD-managed accounts sign in either with their AD password (when the directory is
+                    // reachable) or, offline, with the documented default "Art@2026!" / "<matricule>@2026!".
+                    User u = new User(login, "Art@2026!", display, email, structure, mappedRole);
                     String rawMatricule = row.getOrDefault("matricule", "LDAP-" + login);
                     if (rawMatricule.length() > 64) rawMatricule = rawMatricule.substring(0, 64);
                     u.setMatricule(rawMatricule);

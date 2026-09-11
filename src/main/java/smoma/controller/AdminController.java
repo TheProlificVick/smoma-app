@@ -6,9 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.Department;
 import smoma.controller.model.User;
+import smoma.controller.model.Service.AccessPolicy;
 import smoma.controller.model.Service.AdUserSyncService;
 import smoma.controller.model.Service.LdapDirectoryService;
-import smoma.controller.model.Service.Role;
 import smoma.dto.AdDirectoryEntryDTO;
 import smoma.dto.CreateDepartmentRequest;
 import smoma.dto.CreateUserRequest;
@@ -33,21 +33,35 @@ public class AdminController {
 
     private final DepartmentRepository departmentRepository;
 
+    private final AccessPolicy accessPolicy;
+
     @Value("${spring.ldap.urls:ldap://192.168.0.101:389}")
     private String ldapServer;
 
     public AdminController(AdUserSyncService adUserSyncService,
                            LdapDirectoryService ldapDirectoryService,
                            UserRepository userRepository,
-                           DepartmentRepository departmentRepository) {
+                           DepartmentRepository departmentRepository,
+                           AccessPolicy accessPolicy) {
         this.adUserSyncService = adUserSyncService;
         this.ldapDirectoryService = ldapDirectoryService;
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
+        this.accessPolicy = accessPolicy;
+    }
+
+    /** Every endpoint of this module is reserved to the application administrator. */
+    private void assertAdmin(Principal principal, String requestEmail) {
+        User actor = currentUser(principal, requestEmail);
+        if (actor == null || !accessPolicy.isAdmin(actor)) {
+            throw new SecurityException("Module réservé à l'administrateur de l'application. / Module reserved for the application administrator.");
+        }
     }
 
     @PostMapping("/sync-ad")
-    public ResponseEntity<?> syncActiveDirectory() {
+    public ResponseEntity<?> syncActiveDirectory(Principal principal,
+                                                 @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        assertAdmin(principal, requestEmail);
         try {
             int count = adUserSyncService.syncUsersFromActiveDirectory();
             return ResponseEntity.ok(Map.of("message", "Active Directory sync finished", "syncedCount", count));
@@ -57,7 +71,9 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<User>> getAllUsers(Principal principal,
+                                                  @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        assertAdmin(principal, requestEmail);
         return ResponseEntity.ok(userRepository.findAll());
     }
 
@@ -67,7 +83,9 @@ public class AdminController {
      * Used by the Admin & AD Sync module to fortify role-based access.
      */
     @GetMapping("/ad-directory")
-    public ResponseEntity<?> getFullActiveDirectory() {
+    public ResponseEntity<?> getFullActiveDirectory(Principal principal,
+                                                    @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        assertAdmin(principal, requestEmail);
         try {
             List<AdDirectoryEntryDTO> entries = ldapDirectoryService.getAllDirectoryEntries();
             return ResponseEntity.ok(Map.of(
@@ -84,7 +102,9 @@ public class AdminController {
      * GET /api/admin/ad-directory/users - Only the users from AD with role assignments.
      */
     @GetMapping("/ad-directory/users")
-    public ResponseEntity<?> getAdUsers() {
+    public ResponseEntity<?> getAdUsers(Principal principal,
+                                        @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        assertAdmin(principal, requestEmail);
         try {
             List<Map<String, String>> users = ldapDirectoryService.searchUsers(null);
             return ResponseEntity.ok(Map.of(
@@ -100,7 +120,9 @@ public class AdminController {
      * GET /api/admin/ad-directory/groups - Returns only security groups & distribution groups.
      */
     @GetMapping("/ad-directory/groups")
-    public ResponseEntity<?> getAdGroups() {
+    public ResponseEntity<?> getAdGroups(Principal principal,
+                                         @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        assertAdmin(principal, requestEmail);
         try {
             List<AdDirectoryEntryDTO> all = ldapDirectoryService.getAllDirectoryEntries();
             List<AdDirectoryEntryDTO> groups = all.stream()
@@ -116,7 +138,9 @@ public class AdminController {
      * GET /api/admin/ad-directory/statistics - Summary stats of the whole directory.
      */
     @GetMapping("/ad-directory/statistics")
-    public ResponseEntity<?> getAdStatistics() {
+    public ResponseEntity<?> getAdStatistics(Principal principal,
+                                             @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        assertAdmin(principal, requestEmail);
         try {
             List<AdDirectoryEntryDTO> all = ldapDirectoryService.getAllDirectoryEntries();
                     Map<String, Long> byType = all.stream()
@@ -154,24 +178,15 @@ public class AdminController {
         }
     }
 
-    private User requireAdmin(Principal principal, String requestRole, String requestEmail) {
+    private User currentUser(Principal principal, String requestEmail) {
+        User u = null;
         if (principal != null) {
-            User current = userRepository.findByUsername(principal.getName())
-                    .orElseThrow(() -> new SecurityException("Authenticated administrator not found."));
-            if (current.getRole() == Role.ROLE_ADMIN) {
-                return current;
-            }
+            u = userRepository.findByIdentity(principal.getName()).orElse(null);
         }
-
-        if (requestRole != null && requestRole.equalsIgnoreCase(Role.ROLE_ADMIN.name()) && requestEmail != null) {
-            User current = userRepository.findByUsername(requestEmail)
-                    .orElse(null);
-            if (current != null && current.getRole() == Role.ROLE_ADMIN) {
-                return current;
-            }
+        if (u == null && requestEmail != null) {
+            u = accessPolicy.resolve(requestEmail);
         }
-
-        throw new SecurityException("Only administrators can create users and departments.");
+        return u;
     }
 
     @PostMapping("/users")
@@ -179,10 +194,10 @@ public class AdminController {
                                       Principal principal,
                                       @RequestHeader(value = "X-User-Role", required = false) String requestRole,
                                       @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
-        try {
-            requireAdmin(principal, requestRole, requestEmail);
-        } catch (SecurityException e) {
-            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        User actor = currentUser(principal, requestEmail);
+        if (!accessPolicy.canCreateOrgEntities(actor)) {
+            return ResponseEntity.status(403).body(Map.of("error",
+                    "Seuls l'administrateur système et le personnel DRH peuvent créer un compte utilisateur."));
         }
 
         if (request == null || request.getUsername() == null || request.getPassword() == null) {
@@ -224,7 +239,9 @@ public class AdminController {
     }
 
     @GetMapping("/departments")
-    public ResponseEntity<List<Department>> getDepartments() {
+    public ResponseEntity<List<Department>> getDepartments(Principal principal,
+                                                          @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        assertAdmin(principal, requestEmail);
         return ResponseEntity.ok(departmentRepository.findAll());
     }
 
@@ -233,10 +250,10 @@ public class AdminController {
                                             Principal principal,
                                             @RequestHeader(value = "X-User-Role", required = false) String requestRole,
                                             @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
-        try {
-            requireAdmin(principal, requestRole, requestEmail);
-        } catch (SecurityException e) {
-            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        User actor = currentUser(principal, requestEmail);
+        if (!accessPolicy.canCreateOrgEntities(actor)) {
+            return ResponseEntity.status(403).body(Map.of("error",
+                    "Seuls l'administrateur système et le personnel DRH peuvent créer une direction / structure."));
         }
 
         if (request == null || request.getName() == null || request.getName().isBlank()) {
@@ -254,5 +271,49 @@ public class AdminController {
         department.setHeadName(request.getHeadName());
 
         return ResponseEntity.ok(departmentRepository.save(department));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id,
+                                        Principal principal,
+                                        @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        User actor = currentUser(principal, requestEmail);
+        if (!accessPolicy.canDeleteOrgEntities(actor)) {
+            return ResponseEntity.status(403).body(Map.of("error",
+                    "Seul l'administrateur système peut supprimer un compte utilisateur."));
+        }
+        User target = userRepository.findById(id).orElse(null);
+        if (target == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Utilisateur introuvable: " + id));
+        }
+        if (actor != null && target.getId().equals(actor.getId())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Vous ne pouvez pas supprimer votre propre compte."));
+        }
+        userRepository.delete(target);
+        return ResponseEntity.ok(Map.of("status", "deleted", "id", id));
+    }
+
+    @DeleteMapping("/departments/{id}")
+    public ResponseEntity<?> deleteDepartment(@PathVariable Long id,
+                                              Principal principal,
+                                              @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        User actor = currentUser(principal, requestEmail);
+        if (!accessPolicy.canDeleteOrgEntities(actor)) {
+            return ResponseEntity.status(403).body(Map.of("error",
+                    "Seul l'administrateur système peut supprimer une direction / structure."));
+        }
+        Department target = departmentRepository.findById(id).orElse(null);
+        if (target == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Direction introuvable: " + id));
+        }
+        // Detach any user still pointing at this department so the FK does not block the delete.
+        userRepository.findAll().forEach(u -> {
+            if (u.getDepartment() != null && u.getDepartment().getId().equals(id)) {
+                u.setDepartment(null);
+                userRepository.save(u);
+            }
+        });
+        departmentRepository.delete(target);
+        return ResponseEntity.ok(Map.of("status", "deleted", "id", id));
     }
 }

@@ -62,6 +62,10 @@ public class LdapDirectoryService {
         "userAccountStatus", "comment", "info", "personalTitle"
     };
 
+    // Fail fast when the AD server is unreachable so startup and login stay responsive (spec 6 - performance).
+    private static final String LDAP_CONNECT_TIMEOUT_MS = "3000";
+    private static final String LDAP_READ_TIMEOUT_MS = "5000";
+
     public boolean authenticate(String username, String password) {
         if (ldapUrls == null || ldapUrls.isBlank() || username == null || username.isBlank() || password == null) {
             return false;
@@ -72,6 +76,8 @@ public class LdapDirectoryService {
         env.put(Context.SECURITY_AUTHENTICATION, "simple");
         env.put(Context.SECURITY_PRINCIPAL, username.trim());
         env.put(Context.SECURITY_CREDENTIALS, password);
+        env.put("com.sun.jndi.ldap.connect.timeout", LDAP_CONNECT_TIMEOUT_MS);
+        env.put("com.sun.jndi.ldap.read.timeout", LDAP_READ_TIMEOUT_MS);
         try {
             DirContext context = new InitialDirContext(env);
             context.close();
@@ -79,6 +85,100 @@ public class LdapDirectoryService {
         } catch (NamingException ignored) {
             return false;
         }
+    }
+
+    /**
+     * Authenticates an Active Directory user using their email, sAMAccountName, or matricule,
+     * and returns their resolved profile and dynamic RBAC role.
+     */
+    public Map<String, Object> authenticateAndResolveUser(String identity, String password) {
+        if (identity == null || identity.isBlank() || password == null) {
+            return null;
+        }
+
+        String cleanId = identity.trim();
+
+        // 1. Try resolving through LDAP Directory search with admin bind
+        try {
+            LdapContext ctx = connect();
+            SearchControls controls = new SearchControls();
+            controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+            controls.setReturningAttributes(ALL_ATTRIBUTES);
+            controls.setCountLimit(1);
+
+            // Escape special chars in search identity
+            String escaped = cleanId.replace("\\", "\\5c").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+            String filter = String.format("(&(objectCategory=person)(objectClass=user)(|(sAMAccountName=%s)(userPrincipalName=%s)(mail=%s)(employeeID=%s)(employeeNumber=%s)(description=%s)))",
+                    escaped, escaped, escaped, escaped, escaped, escaped);
+
+            NamingEnumeration<SearchResult> results = ctx.search(baseDn, filter, controls);
+            if (results.hasMore()) {
+                SearchResult sr = results.next();
+                Attributes attrs = sr.getAttributes();
+                String dn = sr.getNameInNamespace();
+                String upn = getAttributeValue(attrs, "userPrincipalName");
+                String sam = getAttributeValue(attrs, "sAMAccountName");
+                if (sam.isEmpty()) sam = cleanId;
+
+                ctx.close();
+
+                // Test user bind credentials with DN, UPN, or sAMAccountName
+                boolean bindOk = authenticate(dn, password);
+                if (!bindOk && !upn.isEmpty()) {
+                    bindOk = authenticate(upn, password);
+                }
+                if (!bindOk && !sam.isEmpty()) {
+                    String domainUser = sam.contains("@") ? sam : (sam + "@art.cm");
+                    bindOk = authenticate(domainUser, password);
+                }
+
+                if (bindOk) {
+                    Map<String, Object> userDetails = new HashMap<>();
+                    String nom = getAttributeValue(attrs, "givenName");
+                    String prenom = getAttributeValue(attrs, "sn");
+                    String displayName = getAttributeValue(attrs, "displayName");
+                    String fullName = (!displayName.isEmpty()) ? displayName : (nom + " " + prenom).trim();
+                    if (fullName.isEmpty()) fullName = sam;
+
+                    String title = getAttributeValue(attrs, "title");
+                    String dept = getAttributeValue(attrs, "department");
+                    String email = getAttributeValue(attrs, "mail");
+                    if (email.isEmpty()) email = cleanId.contains("@") ? cleanId : (sam + "@art.cm");
+                    String matricule = extractMatricule(attrs);
+                    List<String> memberOf = getAttributeValues(attrs, "memberOf");
+                    Role role = mapAdAttributesToRole(title, sam, memberOf);
+
+                    userDetails.put("username", sam);
+                    userDetails.put("fullName", fullName);
+                    userDetails.put("nom", nom);
+                    userDetails.put("prenom", prenom);
+                    userDetails.put("email", email);
+                    userDetails.put("matricule", matricule);
+                    userDetails.put("title", title);
+                    userDetails.put("department", dept);
+                    userDetails.put("role", role);
+                    return userDetails;
+                }
+            } else {
+                ctx.close();
+            }
+        } catch (Exception ignored) {
+            // LDAP directory admin bind failed or network unavailable, try direct bind fallback
+        }
+
+        // 2. Direct simple bind attempt as fallback
+        String candidateUpn = cleanId.contains("@") ? cleanId : (cleanId + "@art.cm");
+        if (authenticate(cleanId, password) || authenticate(candidateUpn, password)) {
+            Map<String, Object> fallback = new HashMap<>();
+            String userSam = cleanId.contains("@") ? cleanId.substring(0, cleanId.indexOf('@')) : cleanId;
+            fallback.put("username", userSam);
+            fallback.put("fullName", userSam);
+            fallback.put("email", candidateUpn);
+            fallback.put("role", mapAdAttributesToRole("", userSam));
+            return fallback;
+        }
+
+        return null;
     }
 
     private LdapContext connect() throws NamingException {
@@ -91,6 +191,8 @@ public class LdapDirectoryService {
         env.put(Context.SECURITY_AUTHENTICATION, "simple");
         env.put(Context.SECURITY_PRINCIPAL, adminUser);
         env.put(Context.SECURITY_CREDENTIALS, adminPass);
+        env.put("com.sun.jndi.ldap.connect.timeout", LDAP_CONNECT_TIMEOUT_MS);
+        env.put("com.sun.jndi.ldap.read.timeout", LDAP_READ_TIMEOUT_MS);
         env.put("com.sun.jndi.ldap.connect.pool", "true");
         env.put("java.naming.ldap.attributes.binary", "-");
         // Follow referrals to avoid "Unprocessed Continuation Reference(s)" errors

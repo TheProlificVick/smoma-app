@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMOMA - Gestion des Mandats (DG)</title>
+    <title data-i18n="modMandatsTitle">SMOMA - Gestion des Mandats (DG)</title>
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <!-- FontAwesome Icons -->
@@ -20,6 +20,26 @@
         .side-pane { flex: 1; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
         .side-pane-header { background: #0B2545; color: white; padding: 10px; font-weight: bold; font-size: 0.9rem; text-align: center; }
         .side-pane-body { flex: 1; padding: 15px; overflow-y: auto; }
+        .step-item-card { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+
+        /* Official printable mandate document */
+        .mandat-sheet { background:#fff; border:2px solid #0B2545; padding:28px; border-radius:6px; color:#1a202c; }
+        .cmr-header { width:100%; border-bottom:2px double #0B2545; padding-bottom:14px; margin-bottom:18px; }
+        .cmr-header td { vertical-align:middle; text-align:center; }
+        .cmr-fr, .cmr-en { font-size:11px; font-weight:700; line-height:1.35; text-transform:uppercase; }
+        .cmr-fr { color:#0B2545; } .cmr-en { color:#334155; }
+        .cmr-motto { font-style:italic; font-weight:600; font-size:10px; color:#64748b; text-transform:none; }
+        .cmr-logo { max-height:82px; width:auto; object-fit:contain; padding:4px; background:#fff; }
+        .mandat-title { text-align:center; background:#0B2545; color:#fff; padding:8px 12px; font-weight:800; font-size:16px; letter-spacing:1px; border-radius:4px; margin:14px 0; }
+        .mandat-sec { font-size:12px; font-weight:700; color:#0B2545; text-transform:uppercase; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin:15px 0 8px; }
+        .seal-sans-frais { display:inline-block; border:3px solid #dc3545; color:#dc3545; font-weight:800; letter-spacing:2px; padding:6px 16px; transform:rotate(-8deg); border-radius:6px; }
+        .gm-stamp { display:inline-block; border:3px solid #198754; color:#198754; font-weight:800; letter-spacing:1px; padding:8px 18px; transform:rotate(-6deg); border-radius:8px; text-align:center; }
+        @media print {
+            body * { visibility:hidden; }
+            #printableMandatContainer, #printableMandatContainer * { visibility:visible; }
+            #printableMandatContainer { position:absolute; left:0; top:0; width:100%; padding:0; margin:0; border:none; }
+            .no-print { display:none !important; }
+        }
     </style>
 </head>
 <body>
@@ -32,13 +52,15 @@
                     <img src="/images/ART%20logo.jpg" alt="ART logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
                 </div>
                 <div>
-                    <div class="fw-bold fs-5">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
-                    <small class="text-light opacity-75">Module Mandats de Mission du Directeur Général (DG)</small>
+                    <div class="fw-bold fs-5" data-i18n="appTitle">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
+                    <small class="text-light opacity-75" data-i18n="modMandatsDesc">Module Mandats de Mission du Directeur Général (DG)</small>
                 </div>
             </div>
-            <div>
-                <a href="/index.html" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-house me-1"></i> Tableau de bord</a>
-                <a href="/login.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> Déconnexion</a>
+            <div class="d-flex align-items-center">
+                <!-- Bilingual Switcher -->
+                <div id="langContainer" class="me-3"></div>
+                <a href="/index.html" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-house me-1"></i> <span data-i18n="navDashboard">Tableau de bord</span></a>
+                <a href="/login.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> <span data-i18n="logout">Déconnexion</span></a>
             </div>
         </div>
     </nav>
@@ -49,12 +71,19 @@
         <!-- Header Actions -->
         <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
             <div>
-                <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-stamp text-danger me-2"></i>Registre des Mandats de Mission</h4>
-                <p class="text-muted small mb-0">Gestion centralisée des mandats cadres signés du DG et génération des ordres de mission individuels</p>
+                <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-stamp text-danger me-2"></i><span data-i18n="modMandatsTitle">Registre des Mandats de Mission</span></h4>
+                <p class="text-muted small mb-0" data-i18n="modMandatsDesc">Gestion centralisée des mandats cadres signés du DG et génération des ordres de mission individuels</p>
             </div>
-            <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalCreateMandat">
-                <i class="fa-solid fa-plus-circle me-1"></i> Créer un Nouveau Mandat
+            <button class="btn btn-primary btn-sm px-3" id="btnOpenCreateMandat" data-bs-toggle="modal" data-bs-target="#modalCreateMandat">
+                <i class="fa-solid fa-plus-circle me-1"></i> <span data-i18n="btnCreateMandat">Créer un Nouveau Mandat</span>
             </button>
+        </div>
+
+        <div class="alert alert-info small border-start border-4 border-info" id="mandatRuleBanner">
+            <i class="fa-solid fa-circle-info me-1"></i> <span data-i18n="mandatRuleNotice">Seuls les agents ayant la désignation CEA, Chef de Cellule, Sous-Directeur ou Directeur (ou l'administrateur) peuvent établir un mandat de mission.</span>
+        </div>
+        <div class="alert alert-danger small d-none" id="mandatDeniedBanner">
+            <i class="fa-solid fa-ban me-1"></i> <span data-i18n="mandatAccessDenied">Votre désignation ne vous autorise pas à établir un mandat de mission.</span>
         </div>
 
         <!-- Mandats Table Card -->
@@ -64,14 +93,14 @@
                     <table class="table table-hover align-middle mb-0" id="mandatsTable">
                         <thead class="table-dark">
                             <tr>
-                                <th>Référence</th>
-                                <th>Objet Général</th>
-                                <th>Motif Réglementaire</th>
-                                <th>Type & Transport</th>
-                                <th>Période Globale</th>
-                                <th>Régime Financier</th>
-                                <th>Statut & Scan</th>
-                                <th class="text-end">Actions</th>
+                                <th data-i18n="thRef">Référence</th>
+                                <th data-i18n="thObject">Objet Général</th>
+                                <th data-i18n="thMotif">Motif Réglementaire</th>
+                                <th data-i18n="thTypeTransport">Type & Transport</th>
+                                <th data-i18n="thPeriod">Période Globale</th>
+                                <th data-i18n="thFinancialRegime">Régime Financier</th>
+                                <th data-i18n="thStatus">Statut & Scan</th>
+                                <th class="text-end" data-i18n="thActions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="mandatsTbody">
@@ -90,55 +119,72 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header art-header text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-stamp me-2"></i>Créer un Nouveau Mandat de Mission</h5>
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-stamp me-2"></i><span data-i18n="btnCreateMandat">Créer un Nouveau Mandat de Mission</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <form id="formMandat">
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Référence du Mandat</label>
+                                <label class="form-label fw-bold" data-i18n="lblMandatRef">Référence du Mandat</label>
                                 <input type="text" class="form-control" id="mRef" placeholder="Ex: MANDAT-ART-2026-001">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Motif Réglementaire</label>
+                                <label class="form-label fw-bold" data-i18n="lblMotifReglementaire">Motif Réglementaire</label>
                                 <select class="form-select" id="mMotif">
-                                    <option value="Décision DG n° 2026/ART">Décision DG n° 2026/ART</option>
-                                    <option value="Contrôle et Régulation des Réseaux">Contrôle et Régulation des Réseaux</option>
-                                    <option value="Séminaire et Représentation Officielle">Séminaire et Représentation Officielle</option>
-                                    <option value="Autre motif dûment habilité">Autre motif dûment habilité</option>
+                                    <!-- Chargé automatiquement depuis /api/referentiels/motifs -->
                                 </select>
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Objet Général de la Mission</label>
-                            <input type="text" class="form-control" id="mObjet" required placeholder="Description globale de l'objectif...">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Objectifs Spécifiques</label>
-                            <textarea class="form-control" id="mObjectifs" rows="2" placeholder="Détails opérationnels et résultats attendus..."></textarea>
                         </div>
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Type de Mission</label>
-                                <select class="form-select" id="mType">
-                                    <option value="INTERNE">Interne (Cameroun)</option>
-                                    <option value="EXTERNE">Externe (International)</option>
+                                <label class="form-label fw-bold" data-i18n="lblDirectionInitiatrice">Direction / Structure Initiatrice</label>
+                                <select class="form-select" id="mDirection" required onchange="suggestRefJustif()">
+                                    <!-- Chargé automatiquement depuis /api/referentiels/structures -->
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Moyen(s) de Transport</label>
+                                <label class="form-label fw-bold" data-i18n="lblRefJustification">Réf. / Article de Justification</label>
+                                <input type="text" class="form-control" id="mRefJustif" placeholder="ART/DG/CSI/001" oninput="this.dataset.userEdited='1'">
+                                <small class="text-muted" data-i18n="refJustifHint">Référence de l'acte qui autorise la mission (Agence / Direction Générale / structure initiatrice / n° d'ordre). Générée automatiquement, modifiable.</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" data-i18n="lblObjetGeneral">Objet Général de la Mission</label>
+                            <input type="text" class="form-control" id="mObjet" required placeholder="Description globale de l'objectif...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" data-i18n="lblObjectifsSpecifiques">Objectifs Spécifiques</label>
+                            <textarea class="form-control" id="mObjectifs" rows="2" placeholder="Détails opérationnels et résultats attendus..."></textarea>
+                        </div>
+
+                        <!-- Type of mission & Transport Modes with Automation -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" data-i18n="lblTypeMission">Type de Mission</label>
+                                <select class="form-select" id="mType" onchange="handleMandatTypeChange(this.value)">
+                                    <option value="INTERNE" data-i18n="typeInterne">Interne (Cameroun)</option>
+                                    <option value="EXTERNE" data-i18n="typeExterne">Externe (International)</option>
+                                </select>
+                                <small class="text-muted" id="mTypeHint">Pour une mission externe, le transport aérien (Avion) est sélectionné automatiquement.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" data-i18n="lblTransportMode">Moyen(s) de Transport</label>
                                 <div class="pt-2">
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" id="tVehicule" value="Vehicule" checked>
-                                        <label class="form-check-label" for="tVehicule">Véhicule</label>
+                                        <input class="form-check-input" type="checkbox" id="tVehicule" value="Vehicule" checked onchange="checkTransportCombination()">
+                                        <label class="form-check-label" for="tVehicule" data-i18n="transportServiceVehicle">Véhicule</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" id="tAvion" value="Avion">
-                                        <label class="form-check-label" for="tAvion">Avion</label>
+                                        <input class="form-check-input" type="checkbox" id="tAvion" value="Avion" onchange="checkTransportCombination()">
+                                        <label class="form-check-label" for="tAvion" data-i18n="transportPlane">Avion</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="tMixte" value="MIXTE" onchange="handleMixteChecked(this.checked)">
+                                        <label class="form-check-label fw-bold text-primary" for="tMixte" data-i18n="transportMixed">Mixte (Véhicule et Avion)</label>
                                     </div>
                                 </div>
                             </div>
@@ -146,11 +192,11 @@
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Date de Début Globale</label>
+                                <label class="form-label fw-bold" data-i18n="lblStartDate">Date de Début Globale</label>
                                 <input type="date" class="form-control" id="mDateDebut" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Date de Fin Globale</label>
+                                <label class="form-label fw-bold" data-i18n="lblEndDate">Date de Fin Globale</label>
                                 <input type="date" class="form-control" id="mDateFin" required>
                             </div>
                         </div>
@@ -159,30 +205,54 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="mSansFrais">
-                                    <label class="form-check-label fw-bold text-danger" for="mSansFrais">Mandat SANS FRAIS (Sceau Rouge)</label>
+                                    <label class="form-check-label fw-bold text-danger" for="mSansFrais" data-i18n="lblSansFrais">Mandat SANS FRAIS (Sceau Rouge)</label>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="mForceMajeure">
-                                    <label class="form-check-label fw-bold text-warning" for="mForceMajeure">Régularisation Force Majeure (&lt; 48h)</label>
+                                    <label class="form-check-label fw-bold text-warning" for="mForceMajeure" data-i18n="lblForceMajeure">Régularisation Force Majeure (&lt; 48h)</label>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Personnel Team Selection -->
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Équipe d'Agents Concernés</label>
-                            <select class="form-select" id="mStaffSelect" multiple style="height: 110px;">
+                        <!-- Multi-Step Itinerary Builder (Missions can have different steps) -->
+                        <div class="mb-3 border rounded p-3 bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0 text-primary"><i class="fa-solid fa-route me-1"></i> <span data-i18n="lblItinerarySteps">Étapes & Itinéraire de la Mission (Multi-étapes)</span></label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addMandatStep()"><i class="fa-solid fa-plus me-1"></i> <span data-i18n="lblAddStep">Ajouter une Étape</span></button>
+                            </div>
+                            <div id="mandatStepsContainer">
+                                <!-- Steps rows inserted here -->
+                            </div>
+                            <small class="text-muted">Précisez les différentes étapes de déplacement de la mission le cas échéant.</small>
+                        </div>
+
+                        <!-- Personnel Team Selection with Fast Matricule Search Bar -->
+                        <div class="mb-3 border rounded p-3">
+                            <label class="form-label fw-bold text-dark"><i class="fa-solid fa-users me-1"></i> <span data-i18n="lblTeamSelection">Équipe d'Agents Concernés</span></label>
+                            
+                            <!-- Search by matricule input -->
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" class="form-control" id="mStaffSearch" placeholder="Rechercher rapidement par matricule ou par nom..." oninput="filterMandatStaff(this.value)">
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('mStaffSearch').value=''; filterMandatStaff('');"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+
+                            <select class="form-select" id="mStaffSelect" multiple style="height: 140px;" onchange="syncMandatStaffSelection()">
                                 <!-- Dynamically filled from /api/personnel -->
                             </select>
-                            <small class="text-muted">Maintenez la touche Ctrl (ou Cmd) pour sélectionner plusieurs agents.</small>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-muted">Cliquez pour ajouter/retirer un agent. La recherche ne perd pas les agents déjà sélectionnés.</small>
+                                <small class="text-secondary fw-bold" id="staffCountBadge">-- agents disponibles</small>
+                            </div>
+                            <div id="mSelectedStaffChips" class="mt-2 d-flex flex-wrap gap-1"></div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary btn-sm px-4" onclick="saveMandat()"><i class="fa-solid fa-save me-1"></i> Enregistrer le Mandat</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnCancel">Annuler</button>
+                    <button type="button" class="btn btn-primary btn-sm px-4" onclick="saveMandat()"><i class="fa-solid fa-save me-1"></i> <span data-i18n="btnSave">Enregistrer le Mandat</span></button>
                 </div>
             </div>
         </div>
@@ -193,7 +263,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header art-header text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-arrow-up me-2"></i>Importer Scan Signé (DG)</h5>
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-arrow-up me-2"></i><span data-i18n="btnUploadScan">Importer Scan Signé (DG)</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -207,7 +277,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnCancel">Annuler</button>
                     <button type="button" class="btn btn-success btn-sm px-4" onclick="submitScan()"><i class="fa-solid fa-check me-1"></i> Valider et Générer les OM</button>
                 </div>
             </div>
@@ -219,7 +289,7 @@
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header art-header text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-columns me-2"></i>Visualisation Côte à Côte - Mandat & Scan Signé</h5>
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-columns me-2"></i><span data-i18n="btnViewSideBySide">Visualisation Côte à Côte - Mandat & Scan Signé</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-3">
@@ -242,23 +312,432 @@
         </div>
     </div>
 
+    <!-- Modal: Official printable Mission Mandate (for the DG's hand signature, then e-stamp on approval) -->
+    <div class="modal fade" id="modalMandatOfficiel" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header art-header text-white no-print">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-contract me-2"></i>Mandat de Mission Officiel — République du Cameroun</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" style="background:#eaedf1;">
+                    <div class="mandat-sheet" id="printableMandatContainer">
+                        <table class="cmr-header">
+                            <tr>
+                                <td style="width:40%;">
+                                    <div class="cmr-fr">
+                                        RÉPUBLIQUE DU CAMEROUN<br>
+                                        <span class="cmr-motto">Paix - Travail - Patrie</span><br>
+                                        ----------------<br>AGENCE DE RÉGULATION<br>DES TÉLÉCOMMUNICATIONS<br>
+                                        <span style="font-size:10px;font-weight:normal;text-transform:none;">Direction Générale</span>
+                                    </div>
+                                </td>
+                                <td style="width:20%;">
+                                    <img src="/images/ART%20logo.jpg" alt="Logo ART Cameroun" class="cmr-logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
+                                </td>
+                                <td style="width:40%;">
+                                    <div class="cmr-en">
+                                        REPUBLIC OF CAMEROON<br>
+                                        <span class="cmr-motto">Peace - Work - Fatherland</span><br>
+                                        ----------------<br>TELECOMMUNICATIONS<br>REGULATORY BOARD<br>
+                                        <span style="font-size:10px;font-weight:normal;text-transform:none;">Directorate General</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="mandat-title">MANDAT DE MISSION / MISSION MANDATE</div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold" id="vmRef" style="font-size:15px;">RÉF : MANDAT-ART-...</span>
+                            <span id="vmSeal"></span>
+                        </div>
+
+                        <div class="mandat-sec">I. RÉFÉRENCES / REFERENCES</div>
+                        <div class="row g-2 small mb-2">
+                            <div class="col-md-6"><strong>Réf. / Article de Justification :</strong> <span id="vmJustif">--</span></div>
+                            <div class="col-md-6"><strong>Direction Initiatrice / Initiating Directorate :</strong> <span id="vmDirection">--</span></div>
+                            <div class="col-md-6"><strong>Motif Réglementaire / Regulatory Justification :</strong> <span id="vmMotif">--</span></div>
+                            <div class="col-md-6"><strong>Type / Type :</strong> <span id="vmType">--</span> &nbsp; | &nbsp; <strong>Transport :</strong> <span id="vmTransport">--</span></div>
+                        </div>
+
+                        <div class="mandat-sec">II. OBJET DE LA MISSION / MISSION PURPOSE</div>
+                        <div class="small mb-2">
+                            <div><strong>Objet Général / General Purpose :</strong> <span id="vmObjet">--</span></div>
+                            <div><strong>Objectifs Spécifiques / Specific Objectives :</strong> <span id="vmObjectifs">--</span></div>
+                            <div><strong>Période Globale / Overall Period :</strong> <span id="vmPeriode">--</span></div>
+                        </div>
+
+                        <div class="mandat-sec">III. ÉTAPES & ITINÉRAIRE / STEPS & ITINERARY</div>
+                        <div id="vmSteps" class="small mb-2">--</div>
+
+                        <div class="mandat-sec">IV. ÉQUIPE DÉSIGNÉE / DESIGNATED TEAM</div>
+                        <div id="vmTeam" class="small mb-2">--</div>
+
+                        <div class="mandat-sec">V. APPROBATION DU DIRECTEUR GÉNÉRAL / GENERAL MANAGER'S APPROVAL</div>
+                        <div class="row text-center mt-3 pt-2" style="border-top:1px dashed #94a3b8;">
+                            <div class="col-6">
+                                <small class="fw-bold text-muted">Cachet & Signature manuscrite<br>(exemplaire imprimé)</small>
+                                <div style="height:70px;"></div>
+                                <small class="text-secondary">______________________________</small>
+                            </div>
+                            <div class="col-6">
+                                <small class="fw-bold text-primary">Le Directeur Général / The General Manager</small>
+                                <div style="height:70px; display:flex; align-items:center; justify-content:center;" id="vmGmStamp"></div>
+                                <small class="text-dark" id="vmGmStampCaption"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer no-print">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnClose">Fermer</button>
+                    <button type="button" class="btn btn-primary btn-sm px-3" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> <span data-i18n="btnPrintForm">Imprimer</span></button>
+                    <a id="vmPdfLink" href="#" target="_blank" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-file-pdf me-1"></i> <span data-i18n="btnDownloadPdf">Télécharger PDF</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 Bundle JS -->
+    <datalist id="cmrCities"></datalist>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/cameroon-cities.js"></script>
 
     <script>
         let allStaff = [];
+        let mandatSteps = [];
+        let mandatCount = 0;
+        // Persisted set of selected staff ids so a search keyword never drops an agent already chosen.
+        let selectedStaffIds = new Set();
+
+        // Client-side mirror of AccessPolicy.canInitiateMandat (the server enforces it too).
+        function currentUserCanInitiateMandat() {
+            const role = (localStorage.getItem('art_user_role') || '').toUpperCase();
+            if (role === 'ROLE_ADMIN') return true;
+            const d = (localStorage.getItem('art_user_designation') || '').toLowerCase();
+            return d === 'cea' || d.includes('(cea)')
+                || d.includes("chargé d'études assistant") || d.includes("charge d'etudes assistant")
+                || d.includes('chef de cellule')
+                || d.includes('sous-directeur') || d.includes('sous directeur')
+                || d.includes('directeur');
+        }
+
+        // Admin + DRH (HR) can delete an erroneous mandate. Server enforces AccessPolicy.canDeleteMandat.
+        function currentUserCanDeleteMandat() {
+            const role = (localStorage.getItem('art_user_role') || '').toUpperCase();
+            return role === 'ROLE_ADMIN' || role === 'ROLE_HR_OFFICER';
+        }
+
+        async function deleteMandat(id, ref) {
+            if (!confirm(t('mandatDeleteConfirm') + '\n\n' + (ref || ('#' + id))
+                + '\n\n' + t('mandatDeleteWarn'))) return;
+            try {
+                const res = await fetch('/api/mandats/' + id, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-User-Email': localStorage.getItem('art_user_email') || '',
+                        'X-User-Role': localStorage.getItem('art_user_role') || ''
+                    }
+                });
+                if (res.ok) {
+                    await loadMandats();
+                } else {
+                    let msg = 'HTTP ' + res.status;
+                    try { const err = await res.json(); msg = err.error || msg; } catch (_) {}
+                    alert('Erreur: ' + msg);
+                }
+            } catch (e) {
+                alert('Erreur réseau lors de la suppression: ' + e.message);
+            }
+        }
+
+        function applyMandatAccessGate() {
+            const allowed = currentUserCanInitiateMandat();
+            const btn = document.getElementById('btnOpenCreateMandat');
+            const denied = document.getElementById('mandatDeniedBanner');
+            const info = document.getElementById('mandatRuleBanner');
+            if (!allowed) {
+                if (btn) { btn.setAttribute('disabled', 'disabled'); btn.classList.add('disabled'); btn.removeAttribute('data-bs-toggle'); }
+                if (denied) denied.classList.remove('d-none');
+                if (info) info.classList.add('d-none');
+            } else {
+                if (btn) { btn.removeAttribute('disabled'); btn.classList.remove('disabled'); btn.setAttribute('data-bs-toggle', 'modal'); }
+                if (denied) denied.classList.add('d-none');
+                if (info) info.classList.remove('d-none');
+            }
+        }
+
+        async function loadDirections() {
+            const select = document.getElementById('mDirection');
+            try {
+                const res = await fetch('/api/referentiels/structures');
+                if (res.ok) {
+                    const list = await res.json();
+                    const opts = list.map(s => {
+                        const name = s.name || s.nom || s.libelle || '';
+                        const acr = s.acronym || s.code || '';
+                        return name ? `<option value="${name}" data-acr="${acr}">${name}${acr ? ' (' + acr + ')' : ''}</option>` : '';
+                    }).join('');
+                    select.innerHTML = `<option value="" data-acr="">${t('selectDirectionPlaceholder')}</option>` + opts;
+                }
+            } catch (e) {
+                console.warn('Directions load skipped:', e);
+            }
+            suggestRefJustif();
+        }
+
+        // Suggest the authorising-act reference: ART / DG / <acronyme direction> / <n° d'ordre>.
+        function suggestRefJustif(force) {
+            const field = document.getElementById('mRefJustif');
+            if (!field) return;
+            if (!force && field.value && field.dataset.userEdited === '1') return;
+            const opt = document.getElementById('mDirection').selectedOptions[0];
+            const acr = (opt && opt.dataset.acr ? opt.dataset.acr : 'DG').toUpperCase();
+            const seq = String((mandatCount || 0) + 1).padStart(3, '0');
+            field.value = `ART/DG/${acr}/${seq}`;
+        }
+
+        // Automation: When external mission is chosen, auto-select plane
+        function handleMandatTypeChange(typeVal) {
+            const tVehicule = document.getElementById('tVehicule');
+            const tAvion = document.getElementById('tAvion');
+            const tMixte = document.getElementById('tMixte');
+            const hint = document.getElementById('mTypeHint');
+
+            if (typeVal === 'EXTERNE') {
+                tAvion.checked = true;
+                tVehicule.checked = false;
+                tMixte.checked = false;
+                if (hint) {
+                    hint.textContent = smomaI18n.getLang() === 'fr' 
+                        ? 'Mission Externe : Avion automatiquement sélectionné.' 
+                        : 'External Mission: Plane automatically selected.';
+                    hint.className = 'text-primary fw-bold';
+                }
+            } else {
+                if (hint) {
+                    hint.textContent = smomaI18n.getLang() === 'fr' 
+                        ? 'Mission Interne : Véhicule sélectionné par défaut.' 
+                        : 'Internal Mission: Service vehicle selected by default.';
+                    hint.className = 'text-muted';
+                }
+            }
+        }
+
+        function handleMixteChecked(isMixte) {
+            const tVehicule = document.getElementById('tVehicule');
+            const tAvion = document.getElementById('tAvion');
+            if (isMixte) {
+                tVehicule.checked = true;
+                tAvion.checked = true;
+            }
+        }
+
+        function checkTransportCombination() {
+            const tVehicule = document.getElementById('tVehicule').checked;
+            const tAvion = document.getElementById('tAvion').checked;
+            document.getElementById('tMixte').checked = (tVehicule && tAvion);
+        }
+
+        // Fast search by matricule or staff name. Already-selected agents are always kept in the list
+        // (shown first) so filtering never silently drops a choice the user already made.
+        function filterMandatStaff(keyword) {
+            const select = document.getElementById('mStaffSelect');
+            const kw = (keyword || '').toLowerCase().trim();
+
+            const matches = s => {
+                if (!kw) return true;
+                return (s.matricule || '').toLowerCase().includes(kw)
+                    || (s.nom || '').toLowerCase().includes(kw)
+                    || (s.prenom || '').toLowerCase().includes(kw)
+                    || (s.departement || '').toLowerCase().includes(kw)
+                    || (s.fonction || '').toLowerCase().includes(kw);
+            };
+
+            const selected = allStaff.filter(s => selectedStaffIds.has(String(s.id)));
+            const rest = allStaff.filter(s => !selectedStaffIds.has(String(s.id)) && matches(s));
+
+            const optionHtml = s => `<option value="${s.id}" ${selectedStaffIds.has(String(s.id)) ? 'selected' : ''}>`
+                + `${s.nom} ${s.prenom || ''} [Matricule: ${s.matricule || 'N/A'}] - ${s.departement || ''}</option>`;
+
+            select.innerHTML = selected.map(optionHtml).join('') + rest.map(optionHtml).join('');
+
+            const countBadge = document.getElementById('staffCountBadge');
+            if (countBadge) {
+                countBadge.textContent = `${selectedStaffIds.size} sélectionné(s) / ${rest.length + selected.length} affichés / ${allStaff.length} agents`;
+            }
+            renderSelectedStaffChips();
+        }
+
+        // Keep the persisted set in sync whenever the user clicks options in the list.
+        function syncMandatStaffSelection() {
+            const select = document.getElementById('mStaffSelect');
+            const visibleIds = Array.from(select.options).map(o => o.value);
+            const nowSelected = new Set(Array.from(select.selectedOptions).map(o => o.value));
+            // Only reconcile ids that are currently visible; hidden (filtered-out) selections are preserved.
+            visibleIds.forEach(id => {
+                if (nowSelected.has(id)) selectedStaffIds.add(id);
+                else selectedStaffIds.delete(id);
+            });
+            renderSelectedStaffChips();
+            const countBadge = document.getElementById('staffCountBadge');
+            if (countBadge) {
+                countBadge.textContent = `${selectedStaffIds.size} sélectionné(s) / ${select.options.length} affichés / ${allStaff.length} agents`;
+            }
+        }
+
+        function renderSelectedStaffChips() {
+            const box = document.getElementById('mSelectedStaffChips');
+            if (!box) return;
+            const chosen = allStaff.filter(s => selectedStaffIds.has(String(s.id)));
+            if (chosen.length === 0) {
+                box.innerHTML = '<span class="text-muted small fst-italic">Aucun agent sélectionné.</span>';
+                return;
+            }
+            box.innerHTML = chosen.map(s => `<span class="badge bg-primary d-inline-flex align-items-center gap-1">`
+                + `${s.nom} ${s.prenom || ''} (${s.matricule || 'N/A'})`
+                + `<i class="fa-solid fa-xmark" style="cursor:pointer" onclick="removeMandatStaff('${s.id}')"></i></span>`).join('');
+        }
+
+        function removeMandatStaff(id) {
+            selectedStaffIds.delete(String(id));
+            filterMandatStaff(document.getElementById('mStaffSearch').value);
+        }
+
+        // Multi-Step Itinerary Methods
+        function addMandatStep(lieu = '', dateDebut = '', dateFin = '', transport = 'Véhicule de service') {
+            const stepId = Date.now() + Math.floor(Math.random() * 100);
+            mandatSteps.push({ id: stepId, lieu, dateDebut, dateFin, transport });
+            renderMandatSteps();
+        }
+
+        function removeMandatStep(stepId) {
+            mandatSteps = mandatSteps.filter(s => s.id !== stepId);
+            renderMandatSteps();
+        }
+
+        function renderMandatSteps() {
+            const container = document.getElementById('mandatStepsContainer');
+            if (mandatSteps.length === 0) {
+                container.innerHTML = `<p class="text-muted small mb-0 fst-italic">Aucune étape spécifique ajoutée. La mission sera considérée comme un déplacement unique.</p>`;
+                return;
+            }
+
+            container.innerHTML = mandatSteps.map((step, idx) => `
+                <div class="step-item-card">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-1 text-center">
+                            <span class="badge bg-primary">Étape ${idx + 1}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" title="${t('stepCityPlaceholder')}" onchange="pickStepCity(${step.id}, this.value)">${cityOptionsHtml(step.lieu)}</select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" class="form-control form-control-sm" title="Date début" value="${step.dateDebut}" onchange="updateStepField(${step.id}, 'dateDebut', this.value)">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" class="form-control form-control-sm" title="Date fin" value="${step.dateFin}" onchange="updateStepField(${step.id}, 'dateFin', this.value)">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" onchange="updateStepField(${step.id}, 'transport', this.value)">
+                                <option value="Véhicule de service" ${step.transport === 'Véhicule de service' ? 'selected' : ''}>Véhicule de service</option>
+                                <option value="Avion" ${step.transport === 'Avion' ? 'selected' : ''}>Avion</option>
+                                <option value="Mixte (Véhicule et Avion)" ${step.transport.includes('Mixte') ? 'selected' : ''}>Mixte (Véhicule et Avion)</option>
+                                <option value="Train" ${step.transport === 'Train' ? 'selected' : ''}>Train (Camrail)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMandatStep(${step.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStepField(stepId, field, value) {
+            const st = mandatSteps.find(s => s.id === stepId);
+            if (st) st[field] = value;
+        }
+
+        // City <select>: "Autre ville" opens a prompt so a location outside the list can still be entered.
+        function pickStepCity(stepId, value) {
+            if (value === '__other__') {
+                const v = (prompt(t('stepCityPrompt') || 'Ville / lieu :') || '').trim();
+                updateStepField(stepId, 'lieu', v);
+                renderMandatSteps();
+                return;
+            }
+            updateStepField(stepId, 'lieu', value);
+        }
 
         async function loadStaff() {
             try {
                 const res = await fetch('/api/personnel');
                 if (res.ok) {
                     allStaff = await res.json();
-                    const select = document.getElementById('mStaffSelect');
-                    select.innerHTML = allStaff.map(s => `<option value="${s.id}">${s.nom} ${s.prenom || ''} (${s.matricule || 'N/A'}) - ${s.departement || ''}</option>`).join('');
+                    filterMandatStaff('');
                 }
             } catch (e) {
                 console.error('Staff load error:', e);
             }
+        }
+
+        // Auto-load the configurable regulatory justifications (spec 4.1). Falls back to a static
+        // shortlist if the referential endpoint is unreachable so the form is never empty.
+        async function loadMotifs() {
+            const select = document.getElementById('mMotif');
+            const fallback = [
+                'Contrôle de la qualité de service (QoS)',
+                'Contrôle de la couverture réseau (2G / 3G / 4G / 5G)',
+                'Contrôle des infrastructures et installations techniques',
+                'Monitoring / surveillance du spectre des fréquences',
+                'Contrôle des titres d\'exploitation et des ressources rares',
+                'Contrôles administratifs et tarifaires',
+                'Contrôle de conformité des équipements et agréments',
+                'Inspection technique des installations régionales',
+                'Audit technique et réglementaire',
+                'Enquête / investigation (brouillage, plainte, litige)',
+                'Étude et analyse technique',
+                'Benchmarking / étude comparative (parangonnage)',
+                'Étude et évaluation économique du secteur',
+                'Étude de marché / observatoire du secteur des télécommunications',
+                'Étude prospective et planification stratégique',
+                'Veille technologique et réglementaire',
+                'Formation / stage / perfectionnement',
+                'Renforcement des capacités',
+                'Atelier / groupe de travail technique',
+                'Représentation officielle de l\'Agence',
+                'Participation aux travaux de l\'UIT et conférences internationales',
+                'Mission de coopération bilatérale ou multilatérale',
+                'Séminaire / colloque / conférence',
+                'Négociation / réunion institutionnelle',
+                'Maintenance des équipements et systèmes techniques',
+                'Déploiement / installation d\'équipements',
+                'Suivi et évaluation de projet',
+                'Supervision et coordination d\'activités régionales',
+                'Sensibilisation et protection du consommateur',
+                'Mission de recouvrement / facturation',
+                'Mission liée au contentieux et aux affaires juridiques',
+                'Appui technique aux délégations régionales',
+                'Mission de service (motif général)',
+                'Régularisation (force majeure)',
+                'Décision du Directeur Général',
+                'Autre motif dûment habilité'
+            ];
+            try {
+                const res = await fetch('/api/referentiels/motifs');
+                if (res.ok) {
+                    const motifs = (await res.json()).filter(m => m.actif !== false);
+                    if (motifs.length > 0) {
+                        select.innerHTML = motifs.map(m => `<option value="${m.libelle}">${m.libelle}</option>`).join('');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Motifs referential load skipped:', e);
+            }
+            select.innerHTML = fallback.map(m => `<option value="${m}">${m}</option>`).join('');
         }
 
         async function loadMandats() {
@@ -267,35 +746,56 @@
                 const res = await fetch('/api/mandats');
                 if (res.ok) {
                     const mandats = await res.json();
+                    mandatCount = mandats.length;
                     if (mandats.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Aucun mandat de mission enregistre. Cliquez sur "Créer un Nouveau Mandat".</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Aucun mandat de mission enregistré. Cliquez sur "Créer un Nouveau Mandat".</td></tr>`;
                         return;
                     }
 
                     tbody.innerHTML = mandats.map(m => {
-                        const sansFraisBadge = m.sansFrais ? `<span class="badge badge-sans-frais"><i class="fa-solid fa-stamp me-1"></i>SANS FRAIS</span>` : `<span class="badge bg-success">AVEC FRAIS</span>`;
+                        const sansFraisBadge = m.sansFrais 
+                            ? `<span class="badge badge-sans-frais"><i class="fa-solid fa-stamp me-1"></i>SANS FRAIS</span>` 
+                            : `<span class="badge bg-success">AVEC FRAIS</span>`;
                         const scanStatus = m.scanSignedPath 
-                            ? `<span class="badge badge-signed"><i class="fa-solid fa-file-circle-check me-1"></i>Scan Valide</span>`
+                            ? `<span class="badge badge-signed"><i class="fa-solid fa-file-circle-check me-1"></i>Scan Validé</span>`
                             : `<span class="badge badge-pending"><i class="fa-solid fa-clock me-1"></i>En attente scan</span>`;
+
+                        const stepsCount = (m.etapes || []).length;
+                        const stepsBadge = stepsCount > 0 
+                            ? `<span class="badge bg-secondary ms-1">${stepsCount} étapes</span>` 
+                            : '';
+
+                        let modes = (m.transportModes || []).join(', ');
+                        if (modes.includes('Vehicule') && modes.includes('Avion')) {
+                            modes = 'Mixte (Véhicule & Avion)';
+                        } else if (!modes) {
+                            modes = m.typeMission === 'EXTERNE' ? 'Avion' : 'Véhicule';
+                        }
 
                         return `
                             <tr>
-                                <td class="fw-bold text-navy">${m.referenceMandat || 'MANDAT-#' + m.id}</td>
+                                <td class="fw-bold text-navy">
+                                    ${m.referenceMandat || 'MANDAT-#' + m.id}
+                                    ${m.referenceJustification ? `<small class="d-block text-primary"><i class="fa-solid fa-file-shield me-1"></i>${m.referenceJustification}</small>` : ''}
+                                    ${m.directionInitiatrice ? `<small class="d-block text-muted">${m.directionInitiatrice}</small>` : ''}
+                                </td>
                                 <td>
-                                    <div class="fw-bold">${m.objetGeneral || 'Sans objet'}</div>
+                                    <div class="fw-bold">${m.objetGeneral || 'Sans objet'} ${stepsBadge}</div>
                                     <small class="text-muted">${m.objectifsSpecifiques || ''}</small>
                                 </td>
                                 <td><small class="text-secondary">${m.motifReglementaire || 'N/A'}</small></td>
                                 <td>
                                     <span class="badge bg-primary">${m.typeMission || 'INTERNE'}</span>
-                                    <small class="d-block text-muted mt-1">${(m.transportModes || []).join(', ') || 'Vehicule'}</small>
+                                    <small class="d-block text-muted mt-1">${modes}</small>
                                 </td>
                                 <td><small class="fw-bold">${m.dateDebut || ''} au ${m.dateFin || ''}</small></td>
                                 <td>${sansFraisBadge}</td>
                                 <td>${scanStatus}</td>
                                 <td class="text-end">
+                                    <button class="btn btn-outline-primary btn-sm me-1" onclick="viewMandatOfficiel(${m.id})" title="${t('mandatOfficialDoc')}"><i class="fa-solid fa-file-contract"></i></button>
                                     <button class="btn btn-outline-info btn-sm me-1" onclick="viewSideBySide(${m.id})" title="Voir côte à côte"><i class="fa-solid fa-columns"></i></button>
-                                    <button class="btn btn-outline-success btn-sm" onclick="openUploadModal(${m.id})" title="Importer Scan Signé"><i class="fa-solid fa-file-arrow-up"></i></button>
+                                    <button class="btn btn-outline-success btn-sm me-1" onclick="openUploadModal(${m.id})" title="Importer Scan Signé"><i class="fa-solid fa-file-arrow-up"></i></button>
+                                    ${currentUserCanDeleteMandat() ? `<button class="btn btn-outline-danger btn-sm" onclick="deleteMandat(${m.id}, '${(m.referenceMandat || ('#' + m.id)).replace(/'/g, "\\'")}')" title="${t('mandatDeleteTitle')}"><i class="fa-solid fa-trash"></i></button>` : ''}
                                 </td>
                             </tr>
                         `;
@@ -307,38 +807,90 @@
         }
 
         async function saveMandat() {
+            const isMixteChecked = document.getElementById('tMixte').checked;
+            let chosenModes = [];
+            if (isMixteChecked) {
+                chosenModes = ['Vehicule', 'Avion', 'Mixte'];
+            } else {
+                if (document.getElementById('tVehicule').checked) chosenModes.push('Vehicule');
+                if (document.getElementById('tAvion').checked) chosenModes.push('Avion');
+            }
+
+            const objet = document.getElementById('mObjet').value.trim();
+            const dateDebut = document.getElementById('mDateDebut').value;
+            const dateFin = document.getElementById('mDateFin').value;
+            const direction = document.getElementById('mDirection').value;
+
+            // Client-side validation so the server never receives an incomplete mandate.
+            if (!objet) { alert('Veuillez saisir l\'objet général de la mission.'); return; }
+            if (!dateDebut || !dateFin) { alert('Veuillez renseigner la période globale (date de début et date de fin).'); return; }
+            if (dateFin < dateDebut) { alert('La date de fin ne peut pas précéder la date de début.'); return; }
+            if (!direction) { alert('Veuillez sélectionner la direction / structure initiatrice.'); return; }
+
+            const personnelIds = Array.from(selectedStaffIds).map(v => parseInt(v)).filter(n => !isNaN(n));
+            if (personnelIds.length === 0) {
+                alert('Veuillez sélectionner au moins un agent pour ce mandat.');
+                return;
+            }
+
             const mandat = {
-                referenceMandat: document.getElementById('mRef').value,
-                objetGeneral: document.getElementById('mObjet').value,
+                referenceMandat: document.getElementById('mRef').value.trim() || null,
+                objetGeneral: objet,
                 objectifsSpecifiques: document.getElementById('mObjectifs').value,
                 motifReglementaire: document.getElementById('mMotif').value,
+                directionInitiatrice: direction,
+                referenceJustification: document.getElementById('mRefJustif').value.trim() || null,
                 typeMission: document.getElementById('mType').value,
-                transportModes: Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value),
-                dateDebut: document.getElementById('mDateDebut').value,
-                dateFin: document.getElementById('mDateFin').value,
+                transportModes: chosenModes,
+                dateDebut: dateDebut,
+                dateFin: dateFin,
                 sansFrais: document.getElementById('mSansFrais').checked,
                 forceMajeure: document.getElementById('mForceMajeure').checked
             };
 
-            const select = document.getElementById('mStaffSelect');
-            const personnelIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+            // Format steps payload — drop empty rows, fall back to the global period for missing dates.
+            const etapesPayload = mandatSteps
+                .filter(s => (s.lieu && s.lieu.trim()) || s.dateDebut || s.dateFin)
+                .map(s => ({
+                    lieu: s.lieu || '',
+                    dateDebut: s.dateDebut || dateDebut,
+                    dateFin: s.dateFin || dateFin,
+                    transportMode: s.transport || 'Véhicule de service'
+                }));
 
             try {
                 const res = await fetch('/api/mandats', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mandat, personnelIds, etapes: [] })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Email': localStorage.getItem('art_user_email') || '',
+                        'X-User-Role': localStorage.getItem('art_user_role') || ''
+                    },
+                    body: JSON.stringify({ mandat, personnelIds, etapes: etapesPayload })
                 });
 
                 if (res.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('modalCreateMandat')).hide();
-                    loadMandats();
+                    document.getElementById('formMandat').reset();
+                    mandatSteps = [];
+                    selectedStaffIds = new Set();
+                    const rj = document.getElementById('mRefJustif');
+                    if (rj) { rj.value = ''; delete rj.dataset.userEdited; }
+                    renderMandatSteps();
+                    filterMandatStaff('');
+                    await loadMandats();
+                    suggestRefJustif(true);
                 } else {
-                    const err = await res.json();
-                    alert('Erreur: ' + (err.error || 'Impossible d\'enregistrer le mandat'));
+                    let msg = 'Impossible d\'enregistrer le mandat (HTTP ' + res.status + ').';
+                    try {
+                        const err = await res.json();
+                        msg = err.error || msg;
+                        if (err.cause) msg += '\n\nDétail: ' + err.cause;
+                    } catch (_) {}
+                    alert('Erreur: ' + msg);
                 }
             } catch (e) {
-                alert('Erreur réseau lors de la création du mandat.');
+                alert('Erreur réseau lors de la création du mandat: ' + e.message);
             }
         }
 
@@ -366,23 +918,97 @@
             }
         }
 
+        // Official printable mandate document: bilingual Cameroon header + ART logo, and the
+        // General Manager's electronic approval stamp once the signed scan has been imported.
+        async function viewMandatOfficiel(id) {
+            try {
+                const res = await fetch(`/api/mandats/${id}`);
+                if (!res.ok) throw new Error('Mandat introuvable');
+                const m = await res.json();
+
+                document.getElementById('vmRef').textContent = 'RÉF : ' + (m.referenceMandat || ('MANDAT-#' + m.id));
+                document.getElementById('vmJustif').textContent = m.referenceJustification || '—';
+                document.getElementById('vmDirection').textContent = m.directionInitiatrice || '—';
+                document.getElementById('vmMotif').textContent = m.motifReglementaire || '—';
+                document.getElementById('vmType').textContent = m.typeMission === 'EXTERNE' ? 'EXTERNE / EXTERNAL' : 'INTERNE / INTERNAL';
+                let modes = (m.transportModes || []).join(', ');
+                if (modes.includes('Vehicule') && modes.includes('Avion')) modes = 'Mixte (Véhicule et Avion)';
+                document.getElementById('vmTransport').textContent = modes || (m.typeMission === 'EXTERNE' ? 'Avion' : 'Véhicule de service');
+                document.getElementById('vmObjet').textContent = m.objetGeneral || '—';
+                document.getElementById('vmObjectifs').textContent = m.objectifsSpecifiques || '—';
+                document.getElementById('vmPeriode').textContent = (m.dateDebut || '') + ' au / to ' + (m.dateFin || '');
+
+                document.getElementById('vmSeal').innerHTML = m.sansFrais
+                    ? '<span class="seal-sans-frais">SANS FRAIS / WITHOUT EXPENSES</span>' : '';
+
+                const etapes = m.etapes || [];
+                document.getElementById('vmSteps').innerHTML = etapes.length
+                    ? `<table class="table table-sm table-bordered"><thead class="table-light"><tr><th>Étape</th><th>Lieu / Location</th><th>Dates</th><th>Transport</th></tr></thead><tbody>`
+                        + etapes.map((s, i) => `<tr><td>${i + 1}</td><td>${s.lieu || ''}</td><td>${s.dateDebut || ''} au ${s.dateFin || ''}</td><td>${s.transportMode || ''}</td></tr>`).join('')
+                        + '</tbody></table>'
+                    : '<p class="fst-italic text-muted">Déplacement unique vers la destination de la mission.</p>';
+
+                const team = m.personnelList || [];
+                document.getElementById('vmTeam').innerHTML = team.length
+                    ? `<table class="table table-sm table-bordered"><thead class="table-light"><tr><th>#</th><th>Nom & Prénom / Full Name</th><th>Matricule</th><th>Structure</th></tr></thead><tbody>`
+                        + team.map((p, i) => `<tr><td>${i + 1}</td><td>${p.nom || ''} ${p.prenom || ''}</td><td>${p.matricule || 'N/A'}</td><td>${p.departement || ''}</td></tr>`).join('')
+                        + '</tbody></table>'
+                    : '<p class="fst-italic text-muted">Aucun agent désigné.</p>';
+
+                // GM electronic approval stamp — shown only once the signed scan is imported.
+                const stampBox = document.getElementById('vmGmStamp');
+                const stampCap = document.getElementById('vmGmStampCaption');
+                if (m.scanSignedPath) {
+                    const d = m.dateValidation || new Date().toISOString().split('T')[0];
+                    stampBox.innerHTML = '<span class="gm-stamp">APPROUVÉ / APPROVED<br><span style="font-size:10px;">DIRECTEUR GÉNÉRAL — ART</span></span>';
+                    stampCap.textContent = 'Signé électroniquement le ' + d + ' — version signée scannée importée.';
+                } else {
+                    stampBox.innerHTML = '<small class="text-secondary">______________________________</small>';
+                    stampCap.textContent = 'À signer par le Directeur Général après impression, puis importer le scan signé.';
+                }
+
+                document.getElementById('vmPdfLink').href = `/api/mandats/${m.id}/pdf`;
+                smomaI18n.applyTranslations();
+                new bootstrap.Modal(document.getElementById('modalMandatOfficiel')).show();
+            } catch (e) {
+                alert('Impossible de charger le document officiel du mandat.');
+            }
+        }
+
         async function viewSideBySide(id) {
             try {
                 const res = await fetch(`/api/mandats/${id}`);
                 if (res.ok) {
                     const m = await res.json();
+                    
+                    let etapesHtml = '';
+                    if (m.etapes && m.etapes.length > 0) {
+                        etapesHtml = `
+                            <p class="mt-3 mb-1"><strong>Étapes de la mission (${m.etapes.length}) :</strong></p>
+                            <table class="table table-sm table-bordered small">
+                                <thead class="table-light"><tr><th>Étape</th><th>Lieu</th><th>Dates</th><th>Transport</th></tr></thead>
+                                <tbody>
+                                    ${m.etapes.map((st, i) => `<tr><td>${i+1}</td><td>${st.lieu || ''}</td><td>${st.dateDebut || ''} au ${st.dateFin || ''}</td><td>${st.transportMode || ''}</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+
                     document.getElementById('systemDocContent').innerHTML = `
                         <div class="text-center mb-3">
                             <h6 class="fw-bold">AGENCE DE REGULATION DES TELECOMMUNICATIONS</h6>
                             <small>Mandat Officiel de Mission N° ${m.referenceMandat || m.id}</small>
                         </div>
                         ${m.sansFrais ? '<div class="alert alert-danger text-center fw-bold p-2 mb-3"><i class="fa-solid fa-stamp me-1"></i>SCEAU SANS FRAIS</div>' : ''}
+                        ${m.referenceJustification ? `<p><strong>Réf. / Article de Justification :</strong> ${m.referenceJustification}</p>` : ''}
+                        ${m.directionInitiatrice ? `<p><strong>Direction Initiatrice :</strong> ${m.directionInitiatrice}</p>` : ''}
                         <p><strong>Objet :</strong> ${m.objetGeneral || ''}</p>
                         <p><strong>Motif :</strong> ${m.motifReglementaire || ''}</p>
                         <p><strong>Période :</strong> ${m.dateDebut} au ${m.dateFin}</p>
-                        <p><strong>Type :</strong> ${m.typeMission}</p>
-                        <p><strong>Agents (${(m.personnelList || []).length}) :</strong></p>
-                        <ul>${(m.personnelList || []).map(p => `<li>${p.nom} ${p.prenom || ''} (${p.matricule || ''})</li>`).join('')}</ul>
+                        <p><strong>Type :</strong> ${m.typeMission} | <strong>Transport :</strong> ${(m.transportModes || []).join(', ') || 'Véhicule'}</p>
+                        ${etapesHtml}
+                        <p class="mt-2"><strong>Agents (${(m.personnelList || []).length}) :</strong></p>
+                        <ul>${(m.personnelList || []).map(p => `<li>${p.nom} ${p.prenom || ''} (Matricule: ${p.matricule || 'N/A'})</li>`).join('')}</ul>
                     `;
 
                     if (m.scanSignedPath) {
@@ -391,7 +1017,7 @@
                                 <i class="fa-solid fa-file-pdf text-danger fa-4x mb-3"></i>
                                 <h6 class="fw-bold">Scan Signé Importé</h6>
                                 <p class="text-muted small">${m.scanSignedPath}</p>
-                                <span class="badge bg-success">Document Valide & Signé DG</span>
+                                <span class="badge bg-success">Document Validé & Signé DG</span>
                             </div>
                         `;
                     } else {
@@ -411,7 +1037,22 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            smomaI18n.injectLanguageSwitcher('#langContainer');
+            smomaI18n.applyTranslations();
+            applyMandatAccessGate();
+            populateCityDatalist('cmrCities');
+            renderMandatSteps();
+            renderSelectedStaffChips();
             loadStaff();
+            loadMotifs();
+            loadMandats().then(loadDirections);
+        });
+        window.addEventListener('smoma_lang_changed', () => {
+            smomaI18n.applyTranslations();
+            applyMandatAccessGate();
+            renderMandatSteps();
+            renderSelectedStaffChips();
+            loadDirections();
             loadMandats();
         });
     </script>

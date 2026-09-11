@@ -34,6 +34,7 @@ public class EtapeMission {
     private LocalDate dateDepart;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private TypeEtape typeEtape;
 
     private String transportMode;

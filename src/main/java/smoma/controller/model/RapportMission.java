@@ -35,11 +35,13 @@ public class RapportMission {
     private String justificatifsJson;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private StatutRapport statut;
 
     private String statutValidation;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private CategorieRapport categorie;
 
     @Column(columnDefinition = "TEXT")

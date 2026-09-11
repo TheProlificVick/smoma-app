@@ -143,41 +143,84 @@
             font-size: 11px;
             color: #868E96;
         }
+
+        .lang-switch-btn {
+            background: none;
+            border: 1px solid #ced4da;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .lang-switch-btn.active {
+            background-color: var(--art-navy);
+            color: #ffffff;
+            border-color: var(--art-navy);
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
     <div class="login-container">
+        <!-- Language Switcher Bar -->
+        <div class="d-flex justify-content-end mb-3" style="display:flex; justify-content:flex-end; margin-bottom:12px; gap:6px;">
+            <button type="button" class="lang-switch-btn" id="btnFr" onclick="setLoginLang('fr')">🇫🇷 FR</button>
+            <button type="button" class="lang-switch-btn" id="btnEn" onclick="setLoginLang('en')">🇬🇧 EN</button>
+        </div>
+
         <div class="header-section">
             <div class="logo-container">
                 <img src="/images/ART%20logo.jpg" alt="Logo ART Cameroun" onerror="this.src='https://placehold.co/240x100/0F2C59/FFFFFF?text=ART+CAMEROUN'">
             </div>
-            <div class="institution-title">République du Cameroun</div>
+            <div class="institution-title" data-i18n="republicOfCameroon">République du Cameroun</div>
             <div class="app-title">SMOMA</div>
+            <small class="text-muted" data-i18n="portalSubTitle" style="font-size:12px; color:#6c757d;">Portail d'authentification institutionnelle</small>
         </div>
 
         <div id="errorMessage"></div>
 
         <form id="loginForm">
             <div class="form-group">
-                <label for="email">Identifiant Institutionnel Email</label>
-                <input type="email" id="email" class="form-control" placeholder="nom.prenom@art.cm" required autocomplete="email">
+                <label for="identity" data-i18n="identityLabel">Identifiant (Email, Nom d'utilisateur ou Matricule)</label>
+                <input type="text" id="identity" class="form-control" placeholder="nom.prenom@art.cm ou matricule" required autocomplete="username" data-i18n-placeholder="identityPlaceholder">
             </div>
             
             <div class="form-group">
-                <label for="password">Mot de passe sécurisé</label>
+                <label for="password" data-i18n="passwordLabel">Mot de passe sécurisé</label>
                 <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
             </div>
 
-            <button type="submit" class="btn-submit">Se connecter au Portail</button>
+            <button type="submit" class="btn-submit" data-i18n="loginSubmitBtn">Se connecter au Portail</button>
         </form>
 
-        <div class="footer-credits">
-            2026 Agence de Régulation des Télécommunications (ART)
+        <div class="footer-credits" data-i18n="loginCredits">
+            2026 Agence de Régulation des Télécommunications (ART) - République du Cameroun
         </div>
     </div>
 
+    <script src="/js/i18n.js"></script>
     <script>
+        function updateLangButtons() {
+            const current = smomaI18n.getLang();
+            const btnFr = document.getElementById('btnFr');
+            const btnEn = document.getElementById('btnEn');
+            if (btnFr && btnEn) {
+                btnFr.classList.toggle('active', current === 'fr');
+                btnEn.classList.toggle('active', current === 'en');
+            }
+        }
+
+        function setLoginLang(lang) {
+            smomaI18n.switchLanguage(lang);
+            updateLangButtons();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLangButtons();
+        });
+
         document.getElementById("loginForm").addEventListener("submit", async function(e) {
             e.preventDefault();
             const errorBanner = document.getElementById("errorMessage");
@@ -185,8 +228,11 @@
 
             localStorage.setItem("art_authenticated", "false");
 
+            const identVal = document.getElementById("identity").value.trim();
             const payload = {
-                email: document.getElementById("email").value,
+                email: identVal,
+                username: identVal,
+                matricule: identVal,
                 password: document.getElementById("password").value
             };
 
@@ -203,13 +249,17 @@
                     localStorage.setItem("user_name", data.fullName || "Agent ART");
                     localStorage.setItem("art_user_role", data.role || "ROLE_AGENT");
                     localStorage.setItem("art_user_email", data.username || "");
+                    localStorage.setItem("art_user_designation", data.designation || "");
+                    if (data.matricule) {
+                        localStorage.setItem("art_user_matricule", data.matricule);
+                    }
                     window.location.href = "index.html";
                 } else {
-                    errorBanner.innerText = "Identifiants professionnels incorrects ou accès refusé.";
+                    errorBanner.innerText = t('loginErrorMsg');
                     errorBanner.style.display = "block";
                 }
             } catch (err) {
-                errorBanner.innerText = "Erreur réseau : Impossible de joindre le serveur Spring Boot.";
+                errorBanner.innerText = t('networkErrorMsg');
                 errorBanner.style.display = "block";
             }
         });

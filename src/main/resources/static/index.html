@@ -75,6 +75,12 @@
             </div>
         </div>
 
+        <!-- Access rule notice: DRH-only mission orders / designation-gated mandates -->
+        <div class="alert alert-warning border-start border-4 border-warning shadow-sm mb-4" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <span data-i18n="dashDrhOnlyNotice">Important : seul le personnel de la DRH est habilité à établir un ordre de mission. L'établissement d'un mandat de mission est réservé aux agents ayant la désignation CEA, Chef de Cellule, Sous-Directeur ou Directeur (le compte administrateur conserve toutes les fonctionnalités).</span>
+        </div>
+
         <!-- System Administration & Organizational Management Modules -->
         <h5 class="mb-3 text-secondary fw-bold"><i class="fa-solid fa-sitemap me-2"></i><span data-i18n="sectionOrg">Structure Organisationnelle & Personnel</span></h5>
         <div class="row g-4 mb-4">
@@ -108,7 +114,7 @@
             </div>
 
             <!-- Module: Admin & AD Sync -->
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" id="cardAdminModule">
                 <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/admin-panel.html'">
                     <div class="card-body p-4 text-center">
                         <div class="icon-box bg-secondary text-white mx-auto mb-3">
@@ -116,6 +122,7 @@
                         </div>
                         <h5 class="card-title fw-bold" data-i18n="modAdminTitle">Admin & Synchro AD</h5>
                         <p class="card-text text-muted small" data-i18n="modAdminDesc">Synchronisation Active Directory et comptes d'accès local.</p>
+                        <span class="badge bg-dark d-block mb-2"><i class="fa-solid fa-lock me-1"></i><span data-i18n="modAdminReserved">Administrateur uniquement</span></span>
                         <a href="/admin-panel.html" class="btn btn-secondary btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
                     </div>
                 </div>
@@ -123,14 +130,14 @@
 
             <!-- Module: Fiscal Year Annual Dashboard -->
             <div class="col-md-6 col-lg-3">
-                <div class="card h-100 shadow-sm module-card" onclick="new bootstrap.Modal(document.getElementById('modal-annual')).show()">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/annual-dashboard.html'">
                     <div class="card-body p-4 text-center">
                         <div class="icon-box bg-dark text-white mx-auto mb-3">
                             <i class="fa-solid fa-chart-pie"></i>
                         </div>
                         <h5 class="card-title fw-bold" data-i18n="modAnnualDashboardTitle">Bilan Annuel Agent</h5>
                         <p class="card-text text-muted small" data-i18n="modAnnualDashboardDesc">Historique annuel des missions effectuées par agent pour l'exercice.</p>
-                        <a href="#" class="btn btn-dark btn-sm w-100" data-i18n="accessBtn" onclick="event.preventDefault(); new bootstrap.Modal(document.getElementById('modal-annual')).show()">Accéder au Module</a>
+                        <a href="/annual-dashboard.html" class="btn btn-dark btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
                     </div>
                 </div>
             </div>
@@ -164,7 +171,22 @@
                         </div>
                         <h5 class="card-title fw-bold" data-i18n="modOrdresTitle">Ordres de Mission</h5>
                         <p class="card-text text-muted small" data-i18n="modOrdresDesc">Types précis, objectifs, étapes itinéraire, transport et frais (avec/sans).</p>
+                        <span class="badge bg-warning text-dark d-block mb-2"><i class="fa-solid fa-lock me-1"></i><span data-i18n="modReservedDrh">Réservé au personnel DRH</span></span>
                         <a href="/mission-requests.html" class="btn btn-primary btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module: My Missions (Staff portal) -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm module-card" onclick="window.location.href='/my-missions.html'">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-box bg-success text-white mx-auto mb-3">
+                            <i class="fa-solid fa-user-clock"></i>
+                        </div>
+                        <h5 class="card-title fw-bold" data-i18n="modMyMissionsTitle">Mes Missions (Agent)</h5>
+                        <p class="card-text text-muted small" data-i18n="modMyMissionsDesc">Vos ordres de mission, notifications, PDF officiel et dépôt de votre rapport.</p>
+                        <a href="/my-missions.html" class="btn btn-success btn-sm w-100" data-i18n="accessBtn">Accéder au Module</a>
                     </div>
                 </div>
             </div>
@@ -274,87 +296,12 @@
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/i18n.js"></script>
 
-    <!-- Language Translation Dictionary & Logic -->
     <script>
-        const i18n = {
-            fr: {
-                connectedSession: "Session Connectée",
-                logout: "Déconnexion",
-                mainHeader: "Système de Gestion des Ordres de Mission (SMOMA)",
-                mainSubheader: "Agence de Régulation des Télécommunications (ART) - Siège de Yaoundé. Plateforme centralisée pour la gestion des mandats signés du DG, des ordres de mission, de la structuration des départements, du personnel et du suivi budgétaire.",
-                sectionOrg: "Structure Organisationnelle & Personnel",
-                sectionMissions: "Gestion Opérationnelle des Missions",
-                sectionStats: "Vue d'Ensemble du Système",
-                modDepartmentsTitle: "Directions & Depts",
-                modDepartmentsDesc: "Gérer l'organigramme de l'ART (DRH, DGF, DT, DLCI, DPS, etc.).",
-                modPersonnelTitle: "Gestion du Personnel",
-                modPersonnelDesc: "Créer et mettre à jour le profil des agents, fonctions et matricules.",
-                modAdminTitle: "Admin & Synchro AD",
-                modAdminDesc: "Synchronisation Active Directory et comptes d'accès local.",
-                modAnnualDashboardTitle: "Bilan Annuel Agent",
-                modAnnualDashboardDesc: "Historique annuel des missions effectuées par agent pour l'exercice.",
-                modMandatsTitle: "Mandats (DG)",
-                modMandatsDesc: "Mandats de mission généraux signés par le Directeur Général avec réf. unique.",
-                modOrdresTitle: "Ordres de Mission",
-                modOrdresDesc: "Types précis, objectifs, étapes itinéraire, transport et frais (avec/sans).",
-                modValidationTitle: "Guichet de Validation",
-                modValidationDesc: "Validation hiérarchique par les Chefs de Département et la Direction Générale.",
-                modReportsTitle: "Impression & Rapports",
-                modReportsDesc: "Génération PDF officiels et numérisation des rapports de fin de mission.",
-                modPaymentsTitle: "Paiements de Mission",
-                modPaymentsDesc: "Suivi des frais, validation des paiements et contrôle de conformité pour les missions.",
-                accessBtn: "Accéder au Module",
-                statMandats: "Mandats DG Signés",
-                statOrders: "Ordres de Mission",
-                statPending: "En Attente de Validation",
-                statStaff: "Personnel Inscrit (AD)"
-            },
-            en: {
-                connectedSession: "Connected Session",
-                logout: "Logout",
-                mainHeader: "Staff Mission Order Management Application (SMOMA)",
-                mainSubheader: "Telecommunications Regulatory Board (TRB/ART) - Yaoundé HQ. Centralized portal for DG general mandates, mission orders, department structures, personnel management, and fiscal reporting.",
-                sectionOrg: "Organizational Structure & Personnel",
-                sectionMissions: "Operational Mission Management",
-                sectionStats: "System Overview",
-                modDepartmentsTitle: "Departments & Units",
-                modDepartmentsDesc: "Manage TRB organizational units (HR, Finance, Tech, Legal, etc.).",
-                modPersonnelTitle: "Personnel Management",
-                modPersonnelDesc: "Create and update staff profiles, positions, and ID numbers.",
-                modAdminTitle: "Admin & AD Sync",
-                modAdminDesc: "Active Directory user synchronization and local access management.",
-                modAnnualDashboardTitle: "Staff Annual Report",
-                modAnnualDashboardDesc: "Annual breakdown of completed missions per employee for current fiscal year.",
-                modMandatsTitle: "GM Mandates",
-                modMandatsDesc: "General mission mandates signed by General Manager with unique reference numbers.",
-                modOrdresTitle: "Mission Orders",
-                modOrdresDesc: "Specific mission types, objectives, multi-step transport, and expense regimes.",
-                modValidationTitle: "Approval Desk",
-                modValidationDesc: "Multi-level validation routing for Heads of Department and General Management.",
-                modReportsTitle: "Printing & Scans",
-                modReportsDesc: "Official PDF order generation and uploading scanned post-mission reports.",
-                modPaymentsTitle: "Mission Payments",
-                modPaymentsDesc: "Track mission fees, validate settlements, and review report compliance before payment.",
-                accessBtn: "Access Module",
-                statMandats: "Signed GM Mandates",
-                statOrders: "Mission Orders",
-                statPending: "Pending Approvals",
-                statStaff: "Registered Staff (AD)"
-            }
-        };
-
-        function switchLanguage(lang) {
-            document.getElementById('currentLangLabel').innerText = (lang === 'fr') ? 'Français (FR)' : 'English (EN)';
-            document.querySelectorAll('[data-i18n]').forEach(element => {
-                const key = element.getAttribute('data-i18n');
-                if (i18n[lang] && i18n[lang][key]) {
-                    element.innerText = i18n[lang][key];
-                }
-            });
-            // Persist preference in locale storage
-            localStorage.setItem('smoma_lang', lang);
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            smomaI18n.applyTranslations();
+        });
 
         async function fetchDashboardStats() {
             try {
@@ -376,6 +323,11 @@
             const savedLang = localStorage.getItem('smoma_lang') || 'fr';
             switchLanguage(savedLang);
             fetchDashboardStats();
+
+            // The Admin module is reserved for the application administrator.
+            const role = (localStorage.getItem('art_user_role') || '').toUpperCase();
+            const adminCard = document.getElementById('cardAdminModule');
+            if (adminCard && role !== 'ROLE_ADMIN') adminCard.style.display = 'none';
         });
     </script>
     <script src="/js/auth-guard.js"></script>
@@ -400,25 +352,6 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modal-annual" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header art-header text-white">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="logo-box"><img src="/images/ART%20logo.jpg" alt="ART logo"></div>
-                        <div>
-                            <h5 class="mb-0">Bilan Annuel Agent</h5>
-                            <small>Historique annuel des missions effectuées par agent</small>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">Vue d'ensemble annuelle et statistiques des missions.</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div class="modal fade" id="modal-departments" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">

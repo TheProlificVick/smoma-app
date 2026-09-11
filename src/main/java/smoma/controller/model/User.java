@@ -29,12 +29,13 @@ public class User {
     private Department department;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private Role role;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "role")
+    @Column(name = "role", length = 64)
     private Set<Role> roles = new HashSet<>();
 
     private boolean active = true;

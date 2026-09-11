@@ -45,10 +45,24 @@ public class AvanceSurFrais {
     private boolean validee;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private StatutAvance statut;
 
     @Column(name = "numero_reference", length = 100)
     private String numeroReference;
+
+    /** Payment channel decided by the Direction des Finances when approving. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mode_paiement", length = 32)
+    private ModePaiement modePaiement;
+
+    /** Bank-transfer reference, when {@link #modePaiement} is VIREMENT. */
+    @Column(name = "reference_virement", length = 120)
+    private String referenceVirement;
+
+    /** Human-readable message sent to the beneficiary once the request has been processed. */
+    @Column(name = "message_beneficiaire", columnDefinition = "TEXT")
+    private String messageBeneficiaire;
 
     public AvanceSurFrais() {
         this.pourcentageAvance = BigDecimal.ZERO;
@@ -169,6 +183,30 @@ public class AvanceSurFrais {
         this.numeroReference = numeroReference;
     }
 
+    public ModePaiement getModePaiement() {
+        return modePaiement;
+    }
+
+    public void setModePaiement(ModePaiement modePaiement) {
+        this.modePaiement = modePaiement;
+    }
+
+    public String getReferenceVirement() {
+        return referenceVirement;
+    }
+
+    public void setReferenceVirement(String referenceVirement) {
+        this.referenceVirement = referenceVirement;
+    }
+
+    public String getMessageBeneficiaire() {
+        return messageBeneficiaire;
+    }
+
+    public void setMessageBeneficiaire(String messageBeneficiaire) {
+        this.messageBeneficiaire = messageBeneficiaire;
+    }
+
     public enum StatutAvance {
         DEMANDEE,
         EN_ATTENTE,
@@ -176,5 +214,10 @@ public class AvanceSurFrais {
         VERSEE,
         REJETEE,
         REGULARISEE
+    }
+
+    public enum ModePaiement {
+        ESPECES,
+        VIREMENT
     }
 }

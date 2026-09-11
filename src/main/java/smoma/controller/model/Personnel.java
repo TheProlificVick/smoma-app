@@ -32,6 +32,7 @@ public class Personnel {
     private String service;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private Grade grade;
 
     @Enumerated(EnumType.STRING)

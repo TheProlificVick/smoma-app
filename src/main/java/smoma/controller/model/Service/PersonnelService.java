@@ -31,8 +31,9 @@ public class PersonnelService {
                         (p.getNom() != null && p.getNom().toLowerCase().contains(query.toLowerCase())) ||
                         (p.getPrenom() != null && p.getPrenom().toLowerCase().contains(query.toLowerCase())) ||
                         (p.getMatricule() != null && p.getMatricule().toLowerCase().contains(query.toLowerCase())))
-                .filter(p -> structure == null || structure.isBlank() || 
-                        (p.getDepartement() != null && p.getDepartement().equalsIgnoreCase(structure)))
+                .filter(p -> structure == null || structure.isBlank() ||
+                        (p.getDepartement() != null &&
+                                p.getDepartement().toLowerCase().contains(structure.toLowerCase())))
                 .filter(p -> grade == null || grade.isBlank() || 
                         (p.getGrade() != null && p.getGrade().name().equalsIgnoreCase(grade)))
                 .filter(p -> statut == null || statut.isBlank() || 

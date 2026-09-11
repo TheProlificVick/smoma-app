@@ -15,13 +15,16 @@ public class RapportMissionService {
     private final RapportMissionRepository rapportRepository;
     private final OrdreDeMissionRepository ordreRepository;
     private final AuditLogRepository auditLogRepository;
+    private final NotificationService notificationService;
 
     public RapportMissionService(RapportMissionRepository rapportRepository,
                                  OrdreDeMissionRepository ordreRepository,
-                                 AuditLogRepository auditLogRepository) {
+                                 AuditLogRepository auditLogRepository,
+                                 NotificationService notificationService) {
         this.rapportRepository = rapportRepository;
         this.ordreRepository = ordreRepository;
         this.auditLogRepository = auditLogRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -56,7 +59,9 @@ public class RapportMissionService {
 
         rapport.setStatutValidation("VALIDE");
         auditLogRepository.save(new AuditLog("VALIDATE_REPORT", "SYSTEM", "Rapport de mission valide ID: " + rapportId));
-        return rapportRepository.save(rapport);
+        RapportMission saved = rapportRepository.save(rapport);
+        notificationService.notifyReportValidated(rapport.getOrdreDeMission());
+        return saved;
     }
 
     public List<RapportMission> searchReports(String query, String categorie, Long personnelId) {
