@@ -5,9 +5,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import smoma.controller.model.OrdreDeMission;
 import smoma.controller.model.User;
 import smoma.controller.model.Service.AccessPolicy;
+import smoma.controller.model.Service.FileStorageService;
 import smoma.controller.model.Service.OrdreDeMissionService;
 import smoma.controller.model.Service.PdfGeneratorService;
 
@@ -22,11 +24,14 @@ public class OrdreDeMissionController {
     private final OrdreDeMissionService omService;
     private final PdfGeneratorService pdfService;
     private final AccessPolicy accessPolicy;
+    private final FileStorageService fileStorageService;
 
-    public OrdreDeMissionController(OrdreDeMissionService omService, PdfGeneratorService pdfService, AccessPolicy accessPolicy) {
+    public OrdreDeMissionController(OrdreDeMissionService omService, PdfGeneratorService pdfService, AccessPolicy accessPolicy,
+                                    FileStorageService fileStorageService) {
         this.omService = omService;
         this.pdfService = pdfService;
         this.accessPolicy = accessPolicy;
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping
@@ -63,7 +68,16 @@ public class OrdreDeMissionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateOrdre(@PathVariable Long id, @RequestBody OrdreDeMission details) {
+    public ResponseEntity<?> updateOrdre(@PathVariable Long id, @RequestBody OrdreDeMission details,
+                                         @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        User user = accessPolicy.resolve(userEmail);
+        if (!accessPolicy.canIssueMissionOrder(user)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeMissionOrderRule()));
+        }
+        if (details != null && details.getDateDebut() != null && details.getDateFin() != null
+                && details.getDateFin().isBefore(details.getDateDebut())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La date de fin ne peut pas précéder la date de début."));
+        }
         try {
             OrdreDeMission updated = omService.updateOrdre(id, details);
             return ResponseEntity.ok(updated);
@@ -72,11 +86,16 @@ public class OrdreDeMissionController {
         }
     }
 
-    @PostMapping("/{id}/upload-scan")
-    public ResponseEntity<?> uploadSignedScan(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+    /** Imports the signed individual mission order, scanned back in, PDF or photo. */
+    @PostMapping(value = "/{id}/upload-scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadSignedScan(@PathVariable Long id, @RequestParam("file") MultipartFile file,
+                                              @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        User user = accessPolicy.resolve(userEmail);
+        if (!accessPolicy.canIssueMissionOrder(user)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeMissionOrderRule()));
+        }
         try {
-            String scanPath = payload.get("scanPath");
-            if (scanPath == null || scanPath.isBlank()) scanPath = "/uploads/scans/om_" + id + "_signed.pdf";
+            String scanPath = fileStorageService.store(file, "scans", "om_" + id + "_signed");
             OrdreDeMission updated = omService.uploadSignedScan(id, scanPath);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {

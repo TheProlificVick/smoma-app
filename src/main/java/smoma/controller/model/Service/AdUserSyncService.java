@@ -8,6 +8,7 @@ import smoma.repository.UserRepository;
 import javax.naming.NamingException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AdUserSyncService {
@@ -38,9 +39,6 @@ public class AdUserSyncService {
             }
 
             String matricule = adUser.get("matricule");
-            String rawDefaultPassword = (matricule != null && !matricule.isBlank()) 
-                    ? matricule + "@2026!" 
-                    : "Art@2026!";
 
             Role assignedRole = Role.valueOf(adUser.getOrDefault("role", "ROLE_AGENT"));
 
@@ -55,9 +53,11 @@ public class AdUserSyncService {
             user.setRole(assignedRole);
             user.setActive(true);
 
-            // Only set password if creating a new user
+            // AD-managed accounts always sign in via a live LDAP bind; the local password column
+            // is never meant to be used for them, so a new user gets an unguessable random hash
+            // rather than a predictable "<matricule>@2026!" default.
             if (user.getId() == null) {
-                user.setPassword(passwordEncoder.encode(rawDefaultPassword));
+                user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
             }
 
             userRepository.save(user);

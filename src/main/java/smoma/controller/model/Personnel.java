@@ -41,7 +41,20 @@ public class Personnel {
 
     private String fonction;
     private String rang;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 16)
+    private Genre genre;
+
     private LocalDate dateEmbauche;
+
+    /** Place/office where the staff member was hired (e.g. "Yaoundé - Siège ART"). */
+    private String lieuEmbauche;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type_contrat", length = 16)
+    private TypeContrat typeContrat;
+
     private LocalDate dateNaissance;
     private String adresse;
     private String ville;
@@ -165,12 +178,36 @@ public class Personnel {
         this.rang = rang;
     }
 
+    public Genre getGenre() {
+        return genre;
+    }
+
+    public void setGenre(Genre genre) {
+        this.genre = genre;
+    }
+
     public LocalDate getDateEmbauche() {
         return dateEmbauche;
     }
 
     public void setDateEmbauche(LocalDate dateEmbauche) {
         this.dateEmbauche = dateEmbauche;
+    }
+
+    public String getLieuEmbauche() {
+        return lieuEmbauche;
+    }
+
+    public void setLieuEmbauche(String lieuEmbauche) {
+        this.lieuEmbauche = lieuEmbauche;
+    }
+
+    public TypeContrat getTypeContrat() {
+        return typeContrat;
+    }
+
+    public void setTypeContrat(TypeContrat typeContrat) {
+        this.typeContrat = typeContrat;
     }
 
     public LocalDate getDateNaissance() {
@@ -237,6 +274,11 @@ public class Personnel {
         return statut == null || statut == Statut.ACTIF;
     }
 
+    /** Retirement age at ART is 60; computed from the date of birth so it never goes stale. */
+    public boolean isEligibleRetraite() {
+        return dateNaissance != null && !dateNaissance.plusYears(60).isAfter(LocalDate.now());
+    }
+
     public enum Grade {
         A,
         B,
@@ -250,6 +292,11 @@ public class Personnel {
         INACTIF,
         CONGE,
         RETRAIT
+    }
+
+    public enum TypeContrat {
+        CDI,
+        CDD
     }
 
     @Override

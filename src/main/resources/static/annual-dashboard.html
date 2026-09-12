@@ -81,6 +81,87 @@
                 <p class="text-muted" data-i18n="annualRecapDesc">Vue consolidée annuelle disponible pour l'exercice budgétaire 2026.</p>
             </div>
         </div>
+
+        <!-- Gender & mission analytics -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="fa-solid fa-venus-mars me-1"></i> <span data-i18n="analysisTitle">Analyse par Genre & Indicateurs des Missions</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card p-3 shadow-sm border-0 border-start border-4 border-info">
+                            <small class="text-muted fw-bold" data-i18n="analysisStaffMale">Effectif Masculin</small>
+                            <h3 class="fw-bold mb-0" id="aEffectifH">--</h3>
+                            <small class="text-muted" id="aEffectifHPct">--</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 shadow-sm border-0 border-start border-4 border-pink" style="border-left-color:#d63384 !important">
+                            <small class="text-muted fw-bold" data-i18n="analysisStaffFemale">Effectif Féminin</small>
+                            <h3 class="fw-bold mb-0" id="aEffectifF">--</h3>
+                            <small class="text-muted" id="aEffectifFPct">--</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 shadow-sm border-0 border-start border-4 border-secondary">
+                            <small class="text-muted fw-bold" data-i18n="analysisAvgDuration">Durée Moyenne des Missions</small>
+                            <h3 class="fw-bold mb-0"><span id="aDureeMoyenne">--</span> <span data-i18n="analysisDaysUnit">jours</span></h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 shadow-sm border-0 border-start border-4 border-success">
+                            <small class="text-muted fw-bold" data-i18n="analysisTotalIndemnites">Total Indemnités Calculées</small>
+                            <h3 class="fw-bold mb-0"><span id="aTotalIndemnites">--</span> <span data-i18n="currencyXaf">FCFA</span></h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold" data-i18n="analysisMissionsByGender">Missions Effectuées par Genre</h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="analysisGender">Genre</th>
+                                    <th data-i18n="analysisMissionCount">Nombre de Missions</th>
+                                    <th data-i18n="analysisAgentCount">Agents Distincts</th>
+                                    <th data-i18n="analysisShare">Part (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aGenreTable"></tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold" data-i18n="analysisMissionsByType">Missions par Type</h6>
+                        <table class="table table-sm table-bordered mb-4">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="analysisType">Type</th>
+                                    <th data-i18n="analysisMissionCount">Nombre de Missions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aTypeTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row g-4 mt-1">
+                    <div class="col-12">
+                        <h6 class="fw-bold" data-i18n="analysisByDepartment">Missions par Direction / Structure (Top 10)</h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="persColStructure">Structure / Direction</th>
+                                    <th data-i18n="analysisMissionCount">Nombre de Missions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aDeptTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap 5 Bundle JS -->
@@ -104,10 +185,50 @@
             }
         }
 
+        const GENRE_LABELS = { HOMME: 'Masculin / Male', FEMME: 'Féminin / Female', NON_PRECISE: 'Non précisé / Unspecified' };
+
+        async function loadMissionAnalysis() {
+            try {
+                const res = await fetch('/api/statistiques/analyse-missions');
+                if (!res.ok) return;
+                const a = await res.json();
+
+                const effTotal = a.effectifTotal || 0;
+                document.getElementById('aEffectifH').innerText = a.effectifHommes || 0;
+                document.getElementById('aEffectifF').innerText = a.effectifFemmes || 0;
+                document.getElementById('aEffectifHPct').innerText = effTotal ? Math.round((a.effectifHommes || 0) / effTotal * 100) + '%' : '—';
+                document.getElementById('aEffectifFPct').innerText = effTotal ? Math.round((a.effectifFemmes || 0) / effTotal * 100) + '%' : '—';
+                document.getElementById('aDureeMoyenne').innerText = a.dureeMoyenneJours ?? 0;
+                document.getElementById('aTotalIndemnites').innerText = Math.round(a.totalIndemnitesVersees || 0).toLocaleString('fr-FR');
+
+                const totalMissions = a.totalMissions || 0;
+                const genreRows = Object.entries(a.missionsByGenre || {}).map(([k, v]) => `
+                    <tr>
+                        <td>${GENRE_LABELS[k] || k}</td>
+                        <td>${v}</td>
+                        <td>${(a.distinctAgentsByGenre || {})[k] ?? 0}</td>
+                        <td>${totalMissions ? Math.round(v / totalMissions * 100) : 0}%</td>
+                    </tr>`).join('');
+                document.getElementById('aGenreTable').innerHTML = genreRows || `<tr><td colspan="4" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+
+                const typeRows = Object.entries(a.missionsByType || {}).map(([k, v]) => `
+                    <tr><td>${k === 'EXTERNE' ? 'EXTERNE (International)' : 'INTERNE (Cameroun)'}</td><td>${v}</td></tr>`).join('');
+                document.getElementById('aTypeTable').innerHTML = typeRows || `<tr><td colspan="2" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+
+                const deptEntries = Object.entries(a.missionsByDepartment || {}).sort((x, y) => y[1] - x[1]).slice(0, 10);
+                document.getElementById('aDeptTable').innerHTML = deptEntries.map(([k, v]) => `
+                    <tr><td>${k}</td><td>${v}</td></tr>`).join('') || `<tr><td colspan="2" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             smomaI18n.injectLanguageSwitcher('#langContainer');
             loadAnnualStats();
+            loadMissionAnalysis();
         });
+        window.addEventListener('smoma_lang_changed', () => { smomaI18n.applyTranslations(); loadMissionAnalysis(); });
     </script>
 </body>
 </html>

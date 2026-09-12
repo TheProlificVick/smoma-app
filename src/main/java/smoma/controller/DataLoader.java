@@ -1,6 +1,10 @@
 package smoma.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import smoma.controller.model.*;
 import smoma.controller.model.Service.Role;
@@ -14,9 +18,22 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class DataLoader implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    /**
+     * When false (the production default), the demo accounts, fabricated indemnity rate table,
+     * and sample personnel below are skipped so a fresh database starts genuinely empty instead
+     * of pre-loaded with guessable-password logins and made-up numbers. Set true only for a
+     * local/dev/staging database (see application-local.properties).
+     */
+    @Value("${smoma.seed-demo-data:false}")
+    private boolean seedDemoData;
 
     private final UserRepository userRepository;
     private final CompanySettingsRepository settingsRepository;
@@ -122,6 +139,35 @@ public class DataLoader implements CommandLineRunner {
         motifRepository.save(new MotifReglementaire(code, libelle, ""));
     }
 
+    /** Ensures a rank tier exists (matched by code), creating it if missing. */
+    private void ensureRang(String code, String libelle, int niveau) {
+        if (code == null || code.isBlank()) return;
+        if (rangRepository.findByCode(code).isPresent()) return;
+        rangRepository.save(new Rang(libelle, code, niveau));
+    }
+
+    /** Ensures a job title exists (matched by code), creating it if missing. */
+    private void ensureFonction(String libelle, String code, String description) {
+        if (code == null || code.isBlank()) return;
+        if (fonctionRepository.findByCode(code).isPresent()) return;
+        fonctionRepository.save(new Fonction(libelle, code, description));
+    }
+
+    /**
+     * Ensures a daily mission-indemnity rate exists for a rank/mission-type pair (matched by
+     * rang+typeMission). Creates it if missing; never overwrites a rate an administrator has
+     * since edited via Référentiels.
+     */
+    private void ensureBareme(String rangCode, OrdreDeMission.TypeMission typeMission, java.math.BigDecimal montant) {
+        if (rangCode == null || rangCode.isBlank() || montant == null) return;
+        if (baremeRepository.findByRangAndTypeMission(rangCode, typeMission).isPresent()) return;
+        BaremeIndemnite b = new BaremeIndemnite();
+        b.setRang(rangCode);
+        b.setTypeMission(typeMission);
+        b.setMontantJournalier(montant);
+        baremeRepository.save(b);
+    }
+
     @Override
     public void run(String... args) throws Exception {
 
@@ -138,55 +184,60 @@ public class DataLoader implements CommandLineRunner {
             settingsRepository.save(settings);
         }
 
-        // 2. Users — each carries a "designation" (title) so the mandate-initiation and
-        //    report-validation rules from the ART organigramme can be exercised end-to-end.
-        if (userRepository.count() == 0) {
-            User admin = new User("admin@art.cm", "admin123", "Administrateur Système", "admin@art.cm", "IT", Role.ROLE_ADMIN);
-            admin.setTitle("Administrateur");
-            userRepository.save(admin);
+        // 2. Demo users — only for a local/dev/staging database (smoma.seed-demo-data=true).
+        //    A production database must never be pre-loaded with guessable-password logins;
+        //    see the bootstrap-admin block near the end of this method for the real prod path.
+        if (seedDemoData) {
+            // 2. Users — each carries a "designation" (title) so the mandate-initiation and
+            //    report-validation rules from the ART organigramme can be exercised end-to-end.
+            if (userRepository.count() == 0) {
+                User admin = new User("admin@art.cm", "admin123", "Administrateur Système", "admin@art.cm", "IT", Role.ROLE_ADMIN);
+                admin.setTitle("Administrateur");
+                userRepository.save(admin);
 
-            User gm = new User("gm@art.cm", "password123", "Directeur Général (DG)", "gm@art.cm", "Direction Générale", Role.ROLE_GENERAL_MANAGER);
-            gm.setTitle("Directeur Général");
-            userRepository.save(gm);
+                User gm = new User("gm@art.cm", "password123", "Directeur Général (DG)", "gm@art.cm", "Direction Générale", Role.ROLE_GENERAL_MANAGER);
+                gm.setTitle("Directeur Général");
+                userRepository.save(gm);
 
-            // DRH officer, Service du Personnel (designation "SP") — validates mission reports.
-            User hr = new User("hr@art.cm", "password123", "Responsable Service du Personnel", "hr@art.cm", "Direction des Ressources Humaines", Role.ROLE_HR_OFFICER);
-            hr.setTitle("SP");
-            userRepository.save(hr);
+                // DRH officer, Service du Personnel (designation "SP") — validates mission reports.
+                User hr = new User("hr@art.cm", "password123", "Responsable Service du Personnel", "hr@art.cm", "Direction des Ressources Humaines", Role.ROLE_HR_OFFICER);
+                hr.setTitle("SP");
+                userRepository.save(hr);
 
-            // Directeur — allowed to initiate a mission mandate.
-            User dept = new User("dept@art.cm", "password123", "Directeur Technique", "dept@art.cm", "Direction Technique", Role.ROLE_DEPARTMENT_REPRESENTATIVE);
-            dept.setTitle("Directeur");
-            userRepository.save(dept);
+                // Directeur — allowed to initiate a mission mandate.
+                User dept = new User("dept@art.cm", "password123", "Directeur Technique", "dept@art.cm", "Direction Technique", Role.ROLE_DEPARTMENT_REPRESENTATIVE);
+                dept.setTitle("Directeur");
+                userRepository.save(dept);
 
-            // Sous-Directeur — allowed to initiate a mission mandate.
-            User sd = new User("sd@art.cm", "password123", "Sous-Directeur des Licences", "sd@art.cm", "Direction des Licences, de la Concurrence et de l'Interconnexion", Role.ROLE_DEPARTMENT_REPRESENTATIVE);
-            sd.setTitle("Sous-Directeur");
-            userRepository.save(sd);
+                // Sous-Directeur — allowed to initiate a mission mandate.
+                User sd = new User("sd@art.cm", "password123", "Sous-Directeur des Licences", "sd@art.cm", "Direction des Licences, de la Concurrence et de l'Interconnexion", Role.ROLE_DEPARTMENT_REPRESENTATIVE);
+                sd.setTitle("Sous-Directeur");
+                userRepository.save(sd);
 
-            // Chargé d'Études Assistant (CEA) — allowed to initiate a mission mandate.
-            User cea = new User("cea@art.cm", "password123", "Chargé d'Études Assistant", "cea@art.cm", "Direction de la Stratégie et de la Prospective", Role.ROLE_STAFF_MEMBER);
-            cea.setTitle("Chargé d'Études Assistant (CEA)");
-            userRepository.save(cea);
+                // Chargé d'Études Assistant (CEA) — allowed to initiate a mission mandate.
+                User cea = new User("cea@art.cm", "password123", "Chargé d'Études Assistant", "cea@art.cm", "Direction de la Stratégie et de la Prospective", Role.ROLE_STAFF_MEMBER);
+                cea.setTitle("Chargé d'Études Assistant (CEA)");
+                userRepository.save(cea);
 
-            // Plain agent — may be assigned missions but cannot initiate a mandate.
-            User staff = new User("staff@art.cm", "password123", "Agent de Mission", "staff@art.cm", "Contrôle & Régulation", Role.ROLE_STAFF_MEMBER);
-            staff.setTitle("Agent Technique");
-            userRepository.save(staff);
+                // Plain agent — may be assigned missions but cannot initiate a mandate.
+                User staff = new User("staff@art.cm", "password123", "Agent de Mission", "staff@art.cm", "Contrôle & Régulation", Role.ROLE_STAFF_MEMBER);
+                staff.setTitle("Agent Technique");
+                userRepository.save(staff);
+            }
+
+            // 2b. Idempotent designation backfill — runs on every startup so an existing database
+            //     (seeded before designations were introduced) also gets the demo accounts and titles.
+            ensureUser("admin@art.cm", "admin123", "Administrateur Système", "IT", Role.ROLE_ADMIN, "Administrateur");
+            ensureUser("gm@art.cm", "password123", "Directeur Général (DG)", "Direction Générale", Role.ROLE_GENERAL_MANAGER, "Directeur Général");
+            ensureUser("hr@art.cm", "password123", "Responsable Service du Personnel", "Direction des Ressources Humaines", Role.ROLE_HR_OFFICER, "SP");
+            // Direction des Finances — approves advance / balance requests and decides the payment channel.
+            ensureUser("finance@art.cm", "password123", "Agent Direction des Finances", "Direction des Finances", Role.ROLE_FINANCE_OFFICER, "DF");
+            ensureUser("dept@art.cm", "password123", "Directeur Technique", "Direction Technique", Role.ROLE_DEPARTMENT_REPRESENTATIVE, "Directeur");
+            ensureUser("sd@art.cm", "password123", "Sous-Directeur des Licences", "Direction des Licences, de la Concurrence et de l'Interconnexion", Role.ROLE_DEPARTMENT_REPRESENTATIVE, "Sous-Directeur");
+            // cea@ and staff@ are linked to seeded personnel matricules so "Mes Missions" shows data immediately.
+            ensureUser("cea@art.cm", "password123", "Chargé d'Études Assistant", "Direction de la Stratégie et de la Prospective", Role.ROLE_STAFF_MEMBER, "Chargé d'Études Assistant (CEA)", "ART-2026-002");
+            ensureUser("staff@art.cm", "password123", "Agent de Mission", "Contrôle & Régulation", Role.ROLE_STAFF_MEMBER, "Agent Technique", "ART-2026-003");
         }
-
-        // 2b. Idempotent designation backfill — runs on every startup so an existing database
-        //     (seeded before designations were introduced) also gets the demo accounts and titles.
-        ensureUser("admin@art.cm", "admin123", "Administrateur Système", "IT", Role.ROLE_ADMIN, "Administrateur");
-        ensureUser("gm@art.cm", "password123", "Directeur Général (DG)", "Direction Générale", Role.ROLE_GENERAL_MANAGER, "Directeur Général");
-        ensureUser("hr@art.cm", "password123", "Responsable Service du Personnel", "Direction des Ressources Humaines", Role.ROLE_HR_OFFICER, "SP");
-        // Direction des Finances — approves advance / balance requests and decides the payment channel.
-        ensureUser("finance@art.cm", "password123", "Agent Direction des Finances", "Direction des Finances", Role.ROLE_FINANCE_OFFICER, "DF");
-        ensureUser("dept@art.cm", "password123", "Directeur Technique", "Direction Technique", Role.ROLE_DEPARTMENT_REPRESENTATIVE, "Directeur");
-        ensureUser("sd@art.cm", "password123", "Sous-Directeur des Licences", "Direction des Licences, de la Concurrence et de l'Interconnexion", Role.ROLE_DEPARTMENT_REPRESENTATIVE, "Sous-Directeur");
-        // cea@ and staff@ are linked to seeded personnel matricules so "Mes Missions" shows data immediately.
-        ensureUser("cea@art.cm", "password123", "Chargé d'Études Assistant", "Direction de la Stratégie et de la Prospective", Role.ROLE_STAFF_MEMBER, "Chargé d'Études Assistant (CEA)", "ART-2026-002");
-        ensureUser("staff@art.cm", "password123", "Agent de Mission", "Contrôle & Régulation", Role.ROLE_STAFF_MEMBER, "Agent Technique", "ART-2026-003");
 
         // 3. Directions / Structures — the full ART organisational chart (decree n° 2020/727 of
         //    03 December 2020). Seeded idempotently on every startup so the "Direction initiatrice"
@@ -283,21 +334,74 @@ public class DataLoader implements CommandLineRunner {
             });
         }
 
-        // 4. Referentiels: Functions, Grades, Rangs, Motifs
-        if (fonctionRepository.count() == 0) {
-            fonctionRepository.save(new Fonction("Directeur de Structure", "DIRECTEUR", ""));
-            fonctionRepository.save(new Fonction("Chef de Service", "CHEF_SERVICE", ""));
-            fonctionRepository.save(new Fonction("Ingénieur de Contrôle", "INGENIEUR", ""));
-            fonctionRepository.save(new Fonction("Juriste Régulateur", "JURISTE", ""));
-            fonctionRepository.save(new Fonction("Agent Technique", "AGENT_TECH", ""));
+        // 4. Referentiels: Rangs, Fonctions and the mission indemnity rate table — ART's real,
+        //    official catalogue ("rang et fonctions - gestion des missions - tarification -
+        //    catalogue des indemnités des frais de mission du personnel"), not placeholder data.
+        //    Seeded idempotently (matched by code) so it applies to an existing database too, and
+        //    a rate an admin has since edited via Référentiels is never overwritten on restart.
+        String[][] rangs = {
+            // {code, libelle, niveau}
+            {"PCA", "Président du Conseil d'Administration", "1"},
+            {"MCA", "Membre du Conseil d'Administration", "2"},
+            {"DG",  "Directeur Général", "3"},
+            {"DGA", "Directeur Général Adjoint", "4"},
+            {"D",   "Directeur", "5"},
+            {"SD",  "Sous-Directeur", "6"},
+            {"CS",  "Chef de Service", "7"},
+            {"CB",  "Chef de Bureau", "8"},
+            {"CA",  "Cadre d'Appui", "9"},
+            {"PA",  "Personnel d'Appui", "10"},
+            {"AL",  "Agent de Liaison / Chauffeur", "11"}
+        };
+        for (String[] r : rangs) {
+            ensureRang(r[0], r[1], Integer.parseInt(r[2]));
+        }
+        // Retire the three placeholder rangs from the very first prototype seed.
+        for (String legacyCode : new String[]{"RANG_1", "RANG_2", "RANG_3"}) {
+            rangRepository.findByCode(legacyCode).ifPresent(rangRepository::delete);
         }
 
-        // Grade entity removed; the personnel grade is an enum inside Personnel.
-
-        if (rangRepository.count() == 0) {
-            rangRepository.save(new Rang("RANG_1", "Directeur / Chef de Département", 1));
-            rangRepository.save(new Rang("RANG_2", "Chef de Service / Ingénieur Principal", 2));
-            rangRepository.save(new Rang("RANG_3", "Cadre / Agent de Contrôle", 3));
+        String[][] fonctions = {
+            // {libelle, code, rang parent}
+            {"Président du Conseil d'Administration", "PCA_TITULAIRE", "PCA"},
+            {"Membre du Conseil d'Administration", "MCA_TITULAIRE", "MCA"},
+            {"Directeur Général", "DG_TITULAIRE", "DG"},
+            {"Directeur Général Adjoint", "DGA_TITULAIRE", "DGA"},
+            {"Conseiller Technique", "CONSEILLER_TECH", "D"},
+            {"Inspecteur", "INSPECTEUR", "D"},
+            {"Directeur", "DIRECTEUR_FN", "D"},
+            {"Responsable de l'Audit Interne", "RESP_AUDIT", "D"},
+            {"Chef de Brigade", "CHEF_BRIGADE", "D"},
+            {"Chef de Division", "CHEF_DIVISION", "D"},
+            {"Sous-Directeur", "SOUS_DIRECTEUR", "SD"},
+            {"Auditeur Junior (Sous-Direction)", "AUDITEUR_JUNIOR_SD", "SD"},
+            {"Chargé d'Étude", "CHARGE_ETUDE", "SD"},
+            {"Cadre PCA", "CADRE_PCA", "SD"},
+            {"Chef de Cellule", "CHEF_CELLULE", "SD"},
+            {"Chef de Brigade Adjoint", "CHEF_BRIGADE_ADJ", "SD"},
+            {"Attaché de Direction", "ATTACHE_DIRECTION", "SD"},
+            {"Chef de Service", "CHEF_SERVICE_CS", "CS"},
+            {"Chargée d'Étude Assistant", "CHARGE_ETUDE_ASSISTANT", "CS"},
+            {"Chef Secrétariat PCA", "CHEF_SECRETARIAT_PCA", "CS"},
+            {"Chef d'Unité", "CHEF_UNITE", "CS"},
+            {"Chef Secrétariat DG", "CHEF_SECRETARIAT_DG", "CS"},
+            {"Comptable Matière DG", "COMPTABLE_MATIERE_DG", "CS"},
+            {"Auditeur Junior (Bureau)", "AUDITEUR_JUNIOR_CB", "CB"},
+            {"Chef de Bureau", "CHEF_BUREAU", "CB"},
+            {"Chef Secrétariat", "CHEF_SECRETARIAT", "CB"},
+            {"Comptable Matière", "COMPTABLE_MATIERE", "CB"},
+            {"Cadre", "CADRE", "CA"},
+            {"Agent de Maîtrise", "AGENT_MAITRISE", "PA"},
+            {"Agent de Liaison", "AGENT_LIAISON", "AL"},
+            {"Chauffeur", "CHAUFFEUR", "AL"}
+        };
+        for (String[] f : fonctions) {
+            ensureFonction(f[0], f[1], "Rang : " + f[2]);
+        }
+        // Retire the placeholder fonctions from the very first prototype seed (distinct codes from
+        // the real catalogue above, so this never touches a real entry).
+        for (String legacyCode : new String[]{"DIRECTEUR", "CHEF_SERVICE", "INGENIEUR", "JURISTE", "AGENT_TECH"}) {
+            fonctionRepository.findByCode(legacyCode).ifPresent(fonctionRepository::delete);
         }
 
         // Motifs / justifications réglementaires — catalogue complet des types de mission
@@ -359,59 +463,34 @@ public class DataLoader implements CommandLineRunner {
             motifRepository.findByCode(legacyCode).ifPresent(motifRepository::delete);
         }
 
-        // 5. Rate Scales (BaremeIndemnite)
-        if (baremeRepository.count() == 0) {
-            BaremeIndemnite b1 = new BaremeIndemnite();
-            b1.setGrade("GRADE_A");
-            b1.setRang("RANG_1");
-            b1.setFonction("DIRECTEUR");
-            b1.setTypeMission(OrdreDeMission.TypeMission.INTERNE);
-            b1.setMontantJournalier(new BigDecimal("100000"));
-            baremeRepository.save(b1);
-
-            BaremeIndemnite b2 = new BaremeIndemnite();
-            b2.setGrade("GRADE_A");
-            b2.setRang("RANG_1");
-            b2.setFonction("DIRECTEUR");
-            b2.setTypeMission(OrdreDeMission.TypeMission.EXTERNE);
-            b2.setMontantJournalier(new BigDecimal("300000"));
-            baremeRepository.save(b2);
-
-            BaremeIndemnite b3 = new BaremeIndemnite();
-            b3.setGrade("GRADE_A");
-            b3.setRang("RANG_2");
-            b3.setFonction("CHEF_SERVICE");
-            b3.setTypeMission(OrdreDeMission.TypeMission.INTERNE);
-            b3.setMontantJournalier(new BigDecimal("60000"));
-            baremeRepository.save(b3);
-
-            BaremeIndemnite b4 = new BaremeIndemnite();
-            b4.setGrade("GRADE_A");
-            b4.setRang("RANG_2");
-            b4.setFonction("CHEF_SERVICE");
-            b4.setTypeMission(OrdreDeMission.TypeMission.EXTERNE);
-            b4.setMontantJournalier(new BigDecimal("200000"));
-            baremeRepository.save(b4);
-
-            BaremeIndemnite b5 = new BaremeIndemnite();
-            b5.setGrade("GRADE_B");
-            b5.setRang("RANG_3");
-            b5.setFonction("INGENIEUR");
-            b5.setTypeMission(OrdreDeMission.TypeMission.INTERNE);
-            b5.setMontantJournalier(new BigDecimal("40000"));
-            baremeRepository.save(b5);
-
-            BaremeIndemnite b6 = new BaremeIndemnite();
-            b6.setGrade("GRADE_B");
-            b6.setRang("RANG_3");
-            b6.setFonction("INGENIEUR");
-            b6.setTypeMission(OrdreDeMission.TypeMission.EXTERNE);
-            b6.setMontantJournalier(new BigDecimal("150000"));
-            baremeRepository.save(b6);
+        // 5. Rate Scales (BaremeIndemnite) — ART's real, official daily indemnity rates per rank,
+        //    Internal / External mission (source: same catalogue as the rangs/fonctions above).
+        //    Seeded unconditionally (real data, not a demo fixture) and idempotently — an admin's
+        //    later edit via Référentiels is never overwritten on restart. Agent de Liaison /
+        //    Chauffeur (AL) has no external rate: that tier is not authorised for external missions.
+        String[][] baremeRates = {
+            // {rang code, interne, externe-or-null}
+            {"PCA", "70000", "90000"},
+            {"MCA", "65000", "85000"},
+            {"DG",  "65000", "85000"},
+            {"DGA", "60000", "80000"},
+            {"D",   "50000", "75000"},
+            {"SD",  "40000", "70000"},
+            {"CS",  "35000", "65000"},
+            {"CB",  "30000", "60000"},
+            {"CA",  "30000", "60000"},
+            {"PA",  "25000", "55000"},
+            {"AL",  "20000", null}
+        };
+        for (String[] rate : baremeRates) {
+            ensureBareme(rate[0], OrdreDeMission.TypeMission.INTERNE, new BigDecimal(rate[1]));
+            if (rate[2] != null) {
+                ensureBareme(rate[0], OrdreDeMission.TypeMission.EXTERNE, new BigDecimal(rate[2]));
+            }
         }
 
-        // 6. Personnel (~6 sample staff members)
-        if (personnelRepository.count() == 0) {
+        // 6. Personnel (~6 sample staff members) — fabricated demo records, dev/staging only.
+        if (seedDemoData && personnelRepository.count() == 0) {
             Personnel p1 = new Personnel("MBARGA", "Lucien", "ART-2026-001", "mbarga@art.cm", "", null);
             Personnel p2 = new Personnel("NNANG", "Alice", "ART-2026-002", "annang@art.cm", "", null);
             Personnel p3 = new Personnel("TCHOUA", "Pierre", "ART-2026-003", "ptchoua@art.cm", "", null);
@@ -422,179 +501,10 @@ public class DataLoader implements CommandLineRunner {
             personnelRepository.saveAll(Arrays.asList(p1, p2, p3, p4, p5, p6));
         }
 
-        // 7. Mandats, Steps, OMs, Advances, Reports
-        if (mandatRepository.count() == 0) {
-            Personnel pMbarga = personnelRepository.findByMatricule("ART-2026-001").orElse(null);
-            Personnel pNnang = personnelRepository.findByMatricule("ART-2026-002").orElse(null);
-            Personnel pTchoua = personnelRepository.findByMatricule("ART-2026-003").orElse(null);
-            Personnel pMoukouri = personnelRepository.findByMatricule("ART-2026-004").orElse(null);
-            Personnel pKouam = personnelRepository.findByMatricule("ART-2026-005").orElse(null);
-
-            // Mandat 1: Interne Avec Frais (Douala & Kribi)
-            MandatDeMission m1 = new MandatDeMission();
-            m1.setReferenceMandat("MANDAT-ART-2026-001");
-            m1.setObjetGeneral("Mission de contrôle de la qualité de service et couverture réseau 4G/5G à Douala et Kribi");
-            m1.setMotifReglementaire("Contrôle de la Qualité de Service & Couverture Réseau 4G/5G");
-            m1.setDateDebut(LocalDate.now().plusDays(5));
-            m1.setDateFin(LocalDate.now().plusDays(15));
-            m1.setTypeMission(MandatDeMission.TypeMission.INTERNE);
-            m1.setSansFrais(false);
-            m1.setPersonnelList(new ArrayList<>(Arrays.asList(pNnang, pTchoua)));
-            m1.setStatut(MandatDeMission.StatutMandat.ACTIF);
-            mandatRepository.save(m1);
-            // Steps for Mandat 1
-            EtapeMission e1 = new EtapeMission();
-            e1.setMandatDeMission(m1);
-            e1.setLieu("Douala");
-            e1.setDateDebut(LocalDate.now().plusDays(5));
-            e1.setDateFin(LocalDate.now().plusDays(10));
-            e1.setCommentaire("Contrôle des antennes d'opérateurs Mobile à Douala");
-
-            EtapeMission e2 = new EtapeMission();
-            e2.setMandatDeMission(m1);
-            e2.setLieu("Kribi");
-            e2.setDateDebut(LocalDate.now().plusDays(11));
-            e2.setDateFin(LocalDate.now().plusDays(15));
-            e2.setCommentaire("Audit de la couverture littorale à Kribi");
-
-            etapeRepository.saveAll(Arrays.asList(e1, e2));
-
-            // Mandat 2: Externe Avec Frais (Genève)
-            MandatDeMission m2 = new MandatDeMission();
-            m2.setReferenceMandat("MANDAT-ART-2026-002");
-            m2.setObjetGeneral("Conférence de l'Union Internationale des Télécommunications (UIT) à Genève");
-            m2.setMotifReglementaire("Représentation à la Conférence de l'Union Internationale des Télécommunications");
-            m2.setDateDebut(LocalDate.now().plusDays(20));
-            m2.setDateFin(LocalDate.now().plusDays(28));
-            m2.setTypeMission(MandatDeMission.TypeMission.EXTERNE);
-            m2.setSansFrais(false);
-            m2.setPersonnelList(new ArrayList<>(Arrays.asList(pMbarga, pMoukouri)));
-            m2.setStatut(MandatDeMission.StatutMandat.ACTIF);
-            mandatRepository.save(m2);
-
-            // Steps for Mandat 2
-            EtapeMission e3 = new EtapeMission();
-            e3.setMandatDeMission(m2);
-            e3.setLieu("Genève (Suisse)");
-            e3.setDateDebut(LocalDate.now().plusDays(20));
-            e3.setDateFin(LocalDate.now().plusDays(28));
-            e3.setCommentaire("Participation aux travaux de régulation des fréquences internationales");
-            etapeRepository.save(e3);
-
-            // Mandat 3: Interne SANS FRAIS (Yaoundé) - Sceau Rouge
-            MandatDeMission m3 = new MandatDeMission();
-            m3.setReferenceMandat("MANDAT-ART-2026-003");
-            m3.setObjetGeneral("Inspection de routine et vérification des équipements au siège régional à Yaoundé");
-            m3.setMotifReglementaire("Inspection et Audit Technique des Installations Régionales");
-            m3.setDateDebut(LocalDate.now().minusDays(3));
-            m3.setDateFin(LocalDate.now().minusDays(1));
-            m3.setTypeMission(MandatDeMission.TypeMission.INTERNE);
-            m3.setSansFrais(true); // SANS FRAIS
-            m3.setPersonnelList(new ArrayList<>(Arrays.asList(pKouam)));
-            m3.setStatut(MandatDeMission.StatutMandat.ACTIF);
-            mandatRepository.save(m3);
-
-            // Steps for Mandat 3
-            EtapeMission e4 = new EtapeMission();
-            e4.setMandatDeMission(m3);
-            e4.setLieu("Yaoundé");
-            e4.setDateDebut(LocalDate.now().minusDays(3));
-            e4.setDateFin(LocalDate.now().minusDays(1));
-            e4.setCommentaire("Vérification des registres internes");
-            etapeRepository.save(e4);
-
-            // OMs
-            OrdreDeMission om1 = new OrdreDeMission();
-            om1.setReferenceOrdre("OM-ART-2026-001");
-            om1.setMandatDeMission(m1);
-            om1.setPersonnel(pNnang);
-            om1.setObjectifsSpecifiques("Contrôle Qualité Réseau Douala");
-            om1.setTypeMission(OrdreDeMission.TypeMission.INTERNE);
-            om1.setLieuDepart("Yaoundé");
-            om1.setLieuDestination("Douala");
-            om1.setDateDebut(LocalDate.now().plusDays(5));
-            om1.setDateFin(LocalDate.now().plusDays(10));
-            om1.setMoyenTransport("Véhicule de Service ART");
-            om1.setMontantIndemnite(new BigDecimal("360000"));
-            om1.setMontantAvance(new BigDecimal("270000")); // 75%
-            om1.setMontantSolde(new BigDecimal("90000"));
-            om1.setSansFrais(false);
-            om1.setStatut(OrdreDeMission.StatutOrdre.SIGNE);
-            ordreRepository.save(om1);
-
-            OrdreDeMission om2 = new OrdreDeMission();
-            om2.setReferenceOrdre("OM-ART-2026-002");
-            om2.setMandatDeMission(m2);
-            om2.setPersonnel(pMbarga);
-            om2.setObjectifsSpecifiques("Conférence UIT Genève");
-            om2.setTypeMission(OrdreDeMission.TypeMission.EXTERNE);
-            om2.setLieuDepart("Yaoundé");
-            om2.setLieuDestination("Genève (Suisse)");
-            om2.setDateDebut(LocalDate.now().plusDays(20));
-            om2.setDateFin(LocalDate.now().plusDays(28));
-            om2.setMoyenTransport("Avion Commercial");
-            om2.setMontantIndemnite(new BigDecimal("2400000"));
-            om2.setMontantAvance(new BigDecimal("2160000")); // 90%
-            om2.setMontantSolde(new BigDecimal("240000"));
-            om2.setSansFrais(false);
-            om2.setStatut(OrdreDeMission.StatutOrdre.SIGNE);
-            ordreRepository.save(om2);
-
-            OrdreDeMission om3 = new OrdreDeMission();
-            om3.setReferenceOrdre("OM-ART-2026-003");
-            om3.setMandatDeMission(m3);
-            om3.setPersonnel(pKouam);
-            om3.setObjectifsSpecifiques("Inspection Siège Yaoundé");
-            om3.setTypeMission(OrdreDeMission.TypeMission.INTERNE);
-            om3.setLieuDepart("Yaoundé");
-            om3.setLieuDestination("Yaoundé");
-            om3.setDateDebut(LocalDate.now().minusDays(3));
-            om3.setDateFin(LocalDate.now().minusDays(1));
-            om3.setMoyenTransport("À Pied");
-            om3.setMontantIndemnite(BigDecimal.ZERO);
-            om3.setMontantAvance(BigDecimal.ZERO);
-            om3.setMontantSolde(BigDecimal.ZERO);
-            om3.setSansFrais(true); // SANS FRAIS
-            om3.setStatut(OrdreDeMission.StatutOrdre.SIGNE);
-            ordreRepository.save(om3);
-
-            // Avances
-            AvanceSurFrais av1 = new AvanceSurFrais();
-            av1.setOrdreDeMission(om1);
-            av1.setPersonnel(pNnang);
-            av1.setMontantTotal(new BigDecimal("360000"));
-            av1.setPourcentageAvance(75);
-            av1.setMontant(new BigDecimal("270000"));
-            av1.setMontantSolde(new BigDecimal("90000"));
-            av1.setDateDemande(LocalDate.now());
-            av1.setStatut(AvanceSurFrais.StatutAvance.VALIDEE);
-            av1.setValidee(true);
-            avanceRepository.save(av1);
-
-            AvanceSurFrais av2 = new AvanceSurFrais();
-            av2.setOrdreDeMission(om2);
-            av2.setPersonnel(pMbarga);
-            av2.setMontantTotal(new BigDecimal("2400000"));
-            av2.setPourcentageAvance(90);
-            av2.setMontant(new BigDecimal("2160000"));
-            av2.setMontantSolde(new BigDecimal("240000"));
-            av2.setDateDemande(LocalDate.now());
-            av2.setStatut(AvanceSurFrais.StatutAvance.DEMANDEE);
-            av2.setValidee(false);
-            avanceRepository.save(av2);
-
-            // Rapport de mission pour OM3
-            RapportMission r3 = new RapportMission();
-            r3.setOrdreDeMission(om3);
-            r3.setPersonnel(pKouam);
-            r3.setTitre("Rapport d'inspection des registres internes du siège");
-            r3.setDescription("Vérification achevée avec succès. Aucun manquement constaté.");
-            r3.setCategorie("CONTRÔLE");
-            r3.setFichierPath("/uploads/rapports/rapport_om3.pdf");
-            r3.setDateDepot(LocalDate.now().minusDays(1));
-            r3.setStatutValidation("VALIDE");
-            rapportRepository.save(r3);
-        }
+        // 7. Example mandates / mission orders — intentionally NOT seeded (removed on request so the
+        //    application starts on a clean slate: no demo MandatDeMission, EtapeMission, OrdreDeMission,
+        //    AvanceSurFrais or RapportMission). Referentials, personnel, users and departments above are
+        //    still seeded normally; only the transactional mission data was a one-time demo fixture.
 
         // 8. Active Directory sync: import AD users into local `users` and `personnel` tables
         try {
@@ -616,9 +526,10 @@ public class DataLoader implements CommandLineRunner {
                     String display = row.getOrDefault("nom", login);
                     String email = row.getOrDefault("email", "");
                     String structure = row.getOrDefault("nomStructure", "");
-                    // AD-managed accounts sign in either with their AD password (when the directory is
-                    // reachable) or, offline, with the documented default "Art@2026!" / "<matricule>@2026!".
-                    User u = new User(login, "Art@2026!", display, email, structure, mappedRole);
+                    // AD-managed accounts always sign in via a live LDAP bind (AuthController tries
+                    // that first); the local password column is never meant to be used for them, so
+                    // it gets an unguessable, unusable random hash rather than a shared default.
+                    User u = new User(login, passwordEncoder.encode(UUID.randomUUID().toString()), display, email, structure, mappedRole);
                     String rawMatricule = row.getOrDefault("matricule", "LDAP-" + login);
                     if (rawMatricule.length() > 64) rawMatricule = rawMatricule.substring(0, 64);
                     u.setMatricule(rawMatricule);
@@ -649,7 +560,23 @@ public class DataLoader implements CommandLineRunner {
                 }
             }
         } catch (Exception e) {
-            System.out.println("AD sync skipped: " + e.getMessage());
+            log.warn("AD sync ignoré au démarrage (LDAP indisponible ?): {}", e.getMessage());
+        }
+
+        // 9. Bootstrap admin — ensures at least one administrator account always exists so the
+        //    first operator can sign in and configure the system, even with demo data disabled
+        //    and no matching AD group. Never runs if an admin already exists; never overwrites one.
+        if (!userRepository.existsByRole(Role.ROLE_ADMIN)) {
+            String bootstrapPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+            User bootstrapAdmin = new User("admin@art.cm", passwordEncoder.encode(bootstrapPassword),
+                    "Administrateur Système", "admin@art.cm", "IT", Role.ROLE_ADMIN);
+            bootstrapAdmin.setTitle("Administrateur");
+            userRepository.save(bootstrapAdmin);
+            log.warn("======================================================================");
+            log.warn("SMOMA: aucun compte administrateur trouvé — un compte de démarrage a été créé.");
+            log.warn("Identifiant : admin@art.cm");
+            log.warn("Mot de passe temporaire (à usage unique, changez-le immédiatement) : {}", bootstrapPassword);
+            log.warn("======================================================================");
         }
     }
 }

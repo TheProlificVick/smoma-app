@@ -7,11 +7,7 @@ import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    List<Notification> findByRecipientMatriculeOrderByDateCreationDesc(String recipientMatricule);
+    List<Notification> findByRecipientMatriculeIgnoreCaseOrderByDateCreationDesc(String recipientMatricule);
 
-    List<Notification> findByRecipientUsernameOrderByDateCreationDesc(String recipientUsername);
-
-    long countByRecipientMatriculeAndLuFalse(String recipientMatricule);
-
-    long countByRecipientUsernameAndLuFalse(String recipientUsername);
+    List<Notification> findByRecipientUsernameIgnoreCaseOrderByDateCreationDesc(String recipientUsername);
 }

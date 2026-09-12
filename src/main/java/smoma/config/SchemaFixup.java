@@ -33,9 +33,7 @@ public class SchemaFixup implements CommandLineRunner {
         {"etapes_mission",     "type_etape"},
         {"baremes_indemnites", "type_mission"},
         {"users",              "role"},
-        {"user_roles",         "role"},
-        {"mission_orders",     "status"},
-        {"mission_requests",   "status"}
+        {"user_roles",         "role"}
     };
 
     private final JdbcTemplate jdbc;

@@ -1,5 +1,6 @@
 package smoma.dto;
 
+import smoma.controller.model.Genre;
 import smoma.controller.model.Service.Role;
 
 public class CreateUserRequest {
@@ -13,6 +14,9 @@ public class CreateUserRequest {
     private String title;
     private Long departmentId;
     private Role role;
+    private Genre genre;
+    private String rang;
+    private String fonction;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -34,4 +38,10 @@ public class CreateUserRequest {
     public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+    public Genre getGenre() { return genre; }
+    public void setGenre(Genre genre) { this.genre = genre; }
+    public String getRang() { return rang; }
+    public void setRang(String rang) { this.rang = rang; }
+    public String getFonction() { return fonction; }
+    public void setFonction(String fonction) { this.fonction = fonction; }
 }

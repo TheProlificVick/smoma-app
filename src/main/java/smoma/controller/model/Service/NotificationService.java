@@ -9,7 +9,11 @@ import smoma.controller.model.OrdreDeMission;
 import smoma.controller.model.Personnel;
 import smoma.repository.NotificationRepository;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class NotificationService {
@@ -81,22 +85,55 @@ public class NotificationService {
                 "/my-missions.html");
     }
 
+    /** Raised when a mission step's end date has passed — alerts the mandate initiator and HR. */
+    public void notifyStepCompleted(String recipientMatricule, String recipientUsername, String titre, String message) {
+        create(recipientMatricule, recipientUsername, titre, message, "STEP_COMPLETED", "/mandats.html");
+    }
+
+    /**
+     * Raised for every DRH / Service du Personnel officer once a mission mandate's signed scan
+     * has been imported — the mandate is now enforceable and its individual mission orders are
+     * ready to be reviewed, printed and delivered from the "Mandats" module.
+     */
+    public void notifyMandateSigned(MandatDeMission mandat, String recipientMatricule, String recipientUsername, int nbOrdresGeneres) {
+        if (mandat == null) return;
+        String ref = mandat.getReferenceMandat() != null ? mandat.getReferenceMandat() : ("Mandat #" + mandat.getId());
+        String ordresInfo = nbOrdresGeneres > 0
+                ? (nbOrdresGeneres + " ordre(s) de mission ont été générés automatiquement et sont prêts à être édités/imprimés.")
+                : "Aucun ordre de mission n'a pu être généré automatiquement (vérifiez les conflits d'affectation dans le journal d'audit).";
+        create(recipientMatricule, recipientUsername,
+                "Mandat de mission signé / Mission mandate signed",
+                "Le Directeur Général a signé le mandat " + ref + " (« " + (mandat.getObjetGeneral() != null ? mandat.getObjetGeneral() : "") + " »), "
+                        + "dont le scan a été importé. " + ordresInfo
+                        + " Ouvrez « Ordres de Mission » pour les compléter et les émettre.",
+                "MANDATE_SIGNED",
+                "/mission-requests.html");
+    }
+
+    /**
+     * All notifications for a recipient, matched by matricule AND username (case-insensitive) and
+     * merged — a recipient can legitimately have notifications filed under either identifier
+     * (e.g. Personnel.matricule vs. User.username), so neither channel is ever silently dropped.
+     */
     public List<Notification> forRecipient(String matricule, String username) {
+        Map<Long, Notification> merged = new LinkedHashMap<>();
         if (matricule != null && !matricule.isBlank()) {
-            List<Notification> byMat = notificationRepository.findByRecipientMatriculeOrderByDateCreationDesc(matricule);
-            if (!byMat.isEmpty()) return byMat;
+            for (Notification n : notificationRepository.findByRecipientMatriculeIgnoreCaseOrderByDateCreationDesc(matricule.trim())) {
+                merged.put(n.getId(), n);
+            }
         }
         if (username != null && !username.isBlank()) {
-            return notificationRepository.findByRecipientUsernameOrderByDateCreationDesc(username);
+            for (Notification n : notificationRepository.findByRecipientUsernameIgnoreCaseOrderByDateCreationDesc(username.trim())) {
+                merged.putIfAbsent(n.getId(), n);
+            }
         }
-        return List.of();
+        List<Notification> all = new ArrayList<>(merged.values());
+        all.sort(Comparator.comparing(Notification::getDateCreation, Comparator.nullsLast(Comparator.reverseOrder())));
+        return all;
     }
 
     public long unreadCount(String matricule, String username) {
-        long c = 0;
-        if (matricule != null && !matricule.isBlank()) c += notificationRepository.countByRecipientMatriculeAndLuFalse(matricule);
-        if (c == 0 && username != null && !username.isBlank()) c += notificationRepository.countByRecipientUsernameAndLuFalse(username);
-        return c;
+        return forRecipient(matricule, username).stream().filter(n -> !n.isLu()).count();
     }
 
     public void markRead(Long id) {

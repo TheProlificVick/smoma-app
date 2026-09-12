@@ -18,6 +18,7 @@ public class OrdreDeMissionService {
     private final AuditLogRepository auditLogRepository;
     private final IndemniteService indemniteService;
     private final NotificationService notificationService;
+    private final MissionCapacityService missionCapacityService;
 
     public OrdreDeMissionService(OrdreDeMissionRepository ordreRepository,
                                  MandatDeMissionRepository mandatRepository,
@@ -25,7 +26,8 @@ public class OrdreDeMissionService {
                                  EtapeMissionRepository etapeRepository,
                                  AuditLogRepository auditLogRepository,
                                  IndemniteService indemniteService,
-                                 NotificationService notificationService) {
+                                 NotificationService notificationService,
+                                 MissionCapacityService missionCapacityService) {
         this.ordreRepository = ordreRepository;
         this.mandatRepository = mandatRepository;
         this.personnelRepository = personnelRepository;
@@ -33,25 +35,14 @@ public class OrdreDeMissionService {
         this.auditLogRepository = auditLogRepository;
         this.indemniteService = indemniteService;
         this.notificationService = notificationService;
+        this.missionCapacityService = missionCapacityService;
     }
 
+    /** Kept for backward compatibility; delegates to {@link MissionCapacityService}. */
     public void checkAgentOverlap(Long personnelId, LocalDate dateDebut, LocalDate dateFin, Long excludeOmId) {
         if (personnelId == null || dateDebut == null || dateFin == null) return;
-
-        List<OrdreDeMission> agentOrders = ordreRepository.findAll().stream()
-                .filter(o -> o.getPersonnel() != null && o.getPersonnel().getId().equals(personnelId))
-                .filter(o -> excludeOmId == null || !o.getId().equals(excludeOmId))
-                .toList();
-
-        for (OrdreDeMission existing : agentOrders) {
-            if (existing.getDateDebut() != null && existing.getDateFin() != null) {
-                boolean overlaps = !dateDebut.isAfter(existing.getDateFin()) && !dateFin.isBefore(existing.getDateDebut());
-                if (overlaps) {
-                    throw new IllegalStateException("Conflit de calendrier: l'agent " + existing.getPersonnel().getFullName() 
-                            + " a déjà une mission prévue du " + existing.getDateDebut() + " au " + existing.getDateFin() + " (" + existing.getReferenceOrdre() + ").");
-                }
-            }
-        }
+        Personnel agent = personnelRepository.findById(personnelId).orElse(null);
+        missionCapacityService.assertNoOverlap(agent, dateDebut, dateFin, excludeOmId);
     }
 
     @Transactional
@@ -83,7 +74,8 @@ public class OrdreDeMissionService {
             om.setEtape(etape);
         }
 
-        checkAgentOverlap(om.getPersonnel() != null ? om.getPersonnel().getId() : null, om.getDateDebut(), om.getDateFin(), null);
+        // One step at a time + 100-day/fiscal-year cap, regardless of rank.
+        missionCapacityService.assertAssignable(om.getPersonnel(), om.getDateDebut(), om.getDateFin(), null);
 
         if (om.getReferenceOrdre() == null || om.getReferenceOrdre().isBlank()) {
             String matricule = om.getPersonnel() != null ? om.getPersonnel().getMatricule() : "AGENT";
@@ -145,7 +137,7 @@ public class OrdreDeMissionService {
             throw new IllegalStateException("Modification impossible: cet ordre de mission est déjà signé et fige dans le système.");
         }
 
-        checkAgentOverlap(om.getPersonnel() != null ? om.getPersonnel().getId() : null, updatedDetails.getDateDebut(), updatedDetails.getDateFin(), omId);
+        missionCapacityService.assertAssignable(om.getPersonnel(), updatedDetails.getDateDebut(), updatedDetails.getDateFin(), omId);
 
         om.setObjectifsSpecifiques(updatedDetails.getObjectifsSpecifiques());
         om.setAvecFrais(updatedDetails.isAvecFrais());

@@ -246,6 +246,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     localStorage.setItem("art_authenticated", "true");
+                    localStorage.setItem("art_auth_token", data.token || "");
                     localStorage.setItem("user_name", data.fullName || "Agent ART");
                     localStorage.setItem("art_user_role", data.role || "ROLE_AGENT");
                     localStorage.setItem("art_user_email", data.username || "");

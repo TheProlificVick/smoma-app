@@ -12,6 +12,9 @@ application-local.properties
 *.pem
 *.key
 
+# Uploaded scans/reports (signed mandates, OMs, mission reports) — real user-submitted files
+uploads/
+
 # Compiled classes accidentally saved next to sources
 *.class
 

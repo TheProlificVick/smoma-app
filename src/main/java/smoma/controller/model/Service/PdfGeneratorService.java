@@ -6,21 +6,37 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.stereotype.Service;
 import org.springframework.core.io.ClassPathResource;
+import smoma.controller.model.AvanceSurFrais;
 import smoma.controller.model.EtapeMission;
+import smoma.controller.model.Genre;
 import smoma.controller.model.MandatDeMission;
-import smoma.controller.model.MissionOrder;
 import smoma.controller.model.OrdreDeMission;
 import smoma.controller.model.Personnel;
+import smoma.controller.model.Rang;
+import smoma.repository.AvanceSurFraisRepository;
+import smoma.repository.RangRepository;
 
 import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
 public class PdfGeneratorService {
+
+    private final RangRepository rangRepository;
+    private final AvanceSurFraisRepository avanceRepository;
+    private final IndemniteService indemniteService;
+
+    public PdfGeneratorService(RangRepository rangRepository, AvanceSurFraisRepository avanceRepository,
+                               IndemniteService indemniteService) {
+        this.rangRepository = rangRepository;
+        this.avanceRepository = avanceRepository;
+        this.indemniteService = indemniteService;
+    }
 
     private Image loadArtLogo() {
         try {
@@ -45,8 +61,15 @@ public class PdfGeneratorService {
         return null;
     }
 
+    /**
+     * Official individual mission order, reproducing ART's real two-sided paper "ORDRE DE
+     * MISSION" form field-for-field: page 1 is the front (identity/mission/payment-mode/rate
+     * decompte), page 2 is the back (observations, advance decompte, note de frais). Fields with
+     * no data source in the app (visas, CNI, handwritten amounts in words) are left blank exactly
+     * as they are on the blank paper form, to be completed by hand once printed.
+     */
     public ByteArrayInputStream generateOrdreDeMissionPdf(OrdreDeMission om) {
-        Document document = new Document(PageSize.A4, 36, 36, 36, 36);
+        Document document = new Document(PageSize.A4, 40, 40, 30, 36);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
@@ -55,166 +78,244 @@ public class PdfGeneratorService {
 
             Font headerFontFr = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(11, 37, 69));
             Font headerFontEn = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.DARK_GRAY);
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, new Color(11, 37, 69));
-            Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.BLACK);
-            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
-            Font stampFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, Color.RED);
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, Color.WHITE);
+            Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.BLACK);
+            Font italicFont = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 7, Color.DARK_GRAY);
+            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.BLACK);
+            Font smallFont = FontFactory.getFont(FontFactory.HELVETICA, 7, Color.DARK_GRAY);
+            Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE);
+            Font approveFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, new Color(25, 135, 84));
 
-            // Official Cameroon 3-Column Header Table
-            PdfPTable headerTable = new PdfPTable(3);
-            headerTable.setWidthPercentage(100);
-            headerTable.setWidths(new float[]{42f, 16f, 42f});
+            Personnel p = om.getPersonnel();
+            AvanceSurFrais avance = avanceRepository.findByOrdreDeMission(om).orElse(null);
+            String typeStr = om.getTypeMission() != null ? om.getTypeMission().name() : "INTERNE";
+            LocalDateSafe dates = new LocalDateSafe(om);
+            long days = dates.days();
+            BigDecimal dailyRate = p != null ? indemniteService.calculateDailyRate(p, typeStr) : BigDecimal.ZERO;
+            BigDecimal totalIndemnite = om.getMontantIndemnite() != null ? om.getMontantIndemnite() : dailyRate.multiply(BigDecimal.valueOf(days));
 
-            PdfPCell leftCell = new PdfPCell(new Phrase(
-                    "RÉPUBLIQUE DU CAMEROUN\nPaix - Travail - Patrie\n---------------\nAGENCE DE RÉGULATION\nDES TÉLÉCOMMUNICATIONS\nDirection Générale", 
-                    headerFontFr));
-            leftCell.setBorder(Rectangle.NO_BORDER);
-            leftCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            // ===== PAGE 1 — FRONT =====
+            document.add(bilingualHeaderTable(headerFontFr, headerFontEn));
+            document.add(new Paragraph(" ", smallFont));
 
-            Image logo = loadArtLogo();
-            PdfPCell centerCell;
-            if (logo != null) {
-                centerCell = new PdfPCell(logo, false);
-            } else {
-                centerCell = new PdfPCell(new Phrase("ART", headerFontFr));
-            }
-            centerCell.setBorder(Rectangle.NO_BORDER);
-            centerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            centerCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            PdfPTable refDateTable = new PdfPTable(2);
+            refDateTable.setWidthPercentage(100);
+            PdfPCell refCell = new PdfPCell(new Phrase("N° " + safe(om.getReferenceOrdre()) + " /ART/DG", boldFont));
+            refCell.setBorder(Rectangle.NO_BORDER);
+            PdfPCell dateCell = new PdfPCell(new Phrase("Yaoundé, le " + (om.getDateEmission() != null ? om.getDateEmission().toString() : ""), bodyFont));
+            dateCell.setBorder(Rectangle.NO_BORDER);
+            dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            refDateTable.addCell(refCell);
+            refDateTable.addCell(dateCell);
+            document.add(refDateTable);
 
-            PdfPCell rightCell = new PdfPCell(new Phrase(
-                    "REPUBLIC OF CAMEROON\nPeace - Work - Fatherland\n---------------\nTELECOMMUNICATIONS\nREGULATORY BOARD\nDirectorate General", 
-                    headerFontEn));
-            rightCell.setBorder(Rectangle.NO_BORDER);
-            rightCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-            headerTable.addCell(leftCell);
-            headerTable.addCell(centerCell);
-            headerTable.addCell(rightCell);
-            document.add(headerTable);
-
-            document.add(new Paragraph(" ", bodyFont));
-
-            // Stamp "SANS FRAIS" if applicable
             if (om.isSansFrais()) {
+                Font stampFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.RED);
                 PdfPTable stampTable = new PdfPTable(1);
                 stampTable.setWidthPercentage(45);
                 PdfPCell stampCell = new PdfPCell(new Phrase("SCEAU : SANS FRAIS / WITHOUT EXPENSES", stampFont));
                 stampCell.setBorderColor(Color.RED);
                 stampCell.setBorderWidth(2f);
-                stampCell.setPadding(6);
+                stampCell.setPadding(5);
                 stampCell.setHorizontalAlignment(Element.ALIGN_CENTER);
                 stampCell.setBackgroundColor(new Color(255, 235, 235));
                 stampTable.addCell(stampCell);
                 document.add(stampTable);
-                document.add(new Paragraph(" ", bodyFont));
             }
 
-            Paragraph docTitle = new Paragraph("ORDRE DE MISSION INDIVIDUEL / MISSION ORDER\nN° : " + om.getReferenceOrdre(), titleFont);
-            docTitle.setAlignment(Element.ALIGN_CENTER);
-            docTitle.setSpacingAfter(12);
-            document.add(docTitle);
+            PdfPTable titleBox = new PdfPTable(1);
+            titleBox.setWidthPercentage(100);
+            titleBox.setSpacingBefore(6);
+            titleBox.setSpacingAfter(10);
+            PdfPCell titleCell = new PdfPCell(new Phrase("ORDRE DE MISSION", titleFont));
+            titleCell.setBackgroundColor(new Color(11, 37, 69));
+            titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            titleCell.setPadding(8);
+            titleBox.addCell(titleCell);
+            document.add(titleBox);
 
-            PdfPTable table = new PdfPTable(2);
-            table.setWidthPercentage(100);
-            table.setWidths(new float[]{35f, 65f});
-
-            addTableRow(table, "Nom & Prénom / Full Name:", om.getPersonnel() != null ? om.getPersonnel().getFullName() : "N/A", boldFont, bodyFont);
-            addTableRow(table, "Matricule / Staff ID:", om.getPersonnel() != null ? om.getPersonnel().getMatricule() : "N/A", boldFont, bodyFont);
-            addTableRow(table, "Fonction & Grade / Title & Rank:", om.getPersonnel() != null ? (om.getPersonnel().getFonction() + " (Grade " + om.getPersonnel().getGrade() + ")") : "N/A", boldFont, bodyFont);
-            addTableRow(table, "Structure / Department:", om.getPersonnel() != null ? om.getPersonnel().getDepartement() : "N/A", boldFont, bodyFont);
-            addTableRow(table, "Mandat de Réf. / Mandate Ref:", om.getMandatDeMission() != null ? om.getMandatDeMission().getReferenceMandat() : "Direct", boldFont, bodyFont);
-
-            String justif = om.getReferenceJustification();
-            if ((justif == null || justif.isBlank()) && om.getMandatDeMission() != null) {
-                justif = om.getMandatDeMission().getReferenceJustification();
+            String genrePrefix = p != null && p.getGenre() == Genre.FEMME ? "Madame " : "Monsieur ";
+            String rangLibelle = rangLibelle(p != null ? p.getRang() : null);
+            String destination = om.getLieuDestination();
+            if ((destination == null || destination.isBlank()) && om.getEtapes() != null && !om.getEtapes().isEmpty()) {
+                destination = om.getEtapes().stream().map(EtapeMission::getLieu).filter(l -> l != null && !l.isBlank())
+                        .reduce((a, b) -> a + " - " + b).orElse(null);
             }
-            if (justif != null && !justif.isBlank()) {
-                addTableRow(table, "Réf. / Article de Justification:", justif, boldFont, bodyFont);
+            String motif = om.getObjectifsSpecifiques();
+            if ((motif == null || motif.isBlank()) && om.getMandatDeMission() != null) motif = om.getMandatDeMission().getObjetGeneral();
+
+            PdfPTable info = new PdfPTable(2);
+            info.setWidthPercentage(100);
+            info.setWidths(new float[]{40f, 60f});
+            formFieldRow(info, "Noms et Prénoms", "(Name, First name)", p != null ? genrePrefix + p.getFullName() : "N/A", boldFont, italicFont, bodyFont);
+            formFieldRow(info, "Grade", "(Rank)", rangLibelle, boldFont, italicFont, bodyFont);
+            formFieldRow(info, "Fonction / Service", "(Function/Office)", p != null ? safe(p.getFonction()) : "N/A", boldFont, italicFont, bodyFont);
+            formFieldRow(info, "Destination", "", safe(destination), boldFont, italicFont, bodyFont);
+            formFieldRow(info, "Motif", "(Purpose of journey)", safe(motif), boldFont, italicFont, bodyFont);
+            formFieldRow(info, "Moyen de transport", "(Means of transport)", safe(om.getMoyenTransport()), boldFont, italicFont, bodyFont);
+            formFieldRow(info, "Durée", "(Duration)", "Du " + dates.debut() + " au " + dates.fin() + ".", boldFont, italicFont, bodyFont);
+            document.add(info);
+
+            Paragraph sigLine;
+            if (om.getScanSignedPath() != null && !om.getScanSignedPath().isBlank()) {
+                sigLine = new Paragraph("APPROUVÉ / APPROVED — LE DIRECTEUR GÉNÉRAL\nSigné électroniquement" +
+                        (om.getDateEmission() != null ? " le " + om.getDateEmission() : ""), approveFont);
+            } else {
+                sigLine = new Paragraph("SIGNATURE DU DIRECTEUR GENERAL\n_______________________________", boldFont);
             }
-            if (om.getDirectionInitiatrice() != null && !om.getDirectionInitiatrice().isBlank()) {
-                addTableRow(table, "Direction Initiatrice / Initiating Directorate:", om.getDirectionInitiatrice(), boldFont, bodyFont);
-            }
-            
-            String typeStr = om.getTypeMission() != null ? om.getTypeMission().name() : "INTERNE";
-            addTableRow(table, "Type de Mission / Mission Type:", typeStr.equals("EXTERNE") ? "EXTERNE (International)" : "INTERNE (Cameroun)", boldFont, bodyFont);
+            sigLine.setAlignment(Element.ALIGN_RIGHT);
+            sigLine.setSpacingBefore(8);
+            sigLine.setSpacingAfter(14);
+            document.add(sigLine);
 
-            String debut = om.getDateDebut() != null ? om.getDateDebut().toString() : "N/A";
-            String fin = om.getDateFin() != null ? om.getDateFin().toString() : "N/A";
-            long days = (om.getDateDebut() != null && om.getDateFin() != null) ? ChronoUnit.DAYS.between(om.getDateDebut(), om.getDateFin()) + 1 : 1;
-            addTableRow(table, "Période d'Exécution / Period:", debut + " au / to " + fin + " (" + days + " jours / days)", boldFont, bodyFont);
-
-            // Transport mode representation (single, mixed, vehicle, plane)
-            String transport = om.getMoyenTransport();
-            if (transport == null || transport.isBlank()) {
-                if (om.getEtape() != null && om.getEtape().getTransportMode() != null) {
-                    transport = om.getEtape().getTransportMode();
-                } else if (om.getMandatDeMission() != null && !om.getMandatDeMission().getTransportModes().isEmpty()) {
-                    transport = String.join(", ", om.getMandatDeMission().getTransportModes());
-                } else {
-                    transport = typeStr.equals("EXTERNE") ? "Avion" : "Véhicule de service";
-                }
-            }
-            if ("MIXTE".equalsIgnoreCase(transport) || transport.contains("Avion") && transport.contains("Vehicule")) {
-                transport = "Mixte (Véhicule et Avion / Vehicle and Plane)";
-            }
-            addTableRow(table, "Moyen de Transport / Transport Mode:", transport, boldFont, bodyFont);
-
-            String obj = om.getObjectifsSpecifiques();
-            if (obj == null || obj.isBlank()) {
-                obj = om.getMandatDeMission() != null ? om.getMandatDeMission().getObjetGeneral() : "Mission officielle ART";
-            }
-            addTableRow(table, "Objet & Objectifs / Purpose:", obj, boldFont, bodyFont);
-            addTableRow(table, "Régime Financier / Financial Terms:", om.isSansFrais() ? "SANS FRAIS DE MISSION (Sans indemnité)" : "AVEC FRAIS DE MISSION (Prise en charge officielle)", boldFont, bodyFont);
-
-            document.add(table);
-
-            // Multi-step Itinerary representation if steps exist
-            List<EtapeMission> etapes = (om.getEtapes() != null && !om.getEtapes().isEmpty()) 
-                    ? om.getEtapes() 
-                    : (om.getMandatDeMission() != null ? om.getMandatDeMission().getEtapes() : null);
-
-            if (etapes != null && !etapes.isEmpty()) {
-                Paragraph stepsHeader = new Paragraph("\nÉtapes & Itinéraire de la Mission / Mission Steps & Itinerary:", boldFont);
-                stepsHeader.setSpacingAfter(6);
-                document.add(stepsHeader);
-
-                PdfPTable stepsTable = new PdfPTable(4);
-                stepsTable.setWidthPercentage(100);
-                stepsTable.setWidths(new float[]{15f, 35f, 25f, 25f});
-
-                stepsTable.addCell(new PdfPCell(new Phrase("Étape", boldFont)));
-                stepsTable.addCell(new PdfPCell(new Phrase("Itinéraire / Lieu", boldFont)));
-                stepsTable.addCell(new PdfPCell(new Phrase("Dates", boldFont)));
-                stepsTable.addCell(new PdfPCell(new Phrase("Transport", boldFont)));
-
-                int stepNum = 1;
-                for (EtapeMission st : etapes) {
-                    stepsTable.addCell(new PdfPCell(new Phrase("Étape " + stepNum++, bodyFont)));
-                    stepsTable.addCell(new PdfPCell(new Phrase(st.getLieu() != null ? st.getLieu() : "Trajet", bodyFont)));
-                    String sDate = (st.getDateDebut() != null ? st.getDateDebut().toString() : "") + 
-                                  (st.getDateFin() != null ? " au " + st.getDateFin().toString() : "");
-                    stepsTable.addCell(new PdfPCell(new Phrase(sDate, bodyFont)));
-                    stepsTable.addCell(new PdfPCell(new Phrase(st.getTransportMode() != null ? st.getTransportMode() : "Non spécifié", bodyFont)));
-                }
-                document.add(stepsTable);
+            // MODE DE PAIEMENT
+            document.add(sectionHeader("MODE DE PAIEMENT", sectionFont));
+            boolean especes = avance != null && avance.getModePaiement() == AvanceSurFrais.ModePaiement.ESPECES;
+            boolean virement = avance != null && avance.getModePaiement() == AvanceSurFrais.ModePaiement.VIREMENT;
+            PdfPTable paiement = new PdfPTable(2);
+            paiement.setWidthPercentage(100);
+            paiement.setSpacingBefore(4);
+            paiement.setSpacingAfter(10);
+            paiement.addCell(plainCell("[" + (especes ? "X" : " ") + "] Espèces : Frs CFA", bodyFont));
+            paiement.addCell(plainCell("[ ] Chèque Ordinaire", bodyFont));
+            paiement.addCell(plainCell("[ ] Devise (1)", bodyFont));
+            paiement.addCell(plainCell("[ ] Chèque de voyage (1)", bodyFont));
+            document.add(paiement);
+            if (virement) {
+                Paragraph virementNote = new Paragraph("Réglé par virement bancaire" +
+                        (avance.getReferenceVirement() != null ? " — référence : " + avance.getReferenceVirement() : ""), smallFont);
+                virementNote.setSpacingAfter(6);
+                document.add(virementNote);
             }
 
-            // Signatures block
-            PdfPTable signTable = new PdfPTable(2);
-            signTable.setWidthPercentage(100);
-            signTable.setSpacingBefore(20);
+            PdfPTable decompte = new PdfPTable(3);
+            decompte.setWidthPercentage(100);
+            decompte.setSpacingBefore(4);
+            decompte.addCell(headerCell("Nombre de jours", boldFont));
+            decompte.addCell(headerCell("Taux", boldFont));
+            decompte.addCell(headerCell("Décompte", boldFont));
+            decompte.addCell(plainCell(String.valueOf(days), bodyFont));
+            decompte.addCell(plainCell(fmt(dailyRate) + " FCFA", bodyFont));
+            decompte.addCell(plainCell(fmt(totalIndemnite) + " FCFA", bodyFont));
+            document.add(decompte);
 
-            PdfPCell signAgent = new PdfPCell(new Phrase("Visa du Titulaire / Staff Member:\n\n\n______________________", bodyFont));
-            signAgent.setBorder(Rectangle.NO_BORDER);
+            Paragraph arrete = new Paragraph("Arrêté le présent décompte à la somme de " + fmt(totalIndemnite) + " FCFA (" + amountFootnote() + ")", bodyFont);
+            arrete.setSpacingBefore(10);
+            document.add(arrete);
+            Paragraph lieuDate = new Paragraph("A Yaoundé, le " + (om.getDateEmission() != null ? om.getDateEmission().toString() : "......................."), bodyFont);
+            lieuDate.setSpacingBefore(4);
+            lieuDate.setSpacingAfter(10);
+            document.add(lieuDate);
 
-            PdfPCell signDg = new PdfPCell(new Phrase("Pour le Directeur Général / For the GM:\nLe Signataire Habilité (Cachet officiel & Sceau)\n\n______________________", boldFont));
-            signDg.setBorder(Rectangle.NO_BORDER);
-            signDg.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            Paragraph footnote1 = new Paragraph("(1) Préciser la nature des devises", smallFont);
+            document.add(footnote1);
 
-            signTable.addCell(signAgent);
-            signTable.addCell(signDg);
-            document.add(signTable);
+            // ===== PAGE 2 — BACK =====
+            document.newPage();
+
+            document.add(sectionHeader("OBSERVATIONS", sectionFont));
+            PdfPTable obs = new PdfPTable(4);
+            obs.setWidthPercentage(100);
+            obs.setSpacingBefore(4);
+            obs.setSpacingAfter(10);
+            for (String h : new String[]{"Visa au départ", "Visa à l'arrivée", "Visa au départ", "Visa à l'arrivée"}) {
+                obs.addCell(headerCell(h, boldFont));
+            }
+            for (int i = 0; i < 4; i++) {
+                PdfPCell blank = new PdfPCell(new Phrase(" ", bodyFont));
+                blank.setMinimumHeight(40);
+                obs.addCell(blank);
+            }
+            document.add(obs);
+
+            Paragraph prolongement = new Paragraph("Durée et raison du prolongement : ...................................................... Visa du Directeur Général : ......................................", bodyFont);
+            prolongement.setSpacingAfter(8);
+            document.add(prolongement);
+            Paragraph finPrecoce = new Paragraph("Durée et raison de fin précoce de la mission : .............................. Visa du Directeur Général : ......................................", bodyFont);
+            finPrecoce.setSpacingAfter(14);
+            document.add(finPrecoce);
+
+            document.add(sectionHeader("DECOMPTES DES AVANCES - DETAILS OF ADVANCES", sectionFont));
+            PdfPTable avancesHead = new PdfPTable(2);
+            avancesHead.setWidthPercentage(100);
+            avancesHead.setSpacingBefore(4);
+            avancesHead.addCell(headerCell("AU DEPART - AT DEPARTURE", boldFont));
+            avancesHead.addCell(headerCell("AU RETOUR - ON RETURN", boldFont));
+            document.add(avancesHead);
+
+            BigDecimal montantAvance = avance != null && avance.getMontantAvance() != null ? avance.getMontantAvance() : BigDecimal.ZERO;
+            BigDecimal montantSolde = om.getMontantSolde() != null ? om.getMontantSolde() : totalIndemnite.subtract(montantAvance);
+
+            PdfPTable indemJour = new PdfPTable(7);
+            indemJour.setWidthPercentage(100);
+            indemJour.setWidths(new float[]{22f, 13f, 13f, 13f, 13f, 13f, 13f});
+            indemJour.addCell(headerCell("Indemnité Journalière", boldFont));
+            indemJour.addCell(headerCell("Nombre", boldFont));
+            indemJour.addCell(headerCell("Taux", boldFont));
+            indemJour.addCell(headerCell("Décompte", boldFont));
+            indemJour.addCell(headerCell("Nombre", boldFont));
+            indemJour.addCell(headerCell("Taux", boldFont));
+            indemJour.addCell(headerCell("Décompte", boldFont));
+
+            indemJour.addCell(plainCell("Normale - Normal", bodyFont));
+            indemJour.addCell(plainCell(String.valueOf(days), bodyFont));
+            indemJour.addCell(plainCell(fmt(dailyRate), bodyFont));
+            indemJour.addCell(plainCell(fmt(totalIndemnite), bodyFont));
+            indemJour.addCell(plainCell("", bodyFont));
+            indemJour.addCell(plainCell("", bodyFont));
+            indemJour.addCell(plainCell("", bodyFont));
+
+            for (String tier : new String[]{"Réduite - Reduced", "Partielle - Partial"}) {
+                indemJour.addCell(plainCell(tier, bodyFont));
+                for (int i = 0; i < 6; i++) indemJour.addCell(plainCell("", bodyFont));
+            }
+            document.add(indemJour);
+
+            PdfPTable arretePaye = new PdfPTable(2);
+            arretePaye.setWidthPercentage(100);
+            arretePaye.setSpacingBefore(6);
+            arretePaye.addCell(plainCell("ARRETE A LA SOMME DE " + fmt(totalIndemnite) + " FCFA\nCLOSE AT THE SUM OF", bodyFont));
+            arretePaye.addCell(plainCell("PAYE LA SOMME DE " + fmt(montantAvance) + " FCFA\nPAID THE SUM OF", bodyFont));
+            document.add(arretePaye);
+
+            Paragraph payeeTitre = new Paragraph("Payée à titre d'avance" + (avance != null && avance.getPourcentageAvance() != null ? " (" + avance.getPourcentageAvance() + "%)" : ""), smallFont);
+            payeeTitre.setSpacingBefore(6);
+            payeeTitre.setSpacingAfter(10);
+            document.add(payeeTitre);
+
+            document.add(sectionHeader("NOTE DE FRAIS", sectionFont));
+            PdfPTable noteFrais = new PdfPTable(2);
+            noteFrais.setWidthPercentage(100);
+            noteFrais.setSpacingBefore(4);
+            noteFrais.setSpacingAfter(4);
+            addTableRow(noteFrais, "Montant total des frais :", fmt(totalIndemnite) + " FCFA", boldFont, bodyFont);
+            document.add(noteFrais);
+
+            PdfPTable noteFrais2 = new PdfPTable(2);
+            noteFrais2.setWidthPercentage(100);
+            noteFrais2.addCell(headerCell("DECOMPTE DES AVANCES", boldFont));
+            noteFrais2.addCell(headerCell("DECOMPTE DU RESTE", boldFont));
+            noteFrais2.addCell(plainCell(fmt(montantAvance) + " FCFA", bodyFont));
+            noteFrais2.addCell(plainCell(fmt(montantSolde) + " FCFA", bodyFont));
+            document.add(noteFrais2);
+
+            PdfPTable acquit = new PdfPTable(2);
+            acquit.setWidthPercentage(100);
+            acquit.setSpacingBefore(14);
+            acquit.addCell(plainCell("Acquit du bénéficiaire\nReçu : ...........................\nCNI N° : ...........................\nDélivrée le : ................. A : .................\n\nSIGNATURE", bodyFont));
+            acquit.addCell(plainCell("Acquit du bénéficiaire\nReçu : ...........................\n\n\n\nSIGNATURE", bodyFont));
+            document.add(acquit);
+
+            Paragraph motto = new Paragraph("\nRéguler c'est faciliter", FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9, new Color(11, 37, 69)));
+            motto.setAlignment(Element.ALIGN_CENTER);
+            motto.setSpacingBefore(14);
+            document.add(motto);
+            Paragraph coords = new Paragraph(
+                    "Yaoundé – Cameroun, Boulevard du 20 mai 1972, Immeuble siège ART\n" +
+                    "B.P.: 6132  Tél.: (+237) 222 23 03 80 - 222 23 25 30  Fax: (+237) 222 23 37 48\n" +
+                    "Site web: www.art.cm - Email: art@cm", smallFont);
+            coords.setAlignment(Element.ALIGN_CENTER);
+            document.add(coords);
 
             document.close();
         } catch (DocumentException ex) {
@@ -222,6 +323,100 @@ public class PdfGeneratorService {
         }
 
         return new ByteArrayInputStream(out.toByteArray());
+    }
+
+    private String rangLibelle(String rangCode) {
+        if (rangCode == null || rangCode.isBlank()) return "N/A";
+        return rangRepository.findByCode(rangCode).map(Rang::getLibelle).orElse(rangCode);
+    }
+
+    private static String fmt(BigDecimal amount) {
+        if (amount == null) return "0";
+        return String.format("%,d", amount.longValue()).replace(',', ' ');
+    }
+
+    private static String amountFootnote() {
+        return "voir montant en chiffres ci-dessus / see amount in figures above";
+    }
+
+    private PdfPTable bilingualHeaderTable(Font headerFontFr, Font headerFontEn) {
+        PdfPTable headerTable = new PdfPTable(3);
+        headerTable.setWidthPercentage(100);
+        headerTable.setWidths(new float[]{42f, 16f, 42f});
+
+        PdfPCell leftCell = new PdfPCell(new Phrase(
+                "RÉPUBLIQUE DU CAMEROUN\nPaix - Travail - Patrie\n---------------\nAGENCE DE RÉGULATION\nDES TÉLÉCOMMUNICATIONS",
+                headerFontFr));
+        leftCell.setBorder(Rectangle.NO_BORDER);
+        leftCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        Image logo = loadArtLogo();
+        PdfPCell centerCell = (logo != null) ? new PdfPCell(logo, false) : new PdfPCell(new Phrase("ART", headerFontFr));
+        centerCell.setBorder(Rectangle.NO_BORDER);
+        centerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        centerCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+        PdfPCell rightCell = new PdfPCell(new Phrase(
+                "REPUBLIC OF CAMEROON\nPeace - Work - Fatherland\n---------------\nTELECOMMUNICATIONS\nREGULATORY BOARD",
+                headerFontEn));
+        rightCell.setBorder(Rectangle.NO_BORDER);
+        rightCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        headerTable.addCell(leftCell);
+        headerTable.addCell(centerCell);
+        headerTable.addCell(rightCell);
+        return headerTable;
+    }
+
+    /** A form row matching the paper layout: bold French label + italic English translation stacked, value on the right. */
+    private void formFieldRow(PdfPTable table, String labelFr, String labelEn, String value, Font labelFont, Font subFont, Font valueFont) {
+        Phrase labelPhrase = new Phrase();
+        labelPhrase.add(new Chunk(labelFr + " :\n", labelFont));
+        if (labelEn != null && !labelEn.isBlank()) labelPhrase.add(new Chunk(labelEn + " :", subFont));
+        PdfPCell labelCell = new PdfPCell(labelPhrase);
+        labelCell.setPadding(5);
+        labelCell.setBackgroundColor(new Color(245, 245, 245));
+        PdfPCell valueCell = new PdfPCell(new Phrase(value != null && !value.isBlank() ? value : "N/A", valueFont));
+        valueCell.setPadding(5);
+        table.addCell(labelCell);
+        table.addCell(valueCell);
+    }
+
+    private PdfPTable sectionHeader(String title, Font font) {
+        PdfPTable t = new PdfPTable(1);
+        t.setWidthPercentage(100);
+        t.setSpacingBefore(4);
+        PdfPCell c = new PdfPCell(new Phrase(title, font));
+        c.setBackgroundColor(new Color(11, 37, 69));
+        c.setPadding(4);
+        t.addCell(c);
+        return t;
+    }
+
+    private PdfPCell headerCell(String text, Font font) {
+        PdfPCell c = new PdfPCell(new Phrase(text, font));
+        c.setBackgroundColor(new Color(230, 230, 230));
+        c.setPadding(4);
+        return c;
+    }
+
+    private PdfPCell plainCell(String text, Font font) {
+        PdfPCell c = new PdfPCell(new Phrase(text, font));
+        c.setPadding(4);
+        return c;
+    }
+
+    /** Small helper bundling the date-formatting/day-count logic used across the front page. */
+    private static class LocalDateSafe {
+        private final OrdreDeMission om;
+        LocalDateSafe(OrdreDeMission om) { this.om = om; }
+        String debut() { return om.getDateDebut() != null ? om.getDateDebut().toString() : "......................."; }
+        String fin() { return om.getDateFin() != null ? om.getDateFin().toString() : "......................."; }
+        long days() {
+            if (om.getDateDebut() == null || om.getDateFin() == null) return 1;
+            long d = ChronoUnit.DAYS.between(om.getDateDebut(), om.getDateFin()) + 1;
+            return d > 0 ? d : 1;
+        }
     }
 
     /**
@@ -306,19 +501,25 @@ public class PdfGeneratorService {
                 Paragraph sh = new Paragraph("\nÉtapes & Itinéraire / Steps & Itinerary:", boldFont);
                 sh.setSpacingAfter(6);
                 document.add(sh);
-                PdfPTable st = new PdfPTable(4);
+                PdfPTable st = new PdfPTable(5);
                 st.setWidthPercentage(100);
-                st.setWidths(new float[]{12f, 38f, 28f, 22f});
+                st.setWidths(new float[]{8f, 24f, 20f, 14f, 34f});
                 st.addCell(new PdfPCell(new Phrase("Étape", boldFont)));
                 st.addCell(new PdfPCell(new Phrase("Lieu / Location", boldFont)));
                 st.addCell(new PdfPCell(new Phrase("Dates", boldFont)));
                 st.addCell(new PdfPCell(new Phrase("Transport", boldFont)));
+                st.addCell(new PdfPCell(new Phrase("Agents Affectés / Assigned Staff", boldFont)));
                 int n = 1;
                 for (EtapeMission e : etapes) {
                     st.addCell(new PdfPCell(new Phrase(String.valueOf(n++), bodyFont)));
                     st.addCell(new PdfPCell(new Phrase(safe(e.getLieu()), bodyFont)));
                     st.addCell(new PdfPCell(new Phrase((e.getDateDebut() != null ? e.getDateDebut().toString() : "") + " au " + (e.getDateFin() != null ? e.getDateFin().toString() : ""), bodyFont)));
                     st.addCell(new PdfPCell(new Phrase(safe(e.getTransportMode()), bodyFont)));
+                    java.util.List<Personnel> stepAgents = e.getPersonnelList();
+                    String agentsTxt = (stepAgents != null && !stepAgents.isEmpty())
+                            ? stepAgents.stream().map(p -> safe(p.getNom()) + " " + safe(p.getPrenom())).reduce((a, b) -> a + ", " + b).orElse("")
+                            : "Toute l'équipe / Whole team";
+                    st.addCell(new PdfPCell(new Phrase(agentsTxt, bodyFont)));
                 }
                 document.add(st);
             }
@@ -372,82 +573,6 @@ public class PdfGeneratorService {
 
     private static String safe(String s) {
         return s == null ? "" : s;
-    }
-
-    public ByteArrayInputStream generateMissionOrderPdf(MissionOrder order) {
-        Document document = new Document(PageSize.A4, 36, 36, 36, 36);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        try {
-            PdfWriter.getInstance(document, out);
-            document.open();
-
-            Font headerFontFr = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(11, 37, 69));
-            Font headerFontEn = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.DARK_GRAY);
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, Color.BLACK);
-            Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.BLACK);
-            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
-
-            PdfPTable headerTable = new PdfPTable(3);
-            headerTable.setWidthPercentage(100);
-            headerTable.setWidths(new float[]{42f, 16f, 42f});
-
-            PdfPCell leftCell = new PdfPCell(new Phrase("RÉPUBLIQUE DU CAMEROUN\nPaix - Travail - Patrie\n---------------\nAGENCE DE RÉGULATION\nDES TÉLÉCOMMUNICATIONS", headerFontFr));
-            leftCell.setBorder(Rectangle.NO_BORDER);
-            leftCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-            Image logo = loadArtLogo();
-            PdfPCell centerCell;
-            if (logo != null) {
-                centerCell = new PdfPCell(logo, false);
-            } else {
-                centerCell = new PdfPCell(new Phrase("ART", headerFontFr));
-            }
-            centerCell.setBorder(Rectangle.NO_BORDER);
-            centerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            centerCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-
-            PdfPCell rightCell = new PdfPCell(new Phrase("REPUBLIC OF CAMEROON\nPeace - Work - Fatherland\n---------------\nTELECOMMUNICATIONS\nREGULATORY BOARD", headerFontEn));
-            rightCell.setBorder(Rectangle.NO_BORDER);
-            rightCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-            headerTable.addCell(leftCell);
-            headerTable.addCell(centerCell);
-            headerTable.addCell(rightCell);
-            document.add(headerTable);
-
-            document.add(new Paragraph(" ", bodyFont));
-
-            Paragraph docTitle = new Paragraph("ORDRE DE MISSION N° " + order.getOrderNumber(), titleFont);
-            docTitle.setAlignment(Element.ALIGN_CENTER);
-            docTitle.setSpacingAfter(20);
-            document.add(docTitle);
-
-            PdfPTable table = new PdfPTable(2);
-            table.setWidthPercentage(100);
-            table.setWidths(new float[]{30f, 70f});
-
-            addTableRow(table, "Date d'émission / Issue Date:", order.getIssueDate().toString(), boldFont, bodyFont);
-            addTableRow(table, "Objet de la mission / Title:", order.getMissionRequest().getTitle(), boldFont, bodyFont);
-            addTableRow(table, "Destination:", order.getMissionRequest().getDestination(), boldFont, bodyFont);
-            addTableRow(table, "Itinéraire / Itinerary:", order.getFormDetail().getItinerary(), boldFont, bodyFont);
-            addTableRow(table, "Durée / Duration:", order.getFormDetail().getDurationDays() + " Jours / Days", boldFont, bodyFont);
-            addTableRow(table, "Moyen de Transport / Mode:", order.getFormDetail().getTransportMode(), boldFont, bodyFont);
-            addTableRow(table, "Budget Alloué / Budget:", order.getFormDetail().getAllocatedBudget() + " FCFA", boldFont, bodyFont);
-            addTableRow(table, "Statut / Status:", order.getStatus().name(), boldFont, bodyFont);
-
-            document.add(table);
-
-            Paragraph sign = new Paragraph("\n\nPour le Directeur Général / For the GM,\nLe Responsable RH (Signé & Validé)", boldFont);
-            sign.setAlignment(Element.ALIGN_RIGHT);
-            document.add(sign);
-
-            document.close();
-        } catch (DocumentException ex) {
-            throw new RuntimeException("Error generating PDF", ex);
-        }
-
-        return new ByteArrayInputStream(out.toByteArray());
     }
 
     private void addTableRow(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {

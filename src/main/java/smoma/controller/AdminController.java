@@ -1,8 +1,9 @@
 package smoma.controller;
 
- 
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.Department;
 import smoma.controller.model.User;
@@ -34,6 +35,8 @@ public class AdminController {
     private final DepartmentRepository departmentRepository;
 
     private final AccessPolicy accessPolicy;
+
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Value("${spring.ldap.urls:ldap://192.168.0.101:389}")
     private String ldapServer;
@@ -203,6 +206,9 @@ public class AdminController {
         if (request == null || request.getUsername() == null || request.getPassword() == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required."));
         }
+        if (request.getPassword().length() < 8) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Le mot de passe doit compter au moins 8 caractères."));
+        }
 
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "User already exists: " + request.getUsername()));
@@ -219,15 +225,18 @@ public class AdminController {
 
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setNom(request.getNom());
         user.setPrenom(request.getPrenom());
         user.setMatricule(request.getMatricule());
-        user.setStructure(request.getStructure());
+        user.setStructure(department != null ? department.getName() : request.getStructure());
         user.setTitle(request.getTitle());
         user.setDepartment(department);
         user.setRole(request.getRole());
+        user.setGenre(request.getGenre());
+        user.setRang(request.getRang());
+        user.setFonction(request.getFonction());
         user.setActive(true);
 
         try {

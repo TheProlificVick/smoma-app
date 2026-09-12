@@ -33,6 +33,10 @@ public class MandatDeMission {
     @Column(name = "direction_initiatrice")
     private String directionInitiatrice;
 
+    /** Username/email of the staff member who created this mandate (used to alert them on step completion). */
+    @Column(name = "initiateur_username")
+    private String initiateurUsername;
+
     /**
      * Reference of the administrative act that justifies / authorises the mission request,
      * e.g. "ART/DG/CSI/001" (Agence / Direction Générale / structure initiatrice / n° d'ordre).
@@ -161,6 +165,14 @@ public class MandatDeMission {
 
     public void setDirectionInitiatrice(String directionInitiatrice) {
         this.directionInitiatrice = directionInitiatrice;
+    }
+
+    public String getInitiateurUsername() {
+        return initiateurUsername;
+    }
+
+    public void setInitiateurUsername(String initiateurUsername) {
+        this.initiateurUsername = initiateurUsername;
     }
 
     public String getReferenceJustification() {

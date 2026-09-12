@@ -281,22 +281,30 @@
 
         async function submitMyReport() {
             const omId = document.getElementById('rpOmId').value;
-            const payload = {
-                omId: omId,
-                titre: document.getElementById('rpTitre').value,
-                description: document.getElementById('rpDesc').value,
-                categorie: document.getElementById('rpCategorie').value,
-                fichierPath: `/uploads/rapports/rapport_${omId}_${currentMatricule()}.pdf`,
-                justificatifsJson: '[]'
-            };
+            const fileInput = document.getElementById('rpFile');
+            const file = fileInput.files[0];
+            if (!file) { alert('Veuillez sélectionner le fichier scanné du rapport (PDF, JPG ou PNG).'); return; }
+
+            const btn = document.querySelector('#modalMyReport .btn-success');
+            const originalLabel = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> ...';
             try {
+                const formData = new FormData();
+                formData.append('omId', omId);
+                formData.append('titre', document.getElementById('rpTitre').value);
+                formData.append('description', document.getElementById('rpDesc').value);
+                formData.append('categorie', document.getElementById('rpCategorie').value);
+                formData.append('file', file);
+
                 const res = await fetch('/api/rapports', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: { 'X-User-Email': currentUsername() },
+                    body: formData
                 });
                 if (res.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('modalMyReport')).hide();
+                    fileInput.value = '';
                     reload();
                 } else {
                     const err = await res.json();
@@ -304,6 +312,9 @@
                 }
             } catch (e) {
                 alert(t('commonLoadError'));
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalLabel;
             }
         }
 

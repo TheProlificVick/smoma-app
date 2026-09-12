@@ -121,6 +121,22 @@
             <div class="d-flex align-items-center">
                 <!-- Language Selector -->
                 <div id="langContainer" class="me-3"></div>
+                <!-- Notification bell: alerts DRH/SP as soon as a mandate is GM-signed and its OM drafts are ready to complete -->
+                <div class="dropdown me-2">
+                    <button class="btn btn-outline-light btn-sm position-relative" type="button" id="btnOmNotif" data-bs-toggle="dropdown" aria-expanded="false" onclick="loadOmNotifications()">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle d-none" id="omNotifCount">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow" style="width:360px;" aria-labelledby="btnOmNotif">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <strong class="small text-dark"><span data-i18n="mmNotifications">Notifications</span></strong>
+                            <button class="btn btn-link btn-sm p-0" onclick="markAllOmNotifRead()"><span data-i18n="mmMarkAllRead">Tout marquer comme lu</span></button>
+                        </div>
+                        <div id="omNotifList" class="p-2" style="max-height:400px; overflow-y:auto;">
+                            <p class="text-muted small p-2 mb-0" data-i18n="mmNoNotifications">Aucune notification.</p>
+                        </div>
+                    </div>
+                </div>
                 <a href="/mandats.html" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-stamp me-1"></i> <span data-i18n="navMandats">Mandats DG</span></a>
                 <a href="/index.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-house me-1"></i> <span data-i18n="navDashboard">Tableau de bord</span></a>
             </div>
@@ -872,21 +888,92 @@
 
         async function submitOmScan() {
             const id = document.getElementById('uploadOmId').value;
+            const fileInput = document.getElementById('omScanFile');
+            const file = fileInput.files[0];
+            if (!file) { alert('Veuillez sélectionner le fichier (PDF, JPG ou PNG) de l\'ordre de mission signé.'); return; }
+
+            const btn = document.querySelector('#modalUploadOmScan .btn-success');
+            const originalLabel = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Importation...';
             try {
+                const formData = new FormData();
+                formData.append('file', file);
                 const res = await fetch(`/api/ordres-mission/${id}/upload-scan`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ scanPath: `/uploads/scans/om_${id}_signed.pdf` })
+                    headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' },
+                    body: formData
                 });
 
                 if (res.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('modalUploadOmScan')).hide();
+                    fileInput.value = '';
                     alert('Scan signé importé! L\'ordre de mission est désormais figé.');
                     loadOrdres();
+                } else {
+                    let msg = 'Impossible d\'importer le scan (HTTP ' + res.status + ').';
+                    try { const err = await res.json(); msg = err.error || msg; } catch (_) {}
+                    alert('Erreur: ' + msg);
                 }
             } catch (e) {
-                alert('Erreur lors de l\'importation du scan.');
+                alert('Erreur réseau lors de l\'importation du scan: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalLabel;
             }
+        }
+
+        // Notification bell: surfaces MANDATE_SIGNED alerts (mandate GM-signed, OM drafts ready)
+        // and MISSION_ASSIGNED/other DRH-relevant alerts, matched by matricule or username.
+        function omNotifIdentity() {
+            return {
+                mat: localStorage.getItem('art_user_matricule') || '',
+                user: localStorage.getItem('art_user_email') || ''
+            };
+        }
+
+        async function loadOmNotifications() {
+            const { mat, user } = omNotifIdentity();
+            const badge = document.getElementById('omNotifCount');
+            const box = document.getElementById('omNotifList');
+            if (!mat && !user) { badge.classList.add('d-none'); return; }
+            try {
+                const res = await fetch('/api/notifications?matricule=' + encodeURIComponent(mat)
+                    + '&username=' + encodeURIComponent(user));
+                const list = res.ok ? await res.json() : [];
+                const unread = list.filter(n => !n.lu).length;
+                badge.textContent = unread;
+                badge.classList.toggle('d-none', unread === 0);
+
+                if (list.length === 0) {
+                    box.innerHTML = `<p class="text-muted small p-2 mb-0">${t('mmNoNotifications')}</p>`;
+                    return;
+                }
+                box.innerHTML = list.slice(0, 20).map(n => `
+                    <div class="p-2 mb-1 rounded ${n.lu ? '' : 'bg-light'}" onclick="markOmNotifRead(${n.id})" style="cursor:pointer; border-left:3px solid ${n.lu ? '#cbd5e1' : '#0d6efd'};">
+                        <div class="fw-bold small">${n.titre || ''}</div>
+                        <div class="small text-muted">${n.message || ''}</div>
+                        <div class="small text-secondary">${(n.dateCreation || '').replace('T', ' ').slice(0, 16)}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                box.innerHTML = `<p class="text-danger small p-2 mb-0">${t('commonLoadError')}</p>`;
+            }
+        }
+
+        async function markOmNotifRead(id) {
+            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST' }); } catch (e) {}
+            loadOmNotifications();
+        }
+
+        async function markAllOmNotifRead() {
+            const { mat, user } = omNotifIdentity();
+            if (!mat && !user) return;
+            try {
+                await fetch('/api/notifications/mark-all-read?matricule=' + encodeURIComponent(mat)
+                    + '&username=' + encodeURIComponent(user), { method: 'POST' });
+            } catch (e) {}
+            loadOmNotifications();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -897,6 +984,8 @@
             renderOmSteps();
             loadOptions();
             loadOrdres();
+            loadOmNotifications();
+            setInterval(loadOmNotifications, 30000);
         });
         window.addEventListener('smoma_lang_changed', () => {
             smomaI18n.applyTranslations();

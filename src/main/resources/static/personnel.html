@@ -58,7 +58,7 @@
                 <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-address-book text-info me-2"></i><span data-i18n="persHeading">Répertoire du Personnel</span></h4>
                 <p class="text-muted small mb-0" data-i18n="persSub">Gestion des fiches agents, affectations organisationnelles, grades et consultation du compte individuel</p>
             </div>
-            <button class="btn btn-info text-white btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalCreateAgent">
+            <button class="btn btn-info text-white btn-sm px-3" onclick="openCreateAgent()" data-bs-toggle="modal" data-bs-target="#modalCreateAgent">
                 <i class="fa-solid fa-user-plus me-1"></i> <span data-i18n="btnAddAgent">Ajouter un Agent</span>
             </button>
         </div>
@@ -128,7 +128,7 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header art-header text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i><span data-i18n="persAddTitle">Ajouter un Nouvel Agent</span></h5>
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i><span id="modalCreateAgentTitle" data-i18n="persAddTitle">Ajouter un Nouvel Agent</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -173,7 +173,9 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" data-i18n="persRangLabel">Rang / Habilitation</label>
-                                <input type="text" class="form-control" id="pRang" placeholder="Ex: Directeur / Sous-Directeur / Chef de Service">
+                                <select class="form-select" id="pRang">
+                                    <!-- Chargé automatiquement depuis /api/referentiels/rangs — détermine le taux d'indemnité -->
+                                </select>
                             </div>
                         </div>
 
@@ -185,6 +187,40 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" data-i18n="thPhone">Téléphone</label>
                                 <input type="text" class="form-control" id="pTel" placeholder="+237 6XX XX XX XX">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold" data-i18n="persGenreLabel">Genre</label>
+                                <select class="form-select" id="pGenre">
+                                    <option value="" data-i18n="adGenreUnspecified">Non précisé</option>
+                                    <option value="HOMME" data-i18n="adGenreMale">Masculin</option>
+                                    <option value="FEMME" data-i18n="adGenreFemale">Féminin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold" data-i18n="persDobLabel">Date de Naissance</label>
+                                <input type="date" class="form-control" id="pDateNaissance">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold" data-i18n="persContractLabel">Type de Contrat</label>
+                                <select class="form-select" id="pTypeContrat">
+                                    <option value="" data-i18n="adOptionNone">—</option>
+                                    <option value="CDI">CDI</option>
+                                    <option value="CDD">CDD</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" data-i18n="persHireDateLabel">Date d'Embauche</label>
+                                <input type="date" class="form-control" id="pDateEmbauche">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" data-i18n="persHirePlaceLabel">Lieu d'Embauche</label>
+                                <input type="text" class="form-control" id="pLieuEmbauche" placeholder="Ex: Yaoundé - Siège ART">
                             </div>
                         </div>
                     </form>
@@ -240,6 +276,23 @@
             }
         }
 
+        // Populates the Rang select from the real ART rank catalogue — this is what drives the
+        // automatic daily indemnity rate, so it must be picked from the referential, never typed.
+        async function loadRangOptions() {
+            const sel = document.getElementById('pRang');
+            try {
+                const res = await fetch('/api/referentiels/rangs');
+                if (!res.ok || !sel) return;
+                const rangs = await res.json();
+                sel.innerHTML = '<option value="">—</option>' + rangs
+                    .filter(r => r.actif !== false)
+                    .sort((a, b) => (a.niveau || 99) - (b.niveau || 99))
+                    .map(r => `<option value="${r.code}">${r.libelle} (${r.code})</option>`).join('');
+            } catch (e) {
+                console.warn('Rang list load skipped:', e);
+            }
+        }
+
         async function searchPersonnel() {
             const query = document.getElementById('searchQuery').value;
             const structure = document.getElementById('filterDept').value;
@@ -276,8 +329,12 @@
                                 <small>${p.email || 'N/A'}</small>
                                 <span class="d-block text-muted small">${p.telephone || ''}</span>
                             </td>
-                            <td><span class="badge bg-success">${t('commonActive')}</span></td>
+                            <td>
+                                <span class="badge bg-success">${t('commonActive')}</span>
+                                ${p.eligibleRetraite ? `<span class="badge bg-warning text-dark d-block mt-1" title="${t('persRetirementHint')}"><i class="fa-solid fa-hourglass-end me-1"></i>${t('persRetirementEligible')}</span>` : ''}
+                            </td>
                             <td class="text-end">
+                                <button class="btn btn-outline-secondary btn-sm me-1" onclick="openEditAgent(${p.id})" title="${t('btnEdit')}"><i class="fa-solid fa-pen"></i></button>
                                 <button class="btn btn-outline-info btn-sm" onclick="openCompteIndividuel(${p.id})" title="${t('persCompteTitle')}"><i class="fa-solid fa-chart-line me-1"></i> ${t('persAccountBtn')}</button>
                             </td>
                         </tr>
@@ -295,6 +352,41 @@
             searchPersonnel();
         }
 
+        let currentEditId = null;
+
+        function openCreateAgent() {
+            currentEditId = null;
+            document.getElementById('formAgent').reset();
+            document.getElementById('modalCreateAgentTitle').textContent = t('persAddTitle');
+        }
+
+        async function openEditAgent(id) {
+            try {
+                const res = await fetch('/api/personnel/' + id);
+                if (!res.ok) throw new Error('not found');
+                const p = await res.json();
+                currentEditId = id;
+                document.getElementById('pMatricule').value = p.matricule || '';
+                document.getElementById('pNom').value = p.nom || '';
+                document.getElementById('pPrenom').value = p.prenom || '';
+                document.getElementById('pDept').value = p.departement || '';
+                document.getElementById('pFonction').value = p.fonction || '';
+                document.getElementById('pGrade').value = p.grade || 'A';
+                document.getElementById('pRang').value = p.rang || '';
+                document.getElementById('pEmail').value = p.email || '';
+                document.getElementById('pTel').value = p.telephone || '';
+                document.getElementById('pGenre').value = p.genre || '';
+                document.getElementById('pDateNaissance').value = p.dateNaissance || '';
+                document.getElementById('pTypeContrat').value = p.typeContrat || '';
+                document.getElementById('pDateEmbauche').value = p.dateEmbauche || '';
+                document.getElementById('pLieuEmbauche').value = p.lieuEmbauche || '';
+                document.getElementById('modalCreateAgentTitle').textContent = t('persEditTitle');
+                new bootstrap.Modal(document.getElementById('modalCreateAgent')).show();
+            } catch (e) {
+                alert(t('commonLoadError'));
+            }
+        }
+
         async function saveAgent() {
             const agent = {
                 matricule: document.getElementById('pMatricule').value,
@@ -306,13 +398,22 @@
                 rang: document.getElementById('pRang').value,
                 email: document.getElementById('pEmail').value,
                 telephone: document.getElementById('pTel').value,
+                genre: document.getElementById('pGenre').value || null,
+                dateNaissance: document.getElementById('pDateNaissance').value || null,
+                typeContrat: document.getElementById('pTypeContrat').value || null,
+                dateEmbauche: document.getElementById('pDateEmbauche').value || null,
+                lieuEmbauche: document.getElementById('pLieuEmbauche').value || null,
                 statut: 'ACTIF'
             };
+            if (currentEditId) agent.id = currentEditId;
 
             try {
                 const res = await fetch('/api/personnel', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Email': localStorage.getItem('art_user_email') || ''
+                    },
                     body: JSON.stringify(agent)
                 });
 
@@ -320,9 +421,13 @@
                     bootstrap.Modal.getInstance(document.getElementById('modalCreateAgent')).hide();
                     document.getElementById('formAgent').reset();
                     searchPersonnel();
+                } else {
+                    let msg = 'Impossible d\'enregistrer l\'agent (HTTP ' + res.status + ').';
+                    try { const err = await res.json(); msg = err.error || msg; } catch (_) {}
+                    alert('Erreur: ' + msg);
                 }
             } catch (e) {
-                alert('Erreur lors de l\'enregistrement de l\'agent.');
+                alert('Erreur lors de l\'enregistrement de l\'agent: ' + e.message);
             }
         }
 
@@ -460,6 +565,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             smomaI18n.injectLanguageSwitcher('#langContainer');
             loadStructureFilter();
+            loadRangOptions();
             searchPersonnel();
         });
         window.addEventListener('smoma_lang_changed', () => { smomaI18n.applyTranslations(); loadStructureFilter(); searchPersonnel(); });

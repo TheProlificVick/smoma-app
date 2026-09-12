@@ -177,6 +177,7 @@
                                     : `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>${t('repPendingCheck')}</span>`}
                             </td>
                             <td class="text-end">
+                                ${r.fichierPath ? `<a href="${r.fichierPath}" target="_blank" class="btn btn-outline-secondary btn-sm me-1"><i class="fa-solid fa-file-pdf"></i></a>` : ''}
                                 ${r.statutValidation !== 'VALIDE' ? `<button class="btn btn-outline-success btn-sm" onclick="validateReport(${r.id})"><i class="fa-solid fa-check"></i> ${t('repValidateBtn')}</button>` : ''}
                             </td>
                         </tr>
@@ -188,28 +189,43 @@
         }
 
         async function saveReport() {
-            const payload = {
-                omId: document.getElementById('rOmSelect').value,
-                titre: document.getElementById('rTitre').value,
-                description: document.getElementById('rDesc').value,
-                categorie: document.getElementById('rCategorie').value,
-                fichierPath: `/uploads/rapports/rapport_${document.getElementById('rOmSelect').value}.pdf`,
-                justificatifsJson: '[]'
-            };
+            const omId = document.getElementById('rOmSelect').value;
+            const fileInput = document.getElementById('rFile');
+            const file = fileInput.files[0];
+            if (!file) { alert('Veuillez sélectionner le fichier PDF du rapport.'); return; }
 
+            const btn = document.querySelector('#modalDepositReport .btn-success');
+            const originalLabel = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> ...';
             try {
+                const formData = new FormData();
+                formData.append('omId', omId);
+                formData.append('titre', document.getElementById('rTitre').value);
+                formData.append('description', document.getElementById('rDesc').value);
+                formData.append('categorie', document.getElementById('rCategorie').value);
+                formData.append('file', file);
+
                 const res = await fetch('/api/rapports', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' },
+                    body: formData
                 });
 
                 if (res.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('modalDepositReport')).hide();
+                    fileInput.value = '';
                     loadReports();
+                } else {
+                    let msg = 'Impossible de déposer le rapport (HTTP ' + res.status + ').';
+                    try { const err = await res.json(); msg = err.error || msg; } catch (_) {}
+                    alert('Erreur: ' + msg);
                 }
             } catch (e) {
-                alert('Erreur lors du dépôt du rapport.');
+                alert('Erreur lors du dépôt du rapport: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalLabel;
             }
         }
 

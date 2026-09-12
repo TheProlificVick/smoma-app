@@ -23,6 +23,12 @@ public class User {
     private String matricule;
     private String structure;
     private String title;
+    private String rang;
+    private String fonction;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 16)
+    private Genre genre;
 
     @ManyToOne
     @JoinColumn(name = "department_id")
@@ -87,6 +93,12 @@ public class User {
     public void setStructure(String structure) { this.structure = structure; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+    public String getRang() { return rang; }
+    public void setRang(String rang) { this.rang = rang; }
+    public String getFonction() { return fonction; }
+    public void setFonction(String fonction) { this.fonction = fonction; }
+    public Genre getGenre() { return genre; }
+    public void setGenre(Genre genre) { this.genre = genre; }
     public Department getDepartment() { return department; }
     public void setDepartment(Department department) { this.department = department; }
     public Role getRole() { return role; }

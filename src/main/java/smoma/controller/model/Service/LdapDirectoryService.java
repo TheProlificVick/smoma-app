@@ -255,9 +255,10 @@ public class LdapDirectoryService {
      * Fortified RBAC: maps AD group memberships (memberOf) and title to smoma roles.
      */
     public Role mapAdAttributesToRole(String title, String username, List<String> memberOf) {
-        if (username != null && (username.equalsIgnoreCase("admin") || username.equalsIgnoreCase("lucien.mba"))) {
-            return Role.ROLE_ADMIN;
-        }
+        // Admin is granted purely by AD group membership below — never by a hardcoded username,
+        // which would silently keep granting admin to a specific named account regardless of
+        // their actual current AD group membership. The application's own bootstrap admin
+        // account (created locally when no admin exists — see DataLoader) is separate from AD.
 
         // AD group based mapping
         if (memberOf != null) {

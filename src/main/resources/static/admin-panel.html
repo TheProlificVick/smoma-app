@@ -158,9 +158,31 @@
                                 <label class="form-label" data-i18n="adLastName">Nom</label>
                                 <input type="text" id="newPrenom" class="form-control" placeholder="Doe">
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label" data-i18n="adGenre">Genre</label>
+                                <select id="newGenre" class="form-select">
+                                    <option value="" data-i18n="adGenreUnspecified">Non précisé</option>
+                                    <option value="HOMME" data-i18n="adGenreMale">Masculin</option>
+                                    <option value="FEMME" data-i18n="adGenreFemale">Féminin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" data-i18n="adRang">Rang</label>
+                                <select id="newRang" class="form-select">
+                                    <option value="" data-i18n="adOptionNone">—</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" data-i18n="adFonction">Fonction</label>
+                                <select id="newFonction" class="form-select">
+                                    <option value="" data-i18n="adOptionNone">—</option>
+                                </select>
+                            </div>
                             <div class="col-md-12">
-                                <label class="form-label" data-i18n="adDeptStructure">Direction / Structure</label>
-                                <input type="text" id="newStructure" class="form-control" placeholder="Human Resources">
+                                <label class="form-label" data-i18n="adDeptStructure">Direction / Structure (organigramme)</label>
+                                <select id="newStructure" class="form-select">
+                                    <option value="" data-i18n="adOptionNone">—</option>
+                                </select>
                             </div>
                             <div class="col-12">
                                 <button type="submit" class="btn btn-success w-100" data-i18n="adCreateUserBtn">Créer l'Utilisateur</button>
@@ -181,15 +203,13 @@
                     <form id="createDepartmentForm">
                         <div class="mb-3">
                             <label class="form-label" data-i18n="adDeptName">Nom de la Direction</label>
-                            <input type="text" id="deptName" class="form-control" placeholder="Direction des Finances" required>
+                            <input type="text" id="deptName" class="form-control" list="existingDeptNames" placeholder="Direction des Finances" required>
+                            <datalist id="existingDeptNames"></datalist>
+                            <small class="text-muted" data-i18n="adDeptDupHint">Les directions existantes s'affichent pendant la saisie — vérifiez avant de créer, pour éviter un doublon.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" data-i18n="adAcronym">Sigle</label>
                             <input type="text" id="deptAcronym" class="form-control" placeholder="DGF">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" data-i18n="adHeadOfDept">Responsable de la Direction</label>
-                            <input type="text" id="deptHead" class="form-control" placeholder="M. MBARGA">
                         </div>
                         <button type="submit" class="btn btn-warning text-dark w-100" data-i18n="adCreateDeptBtn">Créer la Direction</button>
                     </form>
@@ -241,6 +261,29 @@
                         </tr>
                     </thead>
                     <tbody id="deptTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title m-0" data-i18n="adTariffTitle">Grille Tarifaire des Indemnités de Mission (par Rang)</h5>
+            <span class="small" data-i18n="adTariffAdminOnly">Réservé à l'administrateur système.</span>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small" data-i18n="adTariffHint">Taux journalier (FCFA) appliqué automatiquement selon le rang de l'agent, en mission Interne ou Externe. Une modification s'applique immédiatement au calcul des indemnités.</p>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th data-i18n="adTariffRank">Rang</th>
+                            <th data-i18n="adTariffInterne">Taux Interne (FCFA/j)</th>
+                            <th data-i18n="adTariffExterne">Taux Externe (FCFA/j)</th>
+                            <th class="text-end" data-i18n="adColActions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tariffTable"></tbody>
                 </table>
             </div>
         </div>
@@ -448,6 +491,72 @@
         `).join('');
     }
 
+    // ---------- Mission indemnity tariffs (by rank) — administrator only ----------
+    let tariffRangs = [];
+    let tariffBaremes = [];
+
+    async function loadTariffs() {
+        const [rangsRes, baremesRes] = await Promise.all([
+            fetch('/api/referentiels/rangs'),
+            fetch('/api/referentiels/baremes')
+        ]);
+        tariffRangs = rangsRes.ok ? await rangsRes.json() : [];
+        tariffBaremes = baremesRes.ok ? await baremesRes.json() : [];
+        renderTariffTable();
+    }
+
+    function renderTariffTable() {
+        const tbody = document.getElementById('tariffTable');
+        const sorted = tariffRangs.slice().filter(r => r.actif !== false).sort((a, b) => (a.niveau || 99) - (b.niveau || 99));
+        tbody.innerHTML = sorted.map(r => {
+            const interne = tariffBaremes.find(b => b.rang === r.code && b.typeMission === 'INTERNE');
+            const externe = tariffBaremes.find(b => b.rang === r.code && b.typeMission === 'EXTERNE');
+            return `
+                <tr>
+                    <td><strong>${r.libelle}</strong> <span class="text-muted small">(${r.code})</span></td>
+                    <td><input type="number" min="1" step="1" class="form-control form-control-sm" style="max-width:160px"
+                        id="tariffInterne_${r.code}" value="${interne ? interne.montantJournalier : ''}"></td>
+                    <td><input type="number" min="1" step="1" class="form-control form-control-sm" style="max-width:160px"
+                        id="tariffExterne_${r.code}" value="${externe ? externe.montantJournalier : ''}"></td>
+                    <td class="text-end">
+                        <button class="btn btn-outline-primary btn-sm" onclick="saveTariffRow('${r.code}')">
+                            <i class="fa-solid fa-floppy-disk me-1"></i><span data-i18n="adSave">Enregistrer</span>
+                        </button>
+                    </td>
+                </tr>`;
+        }).join('');
+        if (typeof smomaI18n !== 'undefined') smomaI18n.applyTranslations();
+    }
+
+    async function saveTariffRow(rangCode) {
+        const interneVal = document.getElementById('tariffInterne_' + rangCode).value;
+        const externeVal = document.getElementById('tariffExterne_' + rangCode).value;
+
+        async function upsert(typeMission, montant) {
+            if (montant === '' || montant === null) return;
+            const existing = tariffBaremes.find(b => b.rang === rangCode && b.typeMission === typeMission);
+            const payload = { rang: rangCode, typeMission: typeMission, montantJournalier: Number(montant) };
+            const url = existing ? `/api/referentiels/baremes/${existing.id}` : '/api/referentiels/baremes';
+            const res = await fetch(url, {
+                method: existing ? 'PUT' : 'POST',
+                headers: getAdminHeaders(),
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Échec de l\'enregistrement du taux.');
+            }
+        }
+
+        try {
+            await upsert('INTERNE', interneVal);
+            await upsert('EXTERNE', externeVal);
+            await loadTariffs();
+        } catch (e) {
+            alert('Erreur: ' + e.message);
+        }
+    }
+
     async function deleteUser(id) {
         if (!confirm((typeof t === 'function') ? t('adDeleteConfirm') : 'Confirm deletion?')) return;
         const res = await fetch('/api/admin/users/' + id, { method: 'DELETE', headers: getAdminHeaders() });
@@ -464,8 +573,46 @@
         loadDepartments();
     }
 
+    // Populates the department datalist (duplicate-prevention on create) and the
+    // Département/Rang/Fonction dropdowns of the create-user form from the organigramme referentials.
+    async function populateAdminDropdowns() {
+        try {
+            const [deptsRes, rangsRes, fonctionsRes] = await Promise.all([
+                fetch('/api/referentiels/structures'),
+                fetch('/api/referentiels/rangs'),
+                fetch('/api/referentiels/fonctions')
+            ]);
+            const depts = deptsRes.ok ? await deptsRes.json() : [];
+            const rangsList = rangsRes.ok ? await rangsRes.json() : [];
+            const fonctionsList = fonctionsRes.ok ? await fonctionsRes.json() : [];
+
+            document.getElementById('existingDeptNames').innerHTML = depts
+                .map(d => `<option value="${(d.name || '').replace(/"/g, '&quot;')}"></option>`).join('');
+
+            const structureSelect = document.getElementById('newStructure');
+            structureSelect.innerHTML = '<option value="">—</option>' + depts
+                .slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                .map(d => `<option value="${d.id}">${d.name || ''}</option>`).join('');
+
+            const rangSelect = document.getElementById('newRang');
+            rangSelect.innerHTML = '<option value="">—</option>' + rangsList
+                .filter(r => r.actif !== false)
+                .sort((a, b) => (a.niveau || 99) - (b.niveau || 99))
+                .map(r => `<option value="${r.code}">${r.libelle} (${r.code})</option>`).join('');
+
+            const fonctionSelect = document.getElementById('newFonction');
+            fonctionSelect.innerHTML = '<option value="">—</option>' + fonctionsList
+                .filter(f => f.actif !== false)
+                .sort((a, b) => (a.libelle || '').localeCompare(b.libelle || ''))
+                .map(f => `<option value="${f.code}">${f.libelle}</option>`).join('');
+        } catch (e) {
+            console.warn('populateAdminDropdowns failed', e);
+        }
+    }
+
     document.getElementById('createUserForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const departmentId = document.getElementById('newStructure').value;
         const payload = {
             username: document.getElementById('newUsername').value.trim(),
             password: document.getElementById('newPassword').value,
@@ -473,7 +620,10 @@
             role: document.getElementById('newRole').value,
             nom: document.getElementById('newNom').value.trim(),
             prenom: document.getElementById('newPrenom').value.trim(),
-            structure: document.getElementById('newStructure').value.trim()
+            departmentId: departmentId ? Number(departmentId) : null,
+            genre: document.getElementById('newGenre').value || null,
+            rang: document.getElementById('newRang').value || null,
+            fonction: document.getElementById('newFonction').value || null
         };
 
         const res = await fetch('/api/admin/users', {
@@ -494,10 +644,17 @@
 
     document.getElementById('createDepartmentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const name = document.getElementById('deptName').value.trim();
+
+        const existingOptions = Array.from(document.getElementById('existingDeptNames').options).map(o => o.value.toLowerCase());
+        if (existingOptions.includes(name.toLowerCase())) {
+            alert((typeof t === 'function') ? t('adDeptDupBlock') : 'This department already exists — pick it from the list instead of creating a duplicate.');
+            return;
+        }
+
         const payload = {
-            name: document.getElementById('deptName').value.trim(),
-            acronym: document.getElementById('deptAcronym').value.trim(),
-            headName: document.getElementById('deptHead').value.trim()
+            name: name,
+            acronym: document.getElementById('deptAcronym').value.trim()
         };
 
         const res = await fetch('/api/admin/departments', {
@@ -514,6 +671,7 @@
         alert('Department created successfully: ' + payload.name);
         document.getElementById('createDepartmentForm').reset();
         loadDepartments();
+        populateAdminDropdowns();
     });
 
     document.getElementById('syncBtn').addEventListener('click', async () => {
@@ -548,6 +706,8 @@
     // init
     loadUsers();
     loadDepartments();
+    populateAdminDropdowns();
+    loadTariffs();
     loadAdStatistics();
     loadAdUsers();
     loadAdGroups();

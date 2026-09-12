@@ -1,7 +1,7 @@
 package smoma.controller.model;
 
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,14 +42,19 @@ public class EtapeMission {
     @Column(columnDefinition = "TEXT")
     private String commentaire;
 
+    /** Team members specifically assigned to this leg of the mission (spec 4.4). */
     @ManyToMany
     @JoinTable(
         name = "etape_personnel",
         joinColumns = @JoinColumn(name = "etape_id"),
         inverseJoinColumns = @JoinColumn(name = "personnel_id")
     )
-    @JsonIgnore
+    @JsonIgnoreProperties({"ordresDeMission", "mandatsDeMission"})
     private List<Personnel> personnelList = new ArrayList<>();
+
+    /** Set once the "step completed" notification has been sent to the initiator and HR. */
+    @Column(name = "notification_fin_envoyee")
+    private boolean notificationFinEnvoyee;
 
     public EtapeMission() {
     }
@@ -158,6 +163,14 @@ public class EtapeMission {
 
     public void removePersonnel(Personnel p) {
         personnelList.remove(p);
+    }
+
+    public boolean isNotificationFinEnvoyee() {
+        return notificationFinEnvoyee;
+    }
+
+    public void setNotificationFinEnvoyee(boolean notificationFinEnvoyee) {
+        this.notificationFinEnvoyee = notificationFinEnvoyee;
     }
 
     public boolean datesWithinMandatPeriod(LocalDate mandatDateDebut, LocalDate mandatDateFin) {

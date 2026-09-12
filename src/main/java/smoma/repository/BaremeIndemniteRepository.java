@@ -1,6 +1,7 @@
 package smoma.repository;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import smoma.controller.model.BaremeIndemnite;
 import smoma.controller.model.OrdreDeMission.TypeMission;
@@ -13,4 +14,6 @@ public interface BaremeIndemniteRepository extends JpaRepository<BaremeIndemnite
     List<BaremeIndemnite> findByTypeMissionAndEstActifTrue(TypeMission typeMission);
 
     List<BaremeIndemnite> findByEstActifTrue();
+
+    Optional<BaremeIndemnite> findByRangAndTypeMission(String rang, TypeMission typeMission);
 }

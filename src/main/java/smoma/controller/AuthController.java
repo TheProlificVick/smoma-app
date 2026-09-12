@@ -2,6 +2,7 @@ package smoma.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import smoma.controller.model.Service.JwtService;
 import smoma.controller.model.Service.Role;
 import smoma.controller.model.User;
 import smoma.repository.UserRepository;
@@ -20,11 +21,13 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final LdapDirectoryService ldapDirectoryService;
+    private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public AuthController(UserRepository userRepository, LdapDirectoryService ldapDirectoryService) {
+    public AuthController(UserRepository userRepository, LdapDirectoryService ldapDirectoryService, JwtService jwtService) {
         this.userRepository = userRepository;
         this.ldapDirectoryService = ldapDirectoryService;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
@@ -76,25 +79,18 @@ public class AuthController {
             // Proceed to local database verification if LDAP service encounters an error
         }
 
-        // 2. Local Database Check (supporting BCrypt, plain text, and synced accounts)
+        // 2. Local Database Check — BCrypt for real accounts (bootstrap admin, AD-synced, admin-
+        //    created), plain-text only reachable for legacy/dev-seeded demo accounts.
         Optional<User> localUserOpt = userRepository.findByIdentity(identity);
         if (localUserOpt.isPresent()) {
             User user = localUserOpt.get();
             boolean pwdMatch = false;
 
             if (user.getPassword() != null) {
-                if (password.equals(user.getPassword())) {
-                    pwdMatch = true;
-                } else {
-                    try {
-                        pwdMatch = passwordEncoder.matches(password, user.getPassword());
-                    } catch (Exception ignored) {}
-                }
-            }
-
-            // Also check default synced pattern if user was imported from AD
-            if (!pwdMatch && user.getMatricule() != null && !user.getMatricule().isBlank()) {
-                if (password.equals(user.getMatricule() + "@2026!") || password.equals("Art@2026!")) {
+                try {
+                    pwdMatch = passwordEncoder.matches(password, user.getPassword());
+                } catch (Exception ignored) {}
+                if (!pwdMatch && password.equals(user.getPassword())) {
                     pwdMatch = true;
                 }
             }
@@ -108,18 +104,50 @@ public class AuthController {
             }
         }
 
-        // 3. Active Directory Administrator Bootstrap Fallback
-        if (("admin@art.cm".equalsIgnoreCase(identity) || "admin".equalsIgnoreCase(identity)) && "admin123".equals(password)) {
-            Role role = ldapDirectoryService.mapAdAttributesToRole("Administrateur", "admin");
-            return buildSuccessResponse("Administrator ART", role.name(), "admin@art.cm", "ART-ADM-01", "Administrateur");
-        }
-
         return ResponseEntity.status(401).body(Map.of("message", "Identifiants professionnels incorrects ou accès refusé. / Incorrect credentials or access denied."));
     }
 
+    /** Lets an already-authenticated user change their own password (JwtAuthFilter guarantees the caller really is `identity`). */
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> body) {
+        String identity = body.get("identity");
+        String oldPassword = body.get("oldPassword");
+        String newPassword = body.get("newPassword");
+        if (identity == null || oldPassword == null || newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.status(400).body(Map.of("error", "identity, oldPassword et newPassword sont requis."));
+        }
+        if (newPassword.length() < 8) {
+            return ResponseEntity.status(400).body(Map.of("error", "Le nouveau mot de passe doit compter au moins 8 caractères."));
+        }
+
+        User user = userRepository.findByIdentity(identity.trim()).orElse(null);
+        if (user == null || user.getPassword() == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Compte introuvable."));
+        }
+
+        boolean oldMatches;
+        try {
+            oldMatches = passwordEncoder.matches(oldPassword, user.getPassword());
+        } catch (Exception e) {
+            oldMatches = oldPassword.equals(user.getPassword());
+        }
+        if (!oldMatches) {
+            return ResponseEntity.status(401).body(Map.of("error", "Mot de passe actuel incorrect."));
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("status", "password_changed"));
+    }
+
     private ResponseEntity<Map<String, Object>> buildSuccessResponse(String fullName, String role, String username, String matricule, String designation) {
+        String token = jwtService.generateToken(username, Map.of(
+                "role", role != null ? role : "",
+                "matricule", matricule != null ? matricule : "",
+                "designation", designation != null ? designation : ""
+        ));
         Map<String, Object> response = new HashMap<>();
-        response.put("token", "jwt-art-smoma-" + username + "-" + System.currentTimeMillis());
+        response.put("token", token);
         response.put("role", role);
         response.put("username", username);
         response.put("fullName", fullName);

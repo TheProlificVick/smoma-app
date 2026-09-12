@@ -4,6 +4,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.Personnel;
+import smoma.controller.model.User;
+import smoma.controller.model.Service.AccessPolicy;
 import smoma.controller.model.Service.PersonnelService;
 
 import java.time.LocalDate;
@@ -15,9 +17,11 @@ import java.util.Map;
 public class PersonnelController {
 
     private final PersonnelService personnelService;
+    private final AccessPolicy accessPolicy;
 
-    public PersonnelController(PersonnelService personnelService) {
+    public PersonnelController(PersonnelService personnelService, AccessPolicy accessPolicy) {
         this.personnelService = personnelService;
+        this.accessPolicy = accessPolicy;
     }
 
     @GetMapping
@@ -35,7 +39,13 @@ public class PersonnelController {
     }
 
     @PostMapping
-    public ResponseEntity<Personnel> save(@RequestBody Personnel p) {
+    public ResponseEntity<?> save(@RequestBody Personnel p,
+                                  @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        User user = accessPolicy.resolve(userEmail);
+        if (!accessPolicy.canCreateOrgEntities(user)) {
+            return ResponseEntity.status(403).body(Map.of("error",
+                    "Seuls l'administrateur système et le personnel DRH peuvent créer ou modifier une fiche de personnel."));
+        }
         return ResponseEntity.ok(personnelService.save(p));
     }
 

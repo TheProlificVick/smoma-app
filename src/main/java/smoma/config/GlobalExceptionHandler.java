@@ -42,8 +42,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleAny(Exception ex) {
+        // Full details (class, message, stack trace) are logged server-side only — an uncaught
+        // exception here is usually an internal failure (SQL, NPE, ...), and its message can
+        // contain column/table/constraint names that shouldn't reach an untrusted client.
         log.error("Erreur serveur non gérée", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body(ex, HttpStatus.INTERNAL_SERVER_ERROR));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put("error", "Une erreur interne est survenue. Veuillez réessayer ou contacter l'administrateur si le problème persiste. / An internal error occurred, please try again or contact the administrator.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 
     private Map<String, Object> body(Throwable ex, HttpStatus status) {

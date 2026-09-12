@@ -1,6 +1,7 @@
 package smoma.controller.model.Service;
 
 import org.springframework.stereotype.Service;
+import smoma.controller.model.OrdreDeMission;
 import smoma.controller.model.User;
 import smoma.repository.UserRepository;
 
@@ -137,5 +138,38 @@ public class AccessPolicy {
     public String describeReportRule() {
         return "Seul le personnel de la DRH affecté au Service du Personnel (désignation « SP ») "
                 + "peut valider un rapport de mission.";
+    }
+
+    /**
+     * DRH staff (HR officers and the Service du Personnel) who should be alerted operationally
+     * — e.g. when a mission step is completed — without necessarily including the administrator.
+     */
+    public boolean isHrOrPersonnelService(User u) {
+        if (u == null) return false;
+        if (isHrOfficer(u)) return true;
+        String d = designation(u);
+        return d.equals("sp") || d.contains("(sp)") || d.contains("service du personnel");
+    }
+
+    /**
+     * The signed mandate scan is imported either by whoever is entitled to initiate a mandate
+     * (they're typically the one who carried the printed document to the GM and back) or by
+     * DRH/admin downstream.
+     */
+    public boolean canUploadMandatScan(User u) {
+        return isAdmin(u) || isHrOfficer(u) || canInitiateMandat(u);
+    }
+
+    /**
+     * A mission report is deposited either by the agent it was assigned to, or by DRH/admin
+     * filing it on their behalf.
+     */
+    public boolean canDepositReport(User u, OrdreDeMission om) {
+        if (u == null) return false;
+        if (isAdmin(u) || isHrOfficer(u)) return true;
+        if (om == null || om.getPersonnel() == null) return false;
+        String agentMatricule = om.getPersonnel().getMatricule();
+        String userMatricule = u.getMatricule();
+        return agentMatricule != null && userMatricule != null && agentMatricule.equalsIgnoreCase(userMatricule);
     }
 }

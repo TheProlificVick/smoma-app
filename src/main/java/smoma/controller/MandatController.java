@@ -5,12 +5,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import smoma.controller.model.EtapeMission;
+import org.springframework.web.multipart.MultipartFile;
 import smoma.controller.model.MandatDeMission;
 import smoma.controller.model.User;
 import smoma.controller.model.Service.AccessPolicy;
+import smoma.controller.model.Service.FileStorageService;
 import smoma.controller.model.Service.MandatService;
 import smoma.controller.model.Service.PdfGeneratorService;
+import smoma.dto.EtapeStepRequest;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -23,11 +25,14 @@ public class MandatController {
     private final MandatService mandatService;
     private final AccessPolicy accessPolicy;
     private final PdfGeneratorService pdfService;
+    private final FileStorageService fileStorageService;
 
-    public MandatController(MandatService mandatService, AccessPolicy accessPolicy, PdfGeneratorService pdfService) {
+    public MandatController(MandatService mandatService, AccessPolicy accessPolicy, PdfGeneratorService pdfService,
+                            FileStorageService fileStorageService) {
         this.mandatService = mandatService;
         this.accessPolicy = accessPolicy;
         this.pdfService = pdfService;
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping
@@ -54,7 +59,7 @@ public class MandatController {
     public static class MandatCreateRequest {
         public MandatDeMission mandat;
         public List<Long> personnelIds;
-        public List<EtapeMission> etapes;
+        public List<EtapeStepRequest> etapes;
     }
 
     @PostMapping
@@ -69,7 +74,7 @@ public class MandatController {
         }
         // IllegalArgumentException -> 400, any other error -> 500 with a readable JSON body,
         // both handled centrally by GlobalExceptionHandler.
-        MandatDeMission created = mandatService.createMandat(request.mandat, request.personnelIds, request.etapes);
+        MandatDeMission created = mandatService.createMandat(request.mandat, request.personnelIds, request.etapes, userEmail);
         return ResponseEntity.ok(created);
     }
 
@@ -84,11 +89,17 @@ public class MandatController {
         return ResponseEntity.ok(Map.of("status", "deleted", "id", id));
     }
 
-    @PostMapping("/{id}/upload-scan")
-    public ResponseEntity<?> uploadSignedScan(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+    /** Imports the GM-signed mandate: the physical mandate, scanned back in, PDF or photo. */
+    @PostMapping(value = "/{id}/upload-scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadSignedScan(@PathVariable Long id, @RequestParam("file") MultipartFile file,
+                                              @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        User user = accessPolicy.resolve(userEmail);
+        if (!accessPolicy.canUploadMandatScan(user)) {
+            return ResponseEntity.status(403).body(Map.of("error",
+                    "Seuls l'administrateur, la DRH ou un agent habilité à initier un mandat peuvent importer le scan signé."));
+        }
         try {
-            String scanPath = payload.get("scanPath");
-            if (scanPath == null || scanPath.isBlank()) scanPath = "/uploads/scans/mandat_" + id + "_signed.pdf";
+            String scanPath = fileStorageService.store(file, "scans", "mandat_" + id + "_signed");
             MandatDeMission updated = mandatService.uploadSignedScan(id, scanPath);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {

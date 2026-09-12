@@ -59,8 +59,24 @@
             <div class="d-flex align-items-center">
                 <!-- Bilingual Switcher -->
                 <div id="langContainer" class="me-3"></div>
+                <!-- Notification bell: alerts DRH/SP when a mandate is signed (OMs ready) and everyone on step-completion -->
+                <div class="dropdown me-2">
+                    <button class="btn btn-outline-light btn-sm position-relative" type="button" id="btnMandatNotif" data-bs-toggle="dropdown" aria-expanded="false" onclick="loadMandatNotifications()">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle d-none" id="mandatNotifCount">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow" style="width:360px;" aria-labelledby="btnMandatNotif">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <strong class="small text-dark"><span data-i18n="mmNotifications">Notifications</span></strong>
+                            <button class="btn btn-link btn-sm p-0" onclick="markAllMandatNotifRead()"><span data-i18n="mmMarkAllRead">Tout marquer comme lu</span></button>
+                        </div>
+                        <div id="mandatNotifList" class="p-2" style="max-height:400px; overflow-y:auto;">
+                            <p class="text-muted small p-2 mb-0" data-i18n="mmNoNotifications">Aucune notification.</p>
+                        </div>
+                    </div>
+                </div>
                 <a href="/index.html" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-house me-1"></i> <span data-i18n="navDashboard">Tableau de bord</span></a>
-                <a href="/login.html" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> <span data-i18n="logout">Déconnexion</span></a>
+                <a href="/login.html" onclick="artLogout(event)" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> <span data-i18n="logout">Déconnexion</span></a>
             </div>
         </div>
     </nav>
@@ -581,10 +597,35 @@
                 else selectedStaffIds.delete(id);
             });
             renderSelectedStaffChips();
+            syncStepAgentsWithTeam();
             const countBadge = document.getElementById('staffCountBadge');
             if (countBadge) {
                 countBadge.textContent = `${selectedStaffIds.size} sélectionné(s) / ${select.options.length} affichés / ${allStaff.length} agents`;
             }
+        }
+
+        // Snapshot of the team the last time steps were synced, so a member the user manually
+        // unchecked on ONE step is not silently re-added just because the team select re-fires.
+        let lastTeamSnapshot = new Set();
+
+        // Whenever the overall team changes, keep each step's per-step assignment consistent:
+        // a newly-added team member is included on every step by default; someone removed from
+        // the team can no longer be assigned to a step. A member already on the team keeps
+        // whatever per-step choice the user made.
+        function syncStepAgentsWithTeam() {
+            const newlyAdded = Array.from(selectedStaffIds).filter(id => !lastTeamSnapshot.has(id));
+            let changed = false;
+            mandatSteps.forEach(step => {
+                if (!Array.isArray(step.personnelIds)) { step.personnelIds = Array.from(selectedStaffIds); changed = true; return; }
+                const before = step.personnelIds.length;
+                // Drop anyone no longer on the team.
+                step.personnelIds = step.personnelIds.filter(id => selectedStaffIds.has(String(id)));
+                // Include newly-added team members by default.
+                newlyAdded.forEach(id => { if (!step.personnelIds.includes(id)) step.personnelIds.push(id); });
+                if (step.personnelIds.length !== before) changed = true;
+            });
+            lastTeamSnapshot = new Set(selectedStaffIds);
+            if (changed) renderMandatSteps();
         }
 
         function renderSelectedStaffChips() {
@@ -603,12 +644,14 @@
         function removeMandatStaff(id) {
             selectedStaffIds.delete(String(id));
             filterMandatStaff(document.getElementById('mStaffSearch').value);
+            syncStepAgentsWithTeam();
         }
 
         // Multi-Step Itinerary Methods
         function addMandatStep(lieu = '', dateDebut = '', dateFin = '', transport = 'Véhicule de service') {
             const stepId = Date.now() + Math.floor(Math.random() * 100);
-            mandatSteps.push({ id: stepId, lieu, dateDebut, dateFin, transport });
+            // New steps default to the whole current team; the user can then untick agents per step.
+            mandatSteps.push({ id: stepId, lieu, dateDebut, dateFin, transport, personnelIds: Array.from(selectedStaffIds) });
             renderMandatSteps();
         }
 
@@ -623,6 +666,8 @@
                 container.innerHTML = `<p class="text-muted small mb-0 fst-italic">Aucune étape spécifique ajoutée. La mission sera considérée comme un déplacement unique.</p>`;
                 return;
             }
+
+            const team = allStaff.filter(s => selectedStaffIds.has(String(s.id)));
 
             container.innerHTML = mandatSteps.map((step, idx) => `
                 <div class="step-item-card">
@@ -651,13 +696,39 @@
                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMandatStep(${step.id})"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
+                    <div class="row g-2 mt-1">
+                        <div class="col-12">
+                            <small class="fw-bold text-secondary d-block mb-1"><i class="fa-solid fa-user-check me-1"></i><span data-i18n="stepAgentsLabel">Agents affectés à cette étape</span> :</small>
+                            ${team.length === 0
+                                ? `<small class="text-muted fst-italic" data-i18n="stepAgentsEmptyHint">Sélectionnez d'abord l'équipe du mandat ci-dessus.</small>`
+                                : team.map(s => {
+                                    const checked = (step.personnelIds || []).map(String).includes(String(s.id));
+                                    return `<span class="form-check form-check-inline small me-3">
+                                        <input class="form-check-input" type="checkbox" id="stepAgent_${step.id}_${s.id}" ${checked ? 'checked' : ''} onchange="toggleStepAgent(${step.id}, ${s.id}, this.checked)">
+                                        <label class="form-check-label" for="stepAgent_${step.id}_${s.id}">${s.nom} ${s.prenom || ''} <span class="text-muted">(${s.matricule || 'N/A'})</span></label>
+                                    </span>`;
+                                }).join('')
+                            }
+                        </div>
+                    </div>
                 </div>
             `).join('');
+            smomaI18n.applyTranslations();
         }
 
         function updateStepField(stepId, field, value) {
             const st = mandatSteps.find(s => s.id === stepId);
             if (st) st[field] = value;
+        }
+
+        function toggleStepAgent(stepId, personnelId, checked) {
+            const st = mandatSteps.find(s => s.id === stepId);
+            if (!st) return;
+            if (!Array.isArray(st.personnelIds)) st.personnelIds = [];
+            const idStr = String(personnelId);
+            const has = st.personnelIds.map(String).includes(idStr);
+            if (checked && !has) st.personnelIds.push(personnelId);
+            if (!checked && has) st.personnelIds = st.personnelIds.filter(id => String(id) !== idStr);
         }
 
         // City <select>: "Autre ville" opens a prompt so a location outside the list can still be entered.
@@ -849,13 +920,15 @@
             };
 
             // Format steps payload — drop empty rows, fall back to the global period for missing dates.
+            // personnelIds: staff specifically assigned to that leg (empty/omitted = whole team).
             const etapesPayload = mandatSteps
                 .filter(s => (s.lieu && s.lieu.trim()) || s.dateDebut || s.dateFin)
                 .map(s => ({
                     lieu: s.lieu || '',
                     dateDebut: s.dateDebut || dateDebut,
                     dateFin: s.dateFin || dateFin,
-                    transportMode: s.transport || 'Véhicule de service'
+                    transportMode: s.transport || 'Véhicule de service',
+                    personnelIds: (Array.isArray(s.personnelIds) ? s.personnelIds : []).map(v => parseInt(v)).filter(n => !isNaN(n))
                 }));
 
             try {
@@ -874,6 +947,7 @@
                     document.getElementById('formMandat').reset();
                     mandatSteps = [];
                     selectedStaffIds = new Set();
+                    lastTeamSnapshot = new Set();
                     const rj = document.getElementById('mRefJustif');
                     if (rj) { rj.value = ''; delete rj.dataset.userEdited; }
                     renderMandatSteps();
@@ -901,20 +975,38 @@
 
         async function submitScan() {
             const id = document.getElementById('uploadMandatId').value;
+            const fileInput = document.getElementById('scanFile');
+            const file = fileInput.files[0];
+            if (!file) { alert('Veuillez sélectionner le fichier (PDF, JPG ou PNG) du mandat signé par le DG.'); return; }
+
+            const btn = document.querySelector('#modalUploadScan .btn-success');
+            const originalLabel = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Importation...';
             try {
+                const formData = new FormData();
+                formData.append('file', file);
                 const res = await fetch(`/api/mandats/${id}/upload-scan`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ scanPath: `/uploads/scans/mandat_${id}_signed.pdf` })
+                    headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' },
+                    body: formData
                 });
 
                 if (res.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('modalUploadScan')).hide();
+                    fileInput.value = '';
                     alert('Scan signé importé avec succès! Ordres de Mission générés.');
                     loadMandats();
+                } else {
+                    let msg = 'Impossible d\'importer le scan (HTTP ' + res.status + ').';
+                    try { const err = await res.json(); msg = err.error || msg; } catch (_) {}
+                    alert('Erreur: ' + msg);
                 }
             } catch (e) {
-                alert('Erreur lors de l\'importation du scan.');
+                alert('Erreur réseau lors de l\'importation du scan: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalLabel;
             }
         }
 
@@ -942,9 +1034,16 @@
                     ? '<span class="seal-sans-frais">SANS FRAIS / WITHOUT EXPENSES</span>' : '';
 
                 const etapes = m.etapes || [];
+                const allTeamNames = (m.personnelList || []).length;
                 document.getElementById('vmSteps').innerHTML = etapes.length
-                    ? `<table class="table table-sm table-bordered"><thead class="table-light"><tr><th>Étape</th><th>Lieu / Location</th><th>Dates</th><th>Transport</th></tr></thead><tbody>`
-                        + etapes.map((s, i) => `<tr><td>${i + 1}</td><td>${s.lieu || ''}</td><td>${s.dateDebut || ''} au ${s.dateFin || ''}</td><td>${s.transportMode || ''}</td></tr>`).join('')
+                    ? `<table class="table table-sm table-bordered"><thead class="table-light"><tr><th>Étape</th><th>Lieu / Location</th><th>Dates</th><th>Transport</th><th>Agents Affectés / Assigned Staff</th></tr></thead><tbody>`
+                        + etapes.map((s, i) => {
+                            const agents = s.personnelList || [];
+                            const agentsTxt = agents.length
+                                ? agents.map(p => `${p.nom} ${p.prenom || ''} (${p.matricule || 'N/A'})`).join(', ')
+                                : (allTeamNames ? "Toute l'équipe du mandat / Whole mandate team" : '—');
+                            return `<tr><td>${i + 1}</td><td>${s.lieu || ''}</td><td>${s.dateDebut || ''} au ${s.dateFin || ''}</td><td>${s.transportMode || ''}</td><td><small>${agentsTxt}</small></td></tr>`;
+                        }).join('')
                         + '</tbody></table>'
                     : '<p class="fst-italic text-muted">Déplacement unique vers la destination de la mission.</p>';
 
@@ -1016,7 +1115,7 @@
                             <div class="p-4 text-center">
                                 <i class="fa-solid fa-file-pdf text-danger fa-4x mb-3"></i>
                                 <h6 class="fw-bold">Scan Signé Importé</h6>
-                                <p class="text-muted small">${m.scanSignedPath}</p>
+                                <p class="mb-2"><a href="${m.scanSignedPath}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-eye me-1"></i> Voir le fichier importé</a></p>
                                 <span class="badge bg-success">Document Validé & Signé DG</span>
                             </div>
                         `;
@@ -1036,6 +1135,59 @@
             }
         }
 
+        // Notification bell: surfaces MANDATE_SIGNED alerts (DRH/SP, ready to issue OMs) and
+        // STEP_COMPLETED alerts (mandate initiator + DRH/SP), matched by matricule or username.
+        function mandatNotifIdentity() {
+            return {
+                mat: localStorage.getItem('art_user_matricule') || '',
+                user: localStorage.getItem('art_user_email') || ''
+            };
+        }
+
+        async function loadMandatNotifications() {
+            const { mat, user } = mandatNotifIdentity();
+            const badge = document.getElementById('mandatNotifCount');
+            const box = document.getElementById('mandatNotifList');
+            if (!mat && !user) { badge.classList.add('d-none'); return; }
+            try {
+                const res = await fetch('/api/notifications?matricule=' + encodeURIComponent(mat)
+                    + '&username=' + encodeURIComponent(user));
+                const list = res.ok ? await res.json() : [];
+                const unread = list.filter(n => !n.lu).length;
+                badge.textContent = unread;
+                badge.classList.toggle('d-none', unread === 0);
+
+                if (list.length === 0) {
+                    box.innerHTML = `<p class="text-muted small p-2 mb-0">${t('mmNoNotifications')}</p>`;
+                    return;
+                }
+                box.innerHTML = list.slice(0, 20).map(n => `
+                    <div class="p-2 mb-1 rounded ${n.lu ? '' : 'bg-light'}" onclick="markMandatNotifRead(${n.id})" style="cursor:pointer; border-left:3px solid ${n.lu ? '#cbd5e1' : '#0d6efd'};">
+                        <div class="fw-bold small">${n.titre || ''}</div>
+                        <div class="small text-muted">${n.message || ''}</div>
+                        <div class="small text-secondary">${(n.dateCreation || '').replace('T', ' ').slice(0, 16)}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                box.innerHTML = `<p class="text-danger small p-2 mb-0">${t('commonLoadError')}</p>`;
+            }
+        }
+
+        async function markMandatNotifRead(id) {
+            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST' }); } catch (e) {}
+            loadMandatNotifications();
+        }
+
+        async function markAllMandatNotifRead() {
+            const { mat, user } = mandatNotifIdentity();
+            if (!mat && !user) return;
+            try {
+                await fetch('/api/notifications/mark-all-read?matricule=' + encodeURIComponent(mat)
+                    + '&username=' + encodeURIComponent(user), { method: 'POST' });
+            } catch (e) {}
+            loadMandatNotifications();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             smomaI18n.injectLanguageSwitcher('#langContainer');
             smomaI18n.applyTranslations();
@@ -1046,6 +1198,8 @@
             loadStaff();
             loadMotifs();
             loadMandats().then(loadDirections);
+            loadMandatNotifications();
+            setInterval(loadMandatNotifications, 30000);
         });
         window.addEventListener('smoma_lang_changed', () => {
             smomaI18n.applyTranslations();

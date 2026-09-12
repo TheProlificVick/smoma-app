@@ -23,6 +23,9 @@ public class MandatService {
     private final DepartmentRepository departmentRepository;
     private final AvanceSurFraisRepository avanceRepository;
     private final RapportMissionRepository rapportRepository;
+    private final MissionCapacityService missionCapacityService;
+    private final UserRepository userRepository;
+    private final AccessPolicy accessPolicy;
 
     public MandatService(MandatDeMissionRepository mandatRepository,
                          EtapeMissionRepository etapeRepository,
@@ -33,7 +36,10 @@ public class MandatService {
                          NotificationService notificationService,
                          DepartmentRepository departmentRepository,
                          AvanceSurFraisRepository avanceRepository,
-                         RapportMissionRepository rapportRepository) {
+                         RapportMissionRepository rapportRepository,
+                         MissionCapacityService missionCapacityService,
+                         UserRepository userRepository,
+                         AccessPolicy accessPolicy) {
         this.mandatRepository = mandatRepository;
         this.etapeRepository = etapeRepository;
         this.ordreRepository = ordreRepository;
@@ -44,6 +50,9 @@ public class MandatService {
         this.departmentRepository = departmentRepository;
         this.avanceRepository = avanceRepository;
         this.rapportRepository = rapportRepository;
+        this.missionCapacityService = missionCapacityService;
+        this.userRepository = userRepository;
+        this.accessPolicy = accessPolicy;
     }
 
     /**
@@ -74,7 +83,12 @@ public class MandatService {
     }
 
     @Transactional
-    public MandatDeMission createMandat(MandatDeMission mandat, List<Long> personnelIds, List<EtapeMission> etapes) {
+    public MandatDeMission createMandat(MandatDeMission mandat, List<Long> personnelIds, List<smoma.dto.EtapeStepRequest> etapeInputs) {
+        return createMandat(mandat, personnelIds, etapeInputs, null);
+    }
+
+    @Transactional
+    public MandatDeMission createMandat(MandatDeMission mandat, List<Long> personnelIds, List<smoma.dto.EtapeStepRequest> etapeInputs, String initiateurUsername) {
         if (mandat == null) {
             throw new IllegalArgumentException("Aucune donnée de mandat reçue.");
         }
@@ -97,6 +111,9 @@ public class MandatService {
         if (mandat.getDateCreation() == null) {
             mandat.setDateCreation(LocalDate.now());
         }
+        if (initiateurUsername != null && !initiateurUsername.isBlank()) {
+            mandat.setInitiateurUsername(initiateurUsername.trim());
+        }
 
         // Reference of the authorising act (spec: motif réglementaire), e.g. ART/DG/CSI/001.
         if (mandat.getReferenceJustification() == null || mandat.getReferenceJustification().isBlank()) {
@@ -118,32 +135,95 @@ public class MandatService {
         }
 
         MandatDeMission savedMandat = mandatRepository.save(mandat);
+        List<Personnel> team = savedMandat.getPersonnelList();
 
-        if (etapes != null && !etapes.isEmpty()) {
-            for (EtapeMission etape : etapes) {
-                if (etape == null) continue;
-                boolean noLocation = etape.getLieu() == null || etape.getLieu().isBlank();
-                boolean noDates = etape.getDateDebut() == null && etape.getDateFin() == null;
+        if (etapeInputs != null && !etapeInputs.isEmpty()) {
+            // Tracks, within this single submission, how many days each agent has already been
+            // committed to (across the mandate's other new steps) — the 100-day/fiscal-year cap and
+            // the one-step-at-a-time rule must hold even before any OrdreDeMission row exists yet.
+            java.util.Map<Long, Long> newDaysTally = new java.util.HashMap<>();
+            List<Object[]> newStepWindows = new ArrayList<>(); // {agentId, dateDebut, dateFin, lieu}
+
+            for (smoma.dto.EtapeStepRequest input : etapeInputs) {
+                if (input == null) continue;
+                boolean noLocation = input.getLieu() == null || input.getLieu().isBlank();
+                boolean noDates = input.getDateDebut() == null && input.getDateFin() == null;
                 if (noLocation && noDates) continue; // skip an empty step row
 
-                if (etape.getDateDebut() != null && etape.getDateFin() != null
+                if (input.getDateDebut() != null && input.getDateFin() != null
                         && savedMandat.getDateDebut() != null && savedMandat.getDateFin() != null) {
-                    if (etape.getDateDebut().isBefore(savedMandat.getDateDebut())
-                            || etape.getDateFin().isAfter(savedMandat.getDateFin())) {
+                    if (input.getDateDebut().isBefore(savedMandat.getDateDebut())
+                            || input.getDateFin().isAfter(savedMandat.getDateFin())) {
                         throw new IllegalArgumentException("Les dates de l'étape doivent être comprises dans la période globale du mandat ("
                                 + savedMandat.getDateDebut() + " au " + savedMandat.getDateFin() + ").");
                     }
                 }
-                if (etape.getDateDebut() == null) etape.setDateDebut(savedMandat.getDateDebut());
-                if (etape.getDateFin() == null) etape.setDateFin(savedMandat.getDateFin());
+
+                EtapeMission etape = new EtapeMission();
+                etape.setLieu(input.getLieu());
+                etape.setDateDebut(input.getDateDebut() != null ? input.getDateDebut() : savedMandat.getDateDebut());
+                etape.setDateFin(input.getDateFin() != null ? input.getDateFin() : savedMandat.getDateFin());
+                etape.setTransportMode(input.getTransportMode());
+                etape.setCommentaire(input.getCommentaire());
                 etape.setMandatDeMission(savedMandat);
+
+                // Staff specifically assigned to this leg of the mission (spec 4.4). Falls back to
+                // the whole mandate team at OM-generation time when left empty.
+                List<Personnel> stepAgents;
+                if (input.getPersonnelIds() != null && !input.getPersonnelIds().isEmpty()) {
+                    stepAgents = new ArrayList<>(personnelRepository.findAllById(input.getPersonnelIds()));
+                    etape.setPersonnelList(new ArrayList<>(stepAgents));
+                } else {
+                    stepAgents = team != null ? team : new ArrayList<>();
+                }
+
+                LocalDate stepDebut = etape.getDateDebut();
+                LocalDate stepFin = etape.getDateFin();
+                if (stepDebut != null && stepFin != null) {
+                    long stepDays = java.time.temporal.ChronoUnit.DAYS.between(stepDebut, stepFin) + 1;
+                    if (stepDays < 1) stepDays = 1;
+
+                    for (Personnel agent : stepAgents) {
+                        // One step at a time, regardless of rank: reject overlap with any mission
+                        // order already committed (other mandates/OMs) ...
+                        missionCapacityService.assertNoOverlap(agent, stepDebut, stepFin, null);
+
+                        // ... and with any other step of THIS mandate being submitted right now.
+                        for (Object[] w : newStepWindows) {
+                            if (!agent.getId().equals(w[0])) continue;
+                            LocalDate oDebut = (LocalDate) w[1];
+                            LocalDate oFin = (LocalDate) w[2];
+                            if (!stepDebut.isAfter(oFin) && !stepFin.isBefore(oDebut)) {
+                                throw new IllegalArgumentException("Conflit de planning pour " + agent.getFullName()
+                                        + " : déjà affecté(e) du " + oDebut + " au " + oFin + " (" + w[3]
+                                        + ") dans ce même mandat. Un agent ne peut être affecté qu'à une seule étape "
+                                        + "de mission à la fois ; la nouvelle affectation n'est possible qu'une fois l'étape en cours terminée.");
+                            }
+                        }
+
+                        // 100-day/fiscal-year cap, regardless of rank — combines already-committed
+                        // mission orders with the steps of this same submission.
+                        int fiscalYear = stepDebut.getYear();
+                        long existingDays = missionCapacityService.committedDaysInFiscalYear(agent.getId(), fiscalYear, null);
+                        long alreadyTallied = newDaysTally.getOrDefault(agent.getId(), 0L);
+                        long total = existingDays + alreadyTallied + stepDays;
+                        if (total > MissionCapacityService.MAX_DAYS_PER_FISCAL_YEAR) {
+                            throw new IllegalArgumentException("Plafond annuel de mission dépassé pour " + agent.getFullName()
+                                    + " : " + (existingDays + alreadyTallied) + " jour(s) déjà comptabilisé(s) sur l'exercice " + fiscalYear
+                                    + "; cette étape de " + stepDays + " jour(s) porterait le total à " + total
+                                    + " jours, au-delà du plafond réglementaire de " + MissionCapacityService.MAX_DAYS_PER_FISCAL_YEAR + " jours/an.");
+                        }
+                        newDaysTally.merge(agent.getId(), stepDays, Long::sum);
+                        newStepWindows.add(new Object[]{agent.getId(), stepDebut, stepFin, input.getLieu()});
+                    }
+                }
+
                 etapeRepository.save(etape);
             }
         }
 
         // Notify every designated agent that they are part of this mandate (the individual
         // mission order + its notification follow once the signed scan is imported).
-        List<Personnel> team = savedMandat.getPersonnelList();
         if (team != null) {
             for (Personnel agent : team) {
                 notificationService.notifyMandateTeamAssigned(savedMandat, agent);
@@ -171,7 +251,14 @@ public class MandatService {
         }
 
         MandatDeMission updated = mandatRepository.save(mandat);
-        generateOrdresDeMissionForMandat(updated);
+        List<OrdreDeMission> generatedOrders = generateOrdresDeMissionForMandat(updated);
+
+        // Alert DRH / Service du Personnel: the mandate is now signed and its individual mission
+        // orders are ready for them to review, print and deliver to the assigned staff.
+        for (User u : userRepository.findAll()) {
+            if (!accessPolicy.isHrOrPersonnelService(u)) continue;
+            notificationService.notifyMandateSigned(updated, u.getMatricule(), u.getUsername(), generatedOrders.size());
+        }
 
         auditLogRepository.save(new AuditLog("UPLOAD_MANDAT_SCAN", "SYSTEM", "Scan signé importé pour mandat: " + mandat.getReferenceMandat()));
         return updated;
@@ -192,14 +279,32 @@ public class MandatService {
             etapes.add(etapeRepository.save(defaultEtape));
         }
 
-        for (Personnel agent : staffList) {
-            for (EtapeMission etape : etapes) {
-                boolean exists = ordreRepository.findAll().stream().anyMatch(o -> 
+        for (EtapeMission etape : etapes) {
+            // Spec 4.4: an agent may be concerned by only some of the mandate's steps. When a step
+            // has no specific assignment, every team member of the mandate is on it (legacy behaviour).
+            List<Personnel> etapeAgents = (etape.getPersonnelList() != null && !etape.getPersonnelList().isEmpty())
+                    ? etape.getPersonnelList() : staffList;
+
+            for (Personnel agent : etapeAgents) {
+                boolean exists = ordreRepository.findAll().stream().anyMatch(o ->
                         o.getMandatDeMission() != null && o.getMandatDeMission().getId().equals(mandat.getId())
                         && o.getPersonnel() != null && o.getPersonnel().getId().equals(agent.getId())
                         && o.getEtape() != null && o.getEtape().getId().equals(etape.getId()));
 
                 if (!exists) {
+                    // Re-validate at OM-generation time (dates/assignments may have shifted since the
+                    // mandate was drafted). A conflict for one agent must not block the rest of the batch,
+                    // so it is skipped and audited rather than failing the whole mandate.
+                    try {
+                        missionCapacityService.assertAssignable(agent, etape.getDateDebut() != null ? etape.getDateDebut() : mandat.getDateDebut(),
+                                etape.getDateFin() != null ? etape.getDateFin() : mandat.getDateFin(), null);
+                    } catch (IllegalStateException conflict) {
+                        auditLogRepository.save(new AuditLog("SKIP_OM_GENERATION", "SYSTEM",
+                                "Ordre de mission non généré pour " + agent.getFullName() + " (mandat " + mandat.getReferenceMandat()
+                                        + ", étape " + (etape.getLieu() != null ? etape.getLieu() : etape.getId()) + "): " + conflict.getMessage()));
+                        continue;
+                    }
+
                     OrdreDeMission om = new OrdreDeMission();
                     om.setReferenceOrdre("OM-ART-" + agent.getMatricule() + "-" + System.currentTimeMillis() % 10000);
                     om.setMandatDeMission(mandat);
