@@ -14,6 +14,13 @@ public class Rang {
     @Column(nullable = false)
     private String libelle;
 
+    /** English translation of {@link #libelle}, shown instead of it when the UI language is English. */
+    private String libelleEn;
+
+    // Enforced at the DB level too (not just ReferentielController's pre-check): findByCode is
+    // Optional-returning and used on every mission-order PDF generation — a duplicate code would
+    // throw NonUniqueResultException there and break PDF download for every agent sharing it.
+    @Column(unique = true)
     private String code;
 
     @Column(name = "niveau")
@@ -50,6 +57,14 @@ public class Rang {
 
     public void setLibelle(String libelle) {
         this.libelle = libelle;
+    }
+
+    public String getLibelleEn() {
+        return libelleEn;
+    }
+
+    public void setLibelleEn(String libelleEn) {
+        this.libelleEn = libelleEn;
     }
 
     public String getCode() {

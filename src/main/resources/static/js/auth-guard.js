@@ -6,7 +6,14 @@
     if (window.fetch.__artAuthPatched) return;
     const originalFetch = window.fetch;
     window.fetch = function (input, init) {
-        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        // fetch() accepts a plain string, a Request object, or a URL object — the URL case was
+        // missing here (typeof a URL instance is 'object' with no '.url' property, so it fell
+        // through to '', which never starts with '/api/'), silently skipping the Authorization
+        // header — and the 401-detection below — for any page that calls fetch(new URL(...))
+        // instead of fetch('...'). personnel.html does exactly that for its filtered search.
+        const url = typeof input === 'string' ? input
+            : (input instanceof URL) ? input.href
+            : (input && input.url) || '';
         if (url.startsWith('/api/')) {
             const token = localStorage.getItem('art_auth_token');
             if (token) {
@@ -16,7 +23,29 @@
                 init.headers = headers;
             }
         }
-        return originalFetch.call(this, input, init);
+        return originalFetch.call(this, input, init).then(response => {
+            // A stale localStorage "authenticated" flag with an expired/invalid JWT used to leave
+            // every page silently failing every API call with an unexplained 401 — the client-side
+            // page gate below only ever checks the flag, never the token's actual validity, so
+            // nothing sent the user back to log in for a fresh one. JwtAuthFilter's own 401 carries
+            // this exact, distinctive message; a business-logic 401 (e.g. "wrong current password"
+            // on the change-password form) does not, and must NOT force a logout — the user should
+            // just get to retype their password, not get bounced off the page entirely.
+            if (url.startsWith('/api/') && response.status === 401) {
+                response.clone().json().then(body => {
+                    if (body && typeof body.error === 'string' && body.error.startsWith('Session invalide ou expirée')) {
+                        localStorage.removeItem('art_authenticated');
+                        localStorage.removeItem('art_auth_token');
+                        localStorage.removeItem('art_user_role');
+                        localStorage.removeItem('art_user_email');
+                        localStorage.removeItem('art_user_matricule');
+                        localStorage.removeItem('art_user_designation');
+                        window.location.href = '/login.html';
+                    }
+                }).catch(() => {});
+            }
+            return response;
+        });
     };
     window.fetch.__artAuthPatched = true;
 })();

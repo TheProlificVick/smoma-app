@@ -58,7 +58,7 @@
                 <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-address-book text-info me-2"></i><span data-i18n="persHeading">Répertoire du Personnel</span></h4>
                 <p class="text-muted small mb-0" data-i18n="persSub">Gestion des fiches agents, affectations organisationnelles, grades et consultation du compte individuel</p>
             </div>
-            <button class="btn btn-info text-white btn-sm px-3" onclick="openCreateAgent()" data-bs-toggle="modal" data-bs-target="#modalCreateAgent">
+            <button id="btnAddAgentAction" class="btn btn-info text-white btn-sm px-3" onclick="openCreateAgent()" data-bs-toggle="modal" data-bs-target="#modalCreateAgent">
                 <i class="fa-solid fa-user-plus me-1"></i> <span data-i18n="btnAddAgent">Ajouter un Agent</span>
             </button>
         </div>
@@ -86,6 +86,7 @@
                             <option value="B">Grade B</option>
                             <option value="C">Grade C</option>
                             <option value="D">Grade D</option>
+                            <option value="E">Grade E</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -157,7 +158,10 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" data-i18n="persColFunction">Fonction</label>
-                                <input type="text" class="form-control" id="pFonction" placeholder="Ex: Chef de Service Formation">
+                                <select class="form-select" id="pFonction">
+                                    <!-- Chargé depuis /api/referentiels/fonctions?departmentName=... une fois la structure choisie -->
+                                </select>
+                                <small class="text-muted" id="pFonctionHint" data-i18n="persFonctionSelectDeptFirst">Choisissez d'abord la structure / direction ci-dessus.</small>
                             </div>
                         </div>
 
@@ -169,6 +173,7 @@
                                     <option value="B">Grade B</option>
                                     <option value="C">Grade C</option>
                                     <option value="D">Grade D</option>
+                                    <option value="E">Grade E</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -207,8 +212,8 @@
                                 <label class="form-label fw-bold" data-i18n="persContractLabel">Type de Contrat</label>
                                 <select class="form-select" id="pTypeContrat">
                                     <option value="" data-i18n="adOptionNone">—</option>
-                                    <option value="CDI">CDI</option>
-                                    <option value="CDD">CDD</option>
+                                    <option value="CDI" data-i18n="persContractCDI">CDI (Contrat à Durée Indéterminée)</option>
+                                    <option value="CDD" data-i18n="persContractCDD">CDD (Contrat à Durée Déterminée)</option>
                                 </select>
                             </div>
                         </div>
@@ -264,9 +269,10 @@
                 const opts = structures
                     .map(s => {
                         const name = s.name || s.nom || s.libelle || '';
+                        const label = tl(name, s.nameEn) || name;
                         const acr = s.acronym || s.acronyme || s.code || '';
                         if (!name) return '';
-                        return `<option value="${name}">${name}${acr ? ' (' + acr + ')' : ''}</option>`;
+                        return `<option value="${name}">${label}${acr ? ' (' + acr + ')' : ''}</option>`;
                     })
                     .join('');
                 if (filterSel) filterSel.innerHTML = `<option value="">${t('allDepartments')}</option>` + opts;
@@ -287,10 +293,54 @@
                 sel.innerHTML = '<option value="">—</option>' + rangs
                     .filter(r => r.actif !== false)
                     .sort((a, b) => (a.niveau || 99) - (b.niveau || 99))
-                    .map(r => `<option value="${r.code}">${r.libelle} (${r.code})</option>`).join('');
+                    .map(r => `<option value="${r.code}">${tl(r.libelle, r.libelleEn)} (${r.code})</option>`).join('');
             } catch (e) {
                 console.warn('Rang list load skipped:', e);
             }
+        }
+
+        // Fonction now only lists the real postes that exist within the CHOSEN department in the
+        // organigramme (Fonction.department) — picking one auto-fills the correct Rang from
+        // Fonction.rang, since that's what actually drives the mission-indemnity rate downstream.
+        // keepValue: preserve an already-set fonction (e.g. legacy free text on an old record)
+        // by re-adding it as an extra option even if it isn't in the department's own catalogue.
+        let fonctionRangByLibelle = {};
+        async function loadFonctionOptions(departmentName, keepValue) {
+            const sel = document.getElementById('pFonction');
+            const hint = document.getElementById('pFonctionHint');
+            if (!sel) return;
+            if (!departmentName) {
+                sel.innerHTML = '<option value="">—</option>';
+                fonctionRangByLibelle = {};
+                if (hint) hint.hidden = false;
+                return;
+            }
+            if (hint) hint.hidden = true;
+            try {
+                const res = await fetch('/api/referentiels/fonctions?departmentName=' + encodeURIComponent(departmentName));
+                const list = res.ok ? await res.json() : [];
+                fonctionRangByLibelle = {};
+                list.forEach(f => { if (f.rang) fonctionRangByLibelle[f.libelle] = f.rang.code; });
+                let optionsHtml = '<option value="">—</option>' + list
+                    .filter(f => f.actif !== false)
+                    .sort((a, b) => (a.libelle || '').localeCompare(b.libelle || ''))
+                    .map(f => `<option value="${(f.libelle || '').replace(/"/g, '&quot;')}">${tl(f.libelle, f.libelleEn)}</option>`).join('');
+                if (keepValue && !list.some(f => f.libelle === keepValue)) {
+                    optionsHtml += `<option value="${keepValue.replace(/"/g, '&quot;')}">${keepValue}</option>`;
+                }
+                sel.innerHTML = optionsHtml;
+                if (keepValue) sel.value = keepValue;
+            } catch (e) {
+                console.warn('Fonction list load skipped:', e);
+            }
+        }
+
+        // Auto-fill the Rang from the chosen Fonction's own rang in the organigramme — DRH can
+        // still override it manually afterwards if a specific situation genuinely requires it.
+        function onFonctionChange() {
+            const fonction = document.getElementById('pFonction').value;
+            const rangCode = fonctionRangByLibelle[fonction];
+            if (rangCode) document.getElementById('pRang').value = rangCode;
         }
 
         async function searchPersonnel() {
@@ -306,40 +356,47 @@
             const tbody = document.getElementById('personnelTbody');
             try {
                 const res = await fetch(url);
-                if (res.ok) {
-                    const staff = await res.json();
-                    if (staff.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">${t('persNoMatch')}</td></tr>`;
-                        return;
-                    }
-
-                    tbody.innerHTML = staff.map(p => `
-                        <tr>
-                            <td class="fw-bold text-navy">${p.matricule || 'N/A'}</td>
-                            <td>
-                                <div class="fw-bold">${p.nom} ${p.prenom || ''}</div>
-                            </td>
-                            <td><small class="fw-bold text-secondary">${p.departement || '—'}</small></td>
-                            <td>
-                                <small>${p.fonction || 'Agent ART'}</small>
-                                <span class="d-block text-muted small">${p.rang ? t('persRangLabel') + ': ' + p.rang : ''}</span>
-                            </td>
-                            <td><span class="badge bg-primary">Grade ${p.grade || '—'}</span></td>
-                            <td>
-                                <small>${p.email || 'N/A'}</small>
-                                <span class="d-block text-muted small">${p.telephone || ''}</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-success">${t('commonActive')}</span>
-                                ${p.eligibleRetraite ? `<span class="badge bg-warning text-dark d-block mt-1" title="${t('persRetirementHint')}"><i class="fa-solid fa-hourglass-end me-1"></i>${t('persRetirementEligible')}</span>` : ''}
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-outline-secondary btn-sm me-1" onclick="openEditAgent(${p.id})" title="${t('btnEdit')}"><i class="fa-solid fa-pen"></i></button>
-                                <button class="btn btn-outline-info btn-sm" onclick="openCompteIndividuel(${p.id})" title="${t('persCompteTitle')}"><i class="fa-solid fa-chart-line me-1"></i> ${t('persAccountBtn')}</button>
-                            </td>
-                        </tr>
-                    `).join('');
+                if (res.status === 403) {
+                    const err = await res.json().catch(() => ({}));
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${escapeHtml(err.error) || "Vous n'êtes pas autorisé(e) à consulter le répertoire du personnel. Veuillez vous reconnecter."}</td></tr>`;
+                    return;
                 }
+                if (!res.ok) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${t('commonLoadError')} (HTTP ${res.status})</td></tr>`;
+                    return;
+                }
+                const staff = await res.json();
+                if (staff.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">${t('persNoMatch')}</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = staff.map(p => `
+                    <tr>
+                        <td class="fw-bold text-navy">${p.matricule || 'N/A'}</td>
+                        <td>
+                            <div class="fw-bold">${p.nom} ${p.prenom || ''}</div>
+                        </td>
+                        <td><small class="fw-bold text-secondary">${p.departement || '—'}</small></td>
+                        <td>
+                            <small>${p.fonction || 'Agent ART'}</small>
+                            <span class="d-block text-muted small">${p.rang ? t('persRangLabel') + ': ' + p.rang : ''}</span>
+                        </td>
+                        <td><span class="badge bg-primary">Grade ${p.grade || '—'}</span></td>
+                        <td>
+                            <small>${p.email || 'N/A'}</small>
+                            <span class="d-block text-muted small">${p.telephone || ''}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-success">${t('commonActive')}</span>
+                            ${p.eligibleRetraite ? `<span class="badge bg-warning text-dark d-block mt-1" title="${t('persRetirementHint')}"><i class="fa-solid fa-hourglass-end me-1"></i>${t('persRetirementEligible')}</span>` : ''}
+                        </td>
+                        <td class="text-end">
+                            ${currentUserCanManagePersonnel() ? `<button class="btn btn-outline-secondary btn-sm me-1" onclick="openEditAgent(${p.id})" title="${t('btnEdit')}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            <button class="btn btn-outline-info btn-sm" onclick="openCompteIndividuel(${p.id})" title="${t('persCompteTitle')}"><i class="fa-solid fa-chart-line me-1"></i> ${t('persAccountBtn')}</button>
+                        </td>
+                    </tr>
+                `).join('');
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${t('commonLoadError')}</td></tr>`;
             }
@@ -354,9 +411,18 @@
 
         let currentEditId = null;
 
+        // Client-side mirror of AccessPolicy.canCreateOrgEntities (the server enforces it too, on
+        // every POST /api/personnel — this just keeps someone who can't save from being invited to
+        // fill out the whole form first and only finding out at the very end).
+        function currentUserCanManagePersonnel() {
+            const role = (localStorage.getItem('art_user_role') || '').toUpperCase();
+            return role === 'ROLE_ADMIN' || role === 'ROLE_HR_OFFICER';
+        }
+
         function openCreateAgent() {
             currentEditId = null;
             document.getElementById('formAgent').reset();
+            loadFonctionOptions(null);
             document.getElementById('modalCreateAgentTitle').textContent = t('persAddTitle');
         }
 
@@ -370,7 +436,7 @@
                 document.getElementById('pNom').value = p.nom || '';
                 document.getElementById('pPrenom').value = p.prenom || '';
                 document.getElementById('pDept').value = p.departement || '';
-                document.getElementById('pFonction').value = p.fonction || '';
+                await loadFonctionOptions(p.departement || '', p.fonction || '');
                 document.getElementById('pGrade').value = p.grade || 'A';
                 document.getElementById('pRang').value = p.rang || '';
                 document.getElementById('pEmail').value = p.email || '';
@@ -438,6 +504,11 @@
 
             try {
                 const res = await fetch(`/api/personnel/${id}/compte-individuel`);
+                if (res.status === 403) {
+                    const err = await res.json().catch(() => ({}));
+                    body.innerHTML = `<p class="text-danger p-3">${escapeHtml(err.error) || "Vous n'êtes pas autorisé(e) à consulter ce compte individuel."}</p>`;
+                    return;
+                }
                 if (res.ok) {
                     const data = await res.json();
                     const p = data.personnel;
@@ -508,67 +579,26 @@
             }
         }
 
-        async function fetchPersonnelTable() {
-            const tableBody = document.getElementById('personnelTableBody');
-            
-            try {
-                // Call your Spring Boot API endpoint for agents
-                const response = await fetch('/api/agents');
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
-                
-                const agents = await response.json();
-
-                // If Active Directory synced but MySQL returned zero records
-                if (!agents || agents.length === 0) {
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">
-                                Aucun agent trouvé dans la base de données.
-                            </td>
-                        </tr>`;
-                    return;
-                }
-
-                // Render Active Directory agents in the table
-                tableBody.innerHTML = agents.map(agent => `
-                    <tr>
-                        <td><strong>${agent.matricule || '-'}</strong></td>
-                        <td>${agent.nom || ''} ${agent.prenom || ''}</td>
-                        <td>${agent.direction ? (agent.direction.nom || agent.direction) : '-'}</td>
-                        <td>${agent.fonction || '-'}</td>
-                        <td>${agent.grade || '-'}</td>
-                        <td>${agent.email || '-'}</td>
-                        <td><span class="badge bg-success">${agent.statut || 'Actif'}</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-
-            } catch (error) {
-                console.error('Erreur de chargement du personnel:', error);
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="text-center py-4 text-danger">
-                            Impossible de charger la liste du personnel. Vérifiez la connexion API.
-                        </td>
-                    </tr>`;
-            }
-        }
-
-        // Trigger fetch on page load
         document.addEventListener('DOMContentLoaded', () => {
             smomaI18n.injectLanguageSwitcher('#langContainer');
+            if (!currentUserCanManagePersonnel()) {
+                document.getElementById('btnAddAgentAction').hidden = true;
+            }
             loadStructureFilter();
             loadRangOptions();
+            loadFonctionOptions(null);
+            searchPersonnel();
+            document.getElementById('pDept').addEventListener('change', (e) => loadFonctionOptions(e.target.value));
+            document.getElementById('pFonction').addEventListener('change', onFonctionChange);
+        });
+        window.addEventListener('smoma_lang_changed', () => {
+            smomaI18n.applyTranslations();
+            loadStructureFilter();
+            loadRangOptions();
+            const dept = document.getElementById('pDept');
+            if (dept && dept.value) loadFonctionOptions(dept.value, document.getElementById('pFonction') ? document.getElementById('pFonction').value : null);
             searchPersonnel();
         });
-        window.addEventListener('smoma_lang_changed', () => { smomaI18n.applyTranslations(); loadStructureFilter(); searchPersonnel(); });
     </script>
     <script src="/js/i18n.js"></script>
     <script src="/js/auth-guard.js"></script>

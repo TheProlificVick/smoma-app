@@ -12,4 +12,8 @@ public interface FonctionRepository extends JpaRepository<Fonction, Long> {
     List<Fonction> findByLibelleContainingIgnoreCase(String libelle);
 
     Optional<Fonction> findByCode(String code);
+
+    List<Fonction> findByDepartment_Id(Long departmentId);
+
+    List<Fonction> findByDepartment_NameIgnoreCase(String departmentName);
 }

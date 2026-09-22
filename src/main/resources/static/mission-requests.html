@@ -17,68 +17,6 @@
         .badge-signed { background-color: #198754; color: white; }
         .badge-draft { background-color: #6c757d; color: white; }
 
-        /* Official Cameroon Form Styling */
-        .om-official-sheet {
-            background: #ffffff;
-            border: 2px solid #0B2545;
-            padding: 30px;
-            border-radius: 6px;
-            color: #1a202c;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-        .cameroon-header-table {
-            width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 2px double #0B2545;
-            padding-bottom: 15px;
-        }
-        .cameroon-header-table td {
-            vertical-align: middle;
-            text-align: center;
-        }
-        .official-heading-fr, .official-heading-en {
-            font-size: 11px;
-            font-weight: 700;
-            line-height: 1.35;
-            text-transform: uppercase;
-        }
-        .official-heading-fr { color: #0B2545; }
-        .official-heading-en { color: #334155; }
-        .motto {
-            font-style: italic;
-            font-weight: 600;
-            font-size: 10px;
-            color: #64748b;
-            text-transform: none;
-        }
-        .art-center-logo {
-            max-height: 85px;
-            width: auto;
-            object-fit: contain;
-            padding: 4px;
-            background: #fff;
-        }
-        .om-doc-title {
-            text-align: center;
-            background-color: #0B2545;
-            color: #ffffff;
-            padding: 8px 12px;
-            font-weight: 800;
-            font-size: 16px;
-            letter-spacing: 1px;
-            border-radius: 4px;
-            margin: 15px 0;
-        }
-        .form-section-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: #0B2545;
-            text-transform: uppercase;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 4px;
-            margin-top: 15px;
-            margin-bottom: 8px;
-        }
         .step-row-item {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -87,21 +25,50 @@
             margin-bottom: 6px;
         }
 
-        @media print {
-            body * { visibility: hidden; }
-            #printableOmContainer, #printableOmContainer * { visibility: visible; }
-            #printableOmContainer {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                padding: 0;
-                margin: 0;
-                border: none;
-                box-shadow: none;
-            }
-            .no-print { display: none !important; }
+        /* Paper-form-styled create form — same bilingual bold/italic label-row look as the
+           official ORDRE DE MISSION document, so the entry form and the printed result read as
+           the same document instead of two unrelated screens. */
+        .om-title-box {
+            border: 2px solid #0B2545; text-align: center; padding: 8px; margin: 4px 0 16px 0; background: #fff;
         }
+        .om-title-box span { font-size: 18px; font-weight: 800; letter-spacing: 1px; color: #0B2545; }
+        .om-field-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+        .om-field-table > tbody > tr > td { border: 1px solid #94a3b8; padding: 8px 10px; vertical-align: middle; }
+        .om-flabel { width: 34%; background: #f5f7fa; }
+        .om-flabel .fr { font-weight: 700; color: #0B2545; display: block; font-size: 12.5px; }
+        .om-flabel .en { font-style: italic; color: #64748b; font-size: 10.5px; display: block; }
+        .om-fvalue { width: 66%; }
+        .om-fvalue select, .om-fvalue input, .om-fvalue textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 5px 8px; font-size: 13px; }
+        .om-fvalue .row-split { display: flex; gap: 8px; }
+        .om-fvalue .row-split > * { flex: 1; }
+
+        /* Page 2 (verso) preview — same static layout as the back of the paper form / the printed
+           ordre-mission-officiel.html. Nothing here is an input: the real back page is filled by
+           hand after printing (visas, signatures) or computed once the OM exists (décompte,
+           avances) — this is shown purely so the create screen visually reads as the whole
+           two-sided document, front and back, like the paper original. */
+        .om-page-divider {
+            display: flex; align-items: center; gap: 10px; margin: 22px 0 14px 0;
+            color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .om-page-divider::before, .om-page-divider::after { content: ''; flex: 1; border-top: 2px dashed #cbd5e1; }
+        .om-verso { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; font-size: 12px; }
+        .om-verso .om-section-hdr {
+            text-align: center; font-weight: 700; font-size: 12.5px; border-bottom: 1.5px solid #0B2545;
+            color: #0B2545; padding: 4px 0; margin: 12px 0 8px 0;
+        }
+        .om-verso .om-section-hdr:first-child { margin-top: 0; }
+        .om-verso table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        .om-verso th, .om-verso td { border: 1px solid #cbd5e1; padding: 5px; text-align: center; font-size: 10.5px; }
+        .om-verso th { background: #f5f7fa; font-weight: 700; }
+        .om-verso .om-obs-row td { height: 40px; }
+        .om-verso .om-blankline { font-size: 11px; margin: 6px 0; color: #334155; }
+        .om-verso .om-dots { border-bottom: 1px dotted #94a3b8; display: inline-block; min-width: 45%; }
+        .om-verso .om-caption { text-align: center; font-weight: 700; font-size: 11.5px; margin: 4px 0; }
+        .om-verso .om-acquit td { text-align: left; vertical-align: top; font-size: 10.5px; }
+        .om-verso .om-motto { text-align: center; font-style: italic; margin-top: 10px; font-size: 11px; color: #0B2545; }
+        .om-verso .om-addr { text-align: center; font-size: 9.5px; color: #64748b; margin-top: 2px; }
+
     </style>
 </head>
 <body>
@@ -220,109 +187,182 @@
                             </td>
                         </tr>
                     </table>
+                    <div class="om-title-box"><span>ORDRE DE MISSION</span></div>
+
                     <form id="formOm">
-                        <!-- Mandat Selection -->
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" data-i18n="lblSelectMandat">Mandat de Mission Rattrapé</label>
-                            <select class="form-select" id="omMandatSelect" required>
-                                <!-- Dynamically loaded -->
-                            </select>
-                        </div>
-
-                        <!-- Initiating directorate (selected from the referential, never typed) -->
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" data-i18n="lblDirectionInitiatrice">Direction / Structure Initiatrice</label>
-                            <select class="form-select" id="omDirection">
-                                <!-- Chargé automatiquement depuis /api/referentiels/structures -->
-                            </select>
-                        </div>
-
-                        <!-- Staff Member Selection with Fast Matricule Search -->
-                        <div class="mb-3 border rounded p-3 bg-light">
-                            <label class="form-label fw-bold text-dark"><i class="fa-solid fa-user me-1"></i> <span data-i18n="thAgent">Agent Destinataire</span></label>
-                            
-                            <!-- Search Bar by Matricule or Name -->
-                            <div class="input-group input-group-sm mb-2">
-                                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                <input type="text" class="form-control" id="omStaffSearch" placeholder="Taper le matricule (ex: ART-002) ou le nom pour sélectionner instantanément..." oninput="filterOmStaff(this.value)">
-                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('omStaffSearch').value=''; filterOmStaff('');"><i class="fa-solid fa-xmark"></i></button>
-                            </div>
-
-                            <select class="form-select" id="omAgentSelect" required onchange="handleAgentSelected(this.value)">
-                                <!-- Dynamically loaded -->
-                            </select>
-                            <div class="mt-1 small text-muted" id="selectedAgentInfo"></div>
-                        </div>
-
-                        <!-- Mission Type & Automated Transport Mode -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold" data-i18n="lblTypeMission">Type de Mission</label>
-                                <select class="form-select" id="omType" onchange="handleOmTypeChange(this.value)">
-                                    <option value="INTERNE" data-i18n="typeInterne">Interne (Cameroun)</option>
-                                    <option value="EXTERNE" data-i18n="typeExterne">Externe (International)</option>
-                                    <option value="FORMATION" data-i18n="typeFormation">Formation</option>
-                                    <option value="ETUDE" data-i18n="typeEtude">Étude / Benchmarking</option>
-                                    <option value="REPRESENTATION" data-i18n="typeRepresentation">Représentation</option>
-                                </select>
-                                <small class="text-muted" id="omTypeHint">Si Externe est sélectionné, l'avion est choisi automatiquement.</small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold" data-i18n="lblTransportMode">Moyen de Transport</label>
-                                <select class="form-select" id="omTransport">
-                                    <option value="Véhicule de service" data-i18n="transportServiceVehicle">Véhicule de service</option>
-                                    <option value="Avion" data-i18n="transportPlane">Avion</option>
-                                    <option value="Mixte (Véhicule et Avion)" data-i18n="transportMixed">Mixte (Véhicule et Avion)</option>
-                                    <option value="Train (Camrail)" data-i18n="transportTrain">Train (Camrail)</option>
-                                    <option value="Véhicule personnel" data-i18n="transportPersonalVehicle">Véhicule personnel</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Financial Regime -->
-                        <div class="mb-3 p-2 bg-light rounded border">
-                            <label class="form-label fw-bold" data-i18n="lblFinancialRegime">Régime Financier</label>
-                            <div class="d-flex gap-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="omFrais" id="fraisAvec" value="AVEC" checked>
-                                    <label class="form-check-label" for="fraisAvec" data-i18n="regimeAvecFrais">Avec Frais de Mission</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="omFrais" id="fraisSans" value="SANS">
-                                    <label class="form-check-label text-danger fw-bold" for="fraisSans" data-i18n="regimeSansFrais">SANS FRAIS (Sceau Rouge)</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Dates -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold" data-i18n="lblStartDate">Date de Début</label>
-                                <input type="date" class="form-control" id="omDateDebut" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold" data-i18n="lblEndDate">Date de Fin</label>
-                                <input type="date" class="form-control" id="omDateFin" required>
-                            </div>
-                        </div>
-
-                        <!-- Specific Objectives -->
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" data-i18n="lblObjectifsSpecifiques">Objectifs Spécifiques de l'Agent</label>
-                            <textarea class="form-control" id="omObjectifs" rows="2" placeholder="Précisez les tâches individuelles assignées à l'agent..."></textarea>
-                        </div>
-
-                        <!-- Multi-Step Itinerary Builder for Direct OM -->
-                        <div class="mb-3 border rounded p-3 bg-light">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-bold mb-0 text-primary"><i class="fa-solid fa-route me-1"></i> <span data-i18n="lblItinerarySteps">Étapes & Itinéraire de la Mission (Multi-étapes)</span></label>
-                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOmStep()"><i class="fa-solid fa-plus me-1"></i> <span data-i18n="lblAddStep">Ajouter une Étape</span></button>
-                            </div>
-                            <div id="omStepsContainer">
-                                <!-- Steps rows inserted here -->
-                            </div>
-                        </div>
+                        <table class="om-field-table">
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Direction / Structure Initiatrice.........</span>
+                                    <span class="en">(Initiating Directorate)</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <select id="omDirection">
+                                        <!-- Chargé automatiquement depuis /api/referentiels/structures -->
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Mandat de Rattachement.........</span>
+                                    <span class="en">(Framework Mandate)</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <select id="omMandatSelect" required onchange="handleOmMandatSelected(this.value)">
+                                        <!-- Dynamically loaded -->
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Agents Concernés.........</span>
+                                    <span class="en">(Staff Members) — one order is created per agent</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <div class="position-relative">
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                            <input type="text" class="form-control" id="omStaffSearch" autocomplete="off" placeholder="Taper le matricule (ex: ART-002) ou le nom de l'agent, pour en ajouter un ou plusieurs..."
+                                                   oninput="filterOmStaff(this.value)" onfocus="filterOmStaff(this.value)" onkeydown="handleOmStaffSearchKeydown(event)">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="clearOmAgentSelection()" title="Retirer tous les agents"><i class="fa-solid fa-xmark"></i></button>
+                                        </div>
+                                        <div id="omStaffSuggestions" class="list-group position-absolute w-100 shadow-sm" style="z-index:1060; max-height:220px; overflow-y:auto; display:none;"></div>
+                                    </div>
+                                    <div class="mt-1" id="selectedAgentInfo"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Étapes / Destination.........</span>
+                                    <span class="en">(Itinerary / Destination)</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOmStep()"><i class="fa-solid fa-plus me-1"></i> <span data-i18n="lblAddStep">Ajouter une Étape</span></button>
+                                    </div>
+                                    <div id="omStepsContainer">
+                                        <!-- Steps rows inserted here -->
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Motif.........</span>
+                                    <span class="en">(Purpose of journey)</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <textarea id="omObjectifs" rows="2" placeholder="Précisez le motif / les tâches individuelles assignées à l'agent..."></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Type / Moyen de transport.........</span>
+                                    <span class="en">(Mission type / Means of transport)</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <div class="row-split">
+                                        <select id="omType" onchange="handleOmTypeChange(this.value)">
+                                            <option value="INTERNE" data-i18n="typeInterne">Interne (Cameroun)</option>
+                                            <option value="EXTERNE" data-i18n="typeExterne">Externe (International)</option>
+                                            <option value="FORMATION" data-i18n="typeFormation">Formation</option>
+                                            <option value="ETUDE" data-i18n="typeEtude">Étude / Benchmarking</option>
+                                            <option value="REPRESENTATION" data-i18n="typeRepresentation">Représentation</option>
+                                        </select>
+                                        <select id="omTransport">
+                                            <option value="Véhicule de service" data-i18n="transportServiceVehicle">Véhicule de service</option>
+                                            <option value="Avion" data-i18n="transportPlane">Avion</option>
+                                            <option value="Mixte (Véhicule et Avion)" data-i18n="transportMixed">Mixte (Véhicule et Avion)</option>
+                                            <option value="Train (Camrail)" data-i18n="transportTrain">Train (Camrail)</option>
+                                            <option value="Véhicule personnel" data-i18n="transportPersonalVehicle">Véhicule personnel</option>
+                                        </select>
+                                    </div>
+                                    <small class="text-muted" id="omTypeHint">Si Externe est sélectionné, l'avion est choisi automatiquement.</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Durée.........</span>
+                                    <span class="en">(Duration)</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <div class="row-split">
+                                        <input type="date" id="omDateDebut" required>
+                                        <input type="date" id="omDateFin" required>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="om-flabel">
+                                    <span class="fr">Régime Financier.........</span>
+                                    <span class="en">(Financial Regime)</span>
+                                </td>
+                                <td class="om-fvalue">
+                                    <div class="d-flex gap-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="omFrais" id="fraisAvec" value="AVEC" checked>
+                                            <label class="form-check-label" for="fraisAvec" data-i18n="regimeAvecFrais">Avec Frais de Mission</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="omFrais" id="fraisSans" value="SANS">
+                                            <label class="form-check-label text-danger fw-bold" for="fraisSans" data-i18n="regimeSansFrais">SANS FRAIS (Sceau Rouge)</label>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
                     </form>
+
+                    <div class="om-page-divider">Verso — Back of the form</div>
+                    <div class="om-verso">
+                        <div class="om-section-hdr">OBSERVATIONS</div>
+                        <table>
+                            <tr><th>Visa au départ</th><th>Visa à l'arrivée</th><th>Visa au départ</th><th>Visa à l'arrivée</th></tr>
+                            <tr class="om-obs-row"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                        </table>
+                        <div class="om-blankline">Durée et raison du prolongement : <span class="om-dots">&nbsp;</span> Visa du Directeur Général : <span class="om-dots" style="min-width:20%;">&nbsp;</span></div>
+                        <div class="om-blankline">Durée et raison de fin précoce de la mission : <span class="om-dots" style="min-width:35%;">&nbsp;</span> Visa du Directeur Général : <span class="om-dots" style="min-width:20%;">&nbsp;</span></div>
+
+                        <div class="om-section-hdr">DÉCOMPTES DES AVANCES - DETAILS OF ADVANCES</div>
+                        <div class="om-caption">AU DEPART - AT DEPARTURE</div>
+                        <table>
+                            <tr>
+                                <th>Indemnité Journalière<br>Daily allowance</th>
+                                <th>Nombre<br>Number</th><th>Taux<br>Rate</th><th>Décompte<br>Sub-total</th>
+                                <th>Nombre<br>Number</th><th>Taux<br>Rate</th><th>Décompte<br>Sub-total</th>
+                                <th style="font-size:9px;">Indication des réquisitions<br>délivrées au départ</th>
+                            </tr>
+                            <tr><td>Normale - Normal</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td rowspan="3">&nbsp;</td></tr>
+                            <tr><td>Réduite - Reduced</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                            <tr><td>Partielle - Partial</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                        </table>
+                        <div class="om-blankline">ARRETE A LA SOMME DE <span class="om-dots">&nbsp;</span> / CLOSE AT THE SUM OF</div>
+                        <div class="om-blankline">PAYE LA SOMME DE <span class="om-dots">&nbsp;</span> / PAID THE SUM OF</div>
+                        <div class="om-blankline">Payée à titre d'avance <span class="om-dots" style="min-width:20%;">&nbsp;</span> / Paid as advance</div>
+
+                        <div class="om-section-hdr">NOTE DE FRAIS</div>
+                        <div class="om-blankline">Imputation : <span class="om-dots">&nbsp;</span></div>
+                        <div class="om-blankline">Montant total des frais : <span class="om-dots">&nbsp;</span></div>
+                        <table>
+                            <tr><th>DECOMPTE DES AVANCES</th><th>DECOMPTE DU RESTE</th></tr>
+                            <tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+                        </table>
+                        <table class="om-acquit">
+                            <tr>
+                                <td>
+                                    Acquit du bénéficiaire<br>
+                                    Reçu : <span class="om-dots" style="min-width:50%;">&nbsp;</span><br>
+                                    CNI N° : <span class="om-dots" style="min-width:50%;">&nbsp;</span><br>
+                                    Délivrée le : <span class="om-dots" style="min-width:20%;">&nbsp;</span> A : <span class="om-dots" style="min-width:20%;">&nbsp;</span>
+                                </td>
+                                <td>
+                                    Acquit du bénéficiaire<br>
+                                    Reçu : <span class="om-dots" style="min-width:50%;">&nbsp;</span>
+                                </td>
+                            </tr>
+                        </table>
+                        <div class="om-motto">Réguler c'est faciliter</div>
+                        <div class="om-addr">Yaoundé – Cameroun, Boulevard du 20 mai 1972, Immeuble siège ART · B.P.: 6132 Tél.: (+237) 222 23 03 80 · Site web : www.art.cm</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnCancel">Annuler</button>
@@ -332,122 +372,63 @@
         </div>
     </div>
 
-    <!-- Modal: Detailed Official Cameroon Mission Order Form (Official Document View) -->
-    <div class="modal fade" id="modalDetailedOmForm" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
+    <!-- Modal: Edit an existing (not-yet-signed) individual mission order — this is where the
+         financial regime (Avec/Sans frais) is now decided, per order, not on the mandate. -->
+    <div class="modal fade" id="modalEditOm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header art-header text-white no-print">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-invoice me-2"></i>Ordre de Mission Officiel - République du Cameroun</h5>
+                <div class="modal-header art-header text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i><span data-i18n="btnEditOm">Modifier l'Ordre de Mission</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4" style="background:#eaedf1;">
-                    <!-- Printable Official Sheet -->
-                    <div class="om-official-sheet" id="printableOmContainer">
-                        
-                        <!-- Official Bilingual 3-Column Cameroon Document Header -->
-                        <table class="cameroon-header-table">
-                            <tr>
-                                <!-- Left: French Heading -->
-                                <td style="width: 40%; text-align: center;">
-                                    <div class="official-heading-fr">
-                                        RÉPUBLIQUE DU CAMEROUN<br>
-                                        <span class="motto">Paix - Travail - Patrie</span><br>
-                                        ----------------<br>
-                                        AGENCE DE RÉGULATION<br>DES TÉLÉCOMMUNICATIONS<br>
-                                        <span style="font-size:10px; font-weight:normal; text-transform:none;">Direction Générale</span>
-                                    </div>
-                                </td>
-
-                                <!-- Center: Official ART Logo -->
-                                <td style="width: 20%; text-align: center;">
-                                    <img src="/images/ART%20logo.jpg" alt="Logo ART Cameroun" class="art-center-logo" onerror="this.src='https://placehold.co/120x120/0F2C59/FFFFFF?text=ART'">
-                                </td>
-
-                                <!-- Right: English Heading -->
-                                <td style="width: 40%; text-align: center;">
-                                    <div class="official-heading-en">
-                                        REPUBLIC OF CAMEROON<br>
-                                        <span class="motto">Peace - Work - Fatherland</span><br>
-                                        ----------------<br>
-                                        TELECOMMUNICATIONS<br>REGULATORY BOARD<br>
-                                        <span style="font-size:10px; font-weight:normal; text-transform:none;">Directorate General</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <!-- Title Banner -->
-                        <div class="om-doc-title">
-                            ORDRE DE MISSION INDIVIDUEL / MISSION ORDER
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="fw-bold text-navy" id="viewOmRef" style="font-size: 15px;">RÉF : OM-ART-...</span>
-                            <span id="viewOmStampBadge"></span>
-                        </div>
-
-                        <!-- Section I: Identification de l'Agent -->
-                        <div class="form-section-title">I. IDENTIFICATION DU TITULAIRE / STAFF IDENTIFICATION</div>
-                        <div class="row g-2 mb-2 small">
-                            <div class="col-md-6"><strong>Nom & Prénom / Full Name :</strong> <span id="viewOmNom">--</span></div>
-                            <div class="col-md-6"><strong>Matricule / Staff ID :</strong> <span class="badge bg-primary fs-6 px-2 py-1" id="viewOmMatricule">--</span></div>
-                            <div class="col-md-6"><strong>Fonction / Position :</strong> <span id="viewOmFonction">--</span></div>
-                            <div class="col-md-6"><strong>Grade & Rang / Grade & Rank :</strong> <span id="viewOmGrade">--</span></div>
-                            <div class="col-md-12"><strong>Structure / Direction / Department :</strong> <span id="viewOmDept">--</span></div>
-                        </div>
-
-                        <!-- Section II: Mission Details -->
-                        <div class="form-section-title">II. CARACTÉRISTIQUES DE LA MISSION / MISSION DETAILS</div>
-                        <div class="row g-2 mb-2 small">
-                            <div class="col-md-6"><strong>Mandat Cadre Rattaché / Framework Mandate :</strong> <span id="viewOmMandatRef">--</span></div>
-                            <div class="col-md-6"><strong>Réf. / Article de Justification :</strong> <span class="fw-bold text-primary" id="viewOmRefJustif">--</span></div>
-                            <div class="col-md-6"><strong>Direction Initiatrice / Initiating Directorate :</strong> <span id="viewOmDirection">--</span></div>
-                            <div class="col-md-6"><strong>Type de Mission / Mission Type :</strong> <span class="badge bg-info text-dark" id="viewOmType">--</span></div>
-                            <div class="col-md-6"><strong>Période / Period :</strong> <span id="viewOmDates">--</span></div>
-                            <div class="col-md-6"><strong>Moyen de Transport / Transport Mode :</strong> <span class="fw-bold text-primary" id="viewOmTransport">--</span></div>
-                            <div class="col-md-12"><strong>Objet de la Mission / Mission Purpose :</strong> <span id="viewOmObjet">--</span></div>
-                            <div class="col-md-12"><strong>Objectifs Spécifiques / Specific Tasks :</strong> <span id="viewOmObjectifs">--</span></div>
-                        </div>
-
-                        <!-- Section III: Multi-Step Itinerary -->
-                        <div class="form-section-title">III. ÉTAPES & ITINÉRAIRE DÉTAILLÉ / MISSION STEPS & ITINERARY</div>
-                        <div id="viewOmStepsContainer" class="small mb-2">
-                            <!-- Populated dynamically -->
-                        </div>
-
-                        <!-- Section IV: Financial Regime -->
-                        <div class="form-section-title">IV. RÉGIME FINANCIER & PRISE EN CHARGE / FINANCIAL ALLOWANCES</div>
-                        <div class="small mb-3" id="viewOmFinancialText">
-                            Prise en charge financière selon la réglementation en vigueur à l'ART.
-                        </div>
-
-                        <!-- Section V: Signatures Blocks -->
-                        <div class="form-section-title">V. VISAS & SIGNATURES OFFICIELLES / OFFICIAL SIGNATURES</div>
-                        <div class="row text-center mt-3 pt-2" style="border-top: 1px dashed #94a3b8;">
-                            <div class="col-4">
-                                <small class="fw-bold text-muted">Visa du Titulaire<br>Staff Member Signature</small>
-                                <div style="height: 60px;"></div>
-                                <small class="text-secondary">______________________</small>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="editOmId">
+                    <div class="mb-3 p-2 bg-light rounded border">
+                        <label class="form-label fw-bold" data-i18n="lblFinancialRegime">Régime Financier</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="editOmFrais" id="editFraisAvec" value="AVEC" checked>
+                                <label class="form-check-label" for="editFraisAvec" data-i18n="regimeAvecFrais">Avec Frais de Mission</label>
                             </div>
-                            <div class="col-4">
-                                <small class="fw-bold text-muted">Visa Chef de Département / DRH<br>Head of Department / HR</small>
-                                <div style="height: 60px;"></div>
-                                <small class="text-secondary">______________________</small>
-                            </div>
-                            <div class="col-4">
-                                <small class="fw-bold text-primary">Pour le Directeur Général / For the GM<br>Le Signataire Habilité (Cachet Officiel)</small>
-                                <div style="height: 60px; display:flex; align-items:center; justify-content:center;">
-                                    <span class="badge border border-primary text-primary px-3 py-1" style="font-size:10px; letter-spacing:1px;">SCEAU OFFICIEL ART</span>
-                                </div>
-                                <small class="text-dark fw-bold">Signé électroniquement</small>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="editOmFrais" id="editFraisSans" value="SANS">
+                                <label class="form-check-label text-danger fw-bold" for="editFraisSans" data-i18n="regimeSansFrais">SANS FRAIS (Sceau Rouge)</label>
                             </div>
                         </div>
-
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" data-i18n="lblTypeMission">Type de Mission</label>
+                            <select class="form-select" id="editOmType">
+                                <option value="INTERNE" data-i18n="typeInterne">Interne (Cameroun)</option>
+                                <option value="EXTERNE" data-i18n="typeExterne">Externe (International)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" data-i18n="lblTransportMode">Moyen de Transport</label>
+                            <select class="form-select" id="editOmTransport">
+                                <option value="Véhicule de service" data-i18n="transportServiceVehicle">Véhicule de service</option>
+                                <option value="Avion" data-i18n="transportPlane">Avion</option>
+                                <option value="Mixte (Véhicule et Avion)" data-i18n="transportMixed">Mixte (Véhicule et Avion)</option>
+                                <option value="Train (Camrail)" data-i18n="transportTrain">Train (Camrail)</option>
+                                <option value="Véhicule personnel" data-i18n="transportPersonalVehicle">Véhicule personnel</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" data-i18n="lblStartDate">Date de Début</label>
+                            <input type="date" class="form-control" id="editOmDateDebut" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" data-i18n="lblEndDate">Date de Fin</label>
+                            <input type="date" class="form-control" id="editOmDateFin" required>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer no-print">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnClose">Fermer</button>
-                    <button type="button" class="btn btn-primary btn-sm px-3" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> <span data-i18n="btnPrintForm">Imprimer Formulaire</span></button>
-                    <a id="btnModalPdfLink" href="#" target="_blank" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-file-pdf me-1"></i> <span data-i18n="btnDownloadPdf">Télécharger PDF</span></a>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnCancel">Annuler</button>
+                    <button type="button" class="btn btn-primary btn-sm px-4" onclick="saveEditOm()"><i class="fa-solid fa-save me-1"></i> <span data-i18n="adSave">Enregistrer</span></button>
                 </div>
             </div>
         </div>
@@ -491,7 +472,10 @@
         let allMandats = [];
         let allOrdres = [];
         let omSteps = [];
-        let selectedOmAgentId = '';
+        // One direct OM is created per selected agent — a Set, not a single id, so the whole team
+        // named on a mandate can be issued their individual orders from one form submission
+        // instead of repeating the same search-and-create cycle once per person.
+        let selectedOmAgentIds = new Set();
 
         // Only DRH staff (or the administrator) may issue a mission order. Server enforces this too.
         function currentUserCanIssueOm() {
@@ -507,10 +491,16 @@
             }
         }
 
-        // Fast filtering of staff members by typing matricule or name. The currently selected agent is
-        // always kept in the list (shown first) so a search keyword never clears the choice.
+        // Live-suggestions popup: as the admin types a matricule or name, matching agents appear
+        // directly below the field to click on — nothing is auto-selected from typing alone, so the
+        // "Agent :" readout can never silently show a stale/unrelated pick (e.g. a built-in AD
+        // service account) that the admin never actually chose.
+        let omSuggestionItems = [];
+        let omSuggestionActiveIndex = -1;
+
         function filterOmStaff(keyword) {
-            const select = document.getElementById('omAgentSelect');
+            const box = document.getElementById('omStaffSuggestions');
+            if (!box) return;
             const kw = (keyword || '').toLowerCase().trim();
 
             const matches = s => {
@@ -522,32 +512,101 @@
                     || (s.fonction || '').toLowerCase().includes(kw);
             };
 
-            const selected = allStaff.filter(s => String(s.id) === String(selectedOmAgentId));
-            const rest = allStaff.filter(s => String(s.id) !== String(selectedOmAgentId) && matches(s));
+            // Already-selected agents don't clutter the suggestions — there's nothing useful about
+            // suggesting someone a second time, and the chips below are the only place to un-pick them.
+            const pool = allStaff.filter(s => !selectedOmAgentIds.has(String(s.id)));
+            // Empty search: still offer a short starting list rather than the whole roster.
+            omSuggestionItems = (kw ? pool.filter(matches) : pool).slice(0, 25);
+            omSuggestionActiveIndex = -1;
 
-            const optionHtml = s => `<option value="${s.id}" ${String(s.id) === String(selectedOmAgentId) ? 'selected' : ''}>`
-                + `${s.nom} ${s.prenom || ''} [Matricule: ${s.matricule || 'N/A'}] - ${s.departement || ''}</option>`;
-
-            select.innerHTML = selected.map(optionHtml).join('') + rest.map(optionHtml).join('');
-
-            // If nothing is selected yet, adopt the first visible row so the form always has a value.
-            if (!selectedOmAgentId && select.options.length > 0) {
-                selectedOmAgentId = select.options[0].value;
-                select.value = selectedOmAgentId;
+            if (omSuggestionItems.length === 0) {
+                box.innerHTML = `<div class="list-group-item text-muted small">Aucun agent trouvé${kw ? ' pour « ' + kw + ' »' : ''}.</div>`;
+            } else {
+                box.innerHTML = omSuggestionItems.map((s, i) => `
+                    <button type="button" class="list-group-item list-group-item-action py-2" data-idx="${i}" onmousedown="event.preventDefault(); selectOmAgent(${s.id});">
+                        <strong>${s.nom} ${s.prenom || ''}</strong>
+                        <span class="text-muted small d-block">Matricule : ${s.matricule || 'N/A'} — ${s.fonction || 'Agent ART'}${s.departement ? ' — ' + s.departement : ''}</span>
+                    </button>`).join('');
             }
-            handleAgentSelected(selectedOmAgentId);
+            box.style.display = 'block';
         }
 
-        function handleAgentSelected(agentId) {
-            if (agentId) selectedOmAgentId = String(agentId);
-            const agent = allStaff.find(s => String(s.id) === String(selectedOmAgentId));
+        function handleOmStaffSearchKeydown(event) {
+            const box = document.getElementById('omStaffSuggestions');
+            if (!box || box.style.display === 'none') return;
+            const buttons = () => Array.from(box.querySelectorAll('[data-idx]'));
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                omSuggestionActiveIndex = Math.min(omSuggestionActiveIndex + 1, omSuggestionItems.length - 1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                omSuggestionActiveIndex = Math.max(omSuggestionActiveIndex - 1, 0);
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                const idx = omSuggestionActiveIndex >= 0 ? omSuggestionActiveIndex : 0;
+                if (omSuggestionItems[idx]) selectOmAgent(omSuggestionItems[idx].id);
+                return;
+            } else if (event.key === 'Escape') {
+                box.style.display = 'none';
+                return;
+            } else {
+                return;
+            }
+            buttons().forEach((b, i) => b.classList.toggle('active', i === omSuggestionActiveIndex));
+        }
+
+        // Chosen by clicking a suggestion (or pressing Enter on one) — adds to the selection
+        // instead of replacing it, so several agents can be queued up one after another. The
+        // search box clears itself and stays focused after each pick, ready for the next name.
+        function selectOmAgent(id) {
+            selectedOmAgentIds.add(String(id));
+            document.getElementById('omStaffSearch').value = '';
+            document.getElementById('omStaffSuggestions').style.display = 'none';
+            renderSelectedOmAgents();
+            document.getElementById('omStaffSearch').focus();
+        }
+
+        function removeOmAgent(id) {
+            selectedOmAgentIds.delete(String(id));
+            renderSelectedOmAgents();
+        }
+
+        function clearOmAgentSelection() {
+            selectedOmAgentIds.clear();
+            document.getElementById('omStaffSearch').value = '';
+            document.getElementById('omStaffSuggestions').style.display = 'none';
+            renderSelectedOmAgents();
+            document.getElementById('omStaffSearch').focus();
+        }
+
+        document.addEventListener('click', (e) => {
+            const box = document.getElementById('omStaffSuggestions');
+            const input = document.getElementById('omStaffSearch');
+            if (box && input && !box.contains(e.target) && e.target !== input) box.style.display = 'none';
+        });
+
+        // Renders one badge per selected agent (name, matricule, fonction) with its own remove ×
+        // — the only place selectedOmAgentIds' contents are read for display, so the chips always
+        // match what's actually about to be submitted.
+        function renderSelectedOmAgents() {
             const infoDiv = document.getElementById('selectedAgentInfo');
             if (!infoDiv) return;
-            if (agent) {
-                infoDiv.innerHTML = `<strong>Agent :</strong> ${agent.nom} ${agent.prenom || ''} | <strong>Matricule :</strong> <span class="badge bg-primary">${agent.matricule || 'N/A'}</span> | <strong>Fonction :</strong> ${agent.fonction || 'Agent ART'}${agent.grade ? ' | <strong>Grade :</strong> ' + agent.grade : ''}${agent.rang ? ' | <strong>Rang :</strong> ' + agent.rang : ''}`;
-            } else {
-                infoDiv.innerHTML = '<span class="text-muted">Aucun agent sélectionné.</span>';
+            const ids = Array.from(selectedOmAgentIds);
+            if (ids.length === 0) {
+                infoDiv.innerHTML = '<span class="text-muted small">Aucun agent sélectionné.</span>';
+                return;
             }
+            infoDiv.innerHTML = `
+                <div class="small text-muted mb-1">${ids.length} agent(s) sélectionné(s) — un ordre de mission sera créé pour chacun :</div>
+                ${ids.map(id => {
+                    const agent = allStaff.find(s => String(s.id) === id);
+                    if (!agent) return '';
+                    return `<span class="badge bg-primary d-inline-flex align-items-center gap-1 me-1 mb-1 p-2">
+                        ${agent.nom} ${agent.prenom || ''} (${agent.matricule || 'N/A'})
+                        <i class="fa-solid fa-xmark" style="cursor:pointer" onclick="removeOmAgent(${id})"></i>
+                    </span>`;
+                }).join('')}
+            `;
         }
 
         // Automatic Transport Selection when Mission Type is EXTERNE
@@ -570,6 +629,29 @@
                         : 'Internal Mission: Service vehicle selected by default.';
                     hint.className = 'text-muted';
                 }
+            }
+        }
+
+        // Picking the framework mandate carries its departure city / destination (captured once on
+        // the mandate) straight onto the itinerary, instead of making the DRH retype what was
+        // already entered when the mandate was created — and carries its assigned team onto the
+        // agent selection too, since those people are already named on the mandate and re-searching
+        // for the exact same names again would be pure duplicated work. Each half only fires when
+        // its own target is still empty, so neither ever overwrites something built by hand.
+        function handleOmMandatSelected(mandatId) {
+            const mandat = allMandats.find(m => String(m.id) === String(mandatId));
+            if (!mandat) return;
+
+            if (omSteps.length === 0 && mandat.destination) {
+                const transportLabels = { Vehicule: 'Véhicule de service', Avion: 'Avion', Mixte: 'Mixte (Véhicule et Avion)' };
+                const firstMode = mandat.transportModes && mandat.transportModes.find(m => m !== 'Mixte');
+                addOmStep(mandat.destination, mandat.dateDebut || '', mandat.dateFin || '',
+                    transportLabels[firstMode] || 'Véhicule de service');
+            }
+
+            if (selectedOmAgentIds.size === 0 && mandat.personnelList && mandat.personnelList.length > 0) {
+                mandat.personnelList.forEach(p => selectedOmAgentIds.add(String(p.id)));
+                renderSelectedOmAgents();
             }
         }
 
@@ -641,7 +723,7 @@
 
         async function loadOptions() {
             try {
-                const mandatsRes = await fetch('/api/mandats');
+                const mandatsRes = await fetch('/api/mandats', { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
                 if (mandatsRes.ok) {
                     allMandats = await mandatsRes.json();
                     document.getElementById('omMandatSelect').innerHTML = allMandats.map(m =>
@@ -670,8 +752,9 @@
                     const list = await res.json();
                     const opts = list.map(s => {
                         const name = s.name || s.nom || s.libelle || '';
+                        const label = tl(name, s.nameEn) || name;
                         const acr = s.acronym || s.code || '';
-                        return name ? `<option value="${name}">${name}${acr ? ' (' + acr + ')' : ''}</option>` : '';
+                        return name ? `<option value="${name}">${label}${acr ? ' (' + acr + ')' : ''}</option>` : '';
                     }).join('');
                     select.innerHTML = `<option value="">${t('selectDirectionPlaceholder')}</option>` + opts;
                 }
@@ -683,7 +766,7 @@
         async function loadOrdres() {
             const tbody = document.getElementById('omTbody');
             try {
-                const res = await fetch('/api/ordres-mission');
+                const res = await fetch('/api/ordres-mission', { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
                 if (res.ok) {
                     allOrdres = await res.json();
                     if (allOrdres.length === 0) {
@@ -726,8 +809,9 @@
                                 <td>${sansFraisBadge}</td>
                                 <td>${statusBadge}</td>
                                 <td class="text-end">
-                                    <button class="btn btn-outline-primary btn-sm me-1" onclick="viewDetailedOm(${o.id})" title="Consulter le Formulaire Officiel de Mission"><i class="fa-solid fa-file-invoice me-1"></i> Formulaire OM</button>
-                                    <a href="/api/ordres-mission/${o.id}/pdf" target="_blank" class="btn btn-outline-danger btn-sm me-1" title="Télécharger PDF Officiel"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                                    <a href="/ordre-mission-officiel.html?id=${o.id}" target="_blank" class="btn btn-outline-primary btn-sm me-1" title="Consulter / Imprimer le Formulaire Officiel (recto-verso)"><i class="fa-solid fa-file-invoice me-1"></i> Formulaire OM</a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm me-1" onclick="downloadOmPdfFromList(${o.id})" title="Télécharger PDF Officiel"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                    ${!isSigne ? `<button class="btn btn-outline-secondary btn-sm me-1" onclick="openEditOm(${o.id})" title="Modifier (régime financier, dates, transport)"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
                                     ${!isSigne ? `<button class="btn btn-outline-success btn-sm" onclick="openUploadOmModal(${o.id})" title="Importer Scan Signé"><i class="fa-solid fa-file-arrow-up"></i> Scan</button>` : ''}
                                 </td>
                             </tr>
@@ -739,6 +823,11 @@
             }
         }
 
+        // One request per selected agent — the mission's own fields (type, dates, objectifs, ...)
+        // and itinerary are shared, only the assigned agent differs between them, exactly like
+        // generateOrdresDeMissionForMandat already does for the mandate-signature path. Each
+        // request is independent: a scheduling conflict or capacity-cap rejection for one agent
+        // doesn't block the others from getting their order created.
         async function saveOm() {
             const isSans = document.getElementById('fraisSans').checked;
             const om = {
@@ -753,9 +842,9 @@
             };
 
             const mandatId = document.getElementById('omMandatSelect').value;
-            const personnelId = selectedOmAgentId || document.getElementById('omAgentSelect').value;
+            const agentIds = Array.from(selectedOmAgentIds);
             if (!mandatId) { alert('Veuillez sélectionner le mandat de rattachement.'); return; }
-            if (!personnelId) { alert('Veuillez sélectionner l\'agent destinataire.'); return; }
+            if (agentIds.length === 0) { alert('Veuillez sélectionner au moins un agent destinataire.'); return; }
 
             // Format steps payload
             const etapesPayload = omSteps.map(s => ({
@@ -765,125 +854,155 @@
                 transportMode: s.transport
             }));
 
-            try {
-                const res = await fetch('/api/ordres-mission', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-Email': localStorage.getItem('art_user_email') || '',
-                        'X-User-Role': localStorage.getItem('art_user_role') || ''
-                    },
-                    body: JSON.stringify({ om, mandatId, personnelId, etapes: etapesPayload })
-                });
+            const saveBtn = document.querySelector('#modalCreateDirectOm .btn-primary, #modalCreateDirectOm .btn-success');
+            if (saveBtn) { saveBtn.disabled = true; }
 
-                if (res.ok) {
-                    bootstrap.Modal.getInstance(document.getElementById('modalCreateDirectOm')).hide();
-                    document.getElementById('formOm').reset();
-                    omSteps = [];
-                    selectedOmAgentId = '';
-                    document.getElementById('omStaffSearch').value = '';
-                    renderOmSteps();
-                    filterOmStaff('');
-                    loadOrdres();
-                } else {
-                    const err = await res.json();
-                    alert('Erreur: ' + (err.error || 'Impossible de créer l\'ordre de mission'));
+            const successes = [];
+            const failures = [];
+            for (const personnelId of agentIds) {
+                const agent = allStaff.find(s => String(s.id) === personnelId);
+                const label = agent ? `${agent.nom} ${agent.prenom || ''}` : ('#' + personnelId);
+                try {
+                    const res = await fetch('/api/ordres-mission', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-User-Email': localStorage.getItem('art_user_email') || '',
+                            'X-User-Role': localStorage.getItem('art_user_role') || ''
+                        },
+                        body: JSON.stringify({ om, mandatId, personnelId, etapes: etapesPayload })
+                    });
+                    if (res.ok) {
+                        const created = await res.json();
+                        successes.push({ label, id: created.id });
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        failures.push({ label, error: err.error || 'Erreur inconnue' });
+                    }
+                } catch (e) {
+                    failures.push({ label, error: 'Erreur réseau' });
                 }
-            } catch (e) {
-                alert('Erreur réseau.');
             }
+
+            if (saveBtn) { saveBtn.disabled = false; }
+
+            if (successes.length === 0) {
+                alert('Aucun ordre de mission n\'a pu être créé :\n' + failures.map(f => `• ${f.label} : ${f.error}`).join('\n'));
+                return;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalCreateDirectOm')).hide();
+            document.getElementById('formOm').reset();
+            omSteps = [];
+            selectedOmAgentIds.clear();
+            document.getElementById('omStaffSearch').value = '';
+            renderOmSteps();
+            filterOmStaff('');
+            renderSelectedOmAgents();
+
+            if (failures.length > 0) {
+                alert(`${successes.length} ordre(s) de mission créé(s), ${failures.length} échec(s) :\n`
+                    + failures.map(f => `• ${f.label} : ${f.error}`).join('\n'));
+            }
+
+            // Navigate straight to the official two-page form (see ordre-mission-officiel.html) for
+            // the single OM just created, so "Créer" actually shows the real ART document — not just
+            // a row the admin has to go find a print button for. Same-tab navigation (not
+            // window.open) so it can't be silently blocked by the browser's popup blocker after the
+            // await above. With several agents there's no single order to jump to, so land back on
+            // the list instead, refreshed to show all of them.
+            if (successes.length === 1) {
+                window.location.href = `/ordre-mission-officiel.html?id=${successes[0].id}`;
+                return;
+            }
+            loadOrdres();
         }
 
-        // View Detailed Official Cameroon Mission Order Form
-        async function viewDetailedOm(omId) {
+        // The PDF endpoint is authorized the same way as the detail view, so it can't be a plain
+        // <a href> anymore (no way to attach the identity header to a link) — fetch it with the
+        // header and hand the browser the result as a blob instead. Saved via a download-anchor
+        // rather than window.open(): a window opened after an "await" has no user-gesture context
+        // left, so browsers silently block it as a popup — the file never appeared and no error showed.
+        async function fetchAndOpenOmPdf(id) {
             try {
-                const res = await fetch(`/api/ordres-mission/${omId}`);
-                if (!res.ok) throw new Error('Ordre introuvable');
-                const om = await res.json();
-
-                document.getElementById('viewOmRef').textContent = 'RÉF : ' + (om.referenceOrdre || 'OM-#' + om.id);
-                document.getElementById('btnModalPdfLink').href = `/api/ordres-mission/${om.id}/pdf`;
-
-                // Stamp badge
-                const stampBadge = document.getElementById('viewOmStampBadge');
-                if (om.sansFrais) {
-                    stampBadge.innerHTML = `<span class="badge badge-sans-frais px-3 py-2 fs-6"><i class="fa-solid fa-stamp me-1"></i>SCEAU : SANS FRAIS / WITHOUT EXPENSES</span>`;
-                } else {
-                    stampBadge.innerHTML = `<span class="badge bg-success px-3 py-2 fs-6"><i class="fa-solid fa-shield-check me-1"></i>AVEC PRISE EN CHARGE ET INDEMNITÉS</span>`;
+                const res = await fetch(`/api/ordres-mission/${id}/pdf`, { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
+                if (res.status === 403) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || "Vous n'êtes pas autorisé(e) à télécharger cet ordre de mission.");
+                    return;
                 }
-
-                // Personnel Info
-                const p = om.personnel || {};
-                document.getElementById('viewOmNom').textContent = (p.nom || '') + ' ' + (p.prenom || '');
-                document.getElementById('viewOmMatricule').textContent = p.matricule || 'N/A';
-                document.getElementById('viewOmFonction').textContent = p.fonction || 'Cadre / Agent ART';
-                document.getElementById('viewOmGrade').textContent = (p.grade ? 'Grade ' + p.grade : 'A') + (p.rang ? ' (Rang: ' + p.rang + ')' : '');
-                document.getElementById('viewOmDept').textContent = p.departement || 'Direction Générale';
-
-                // Mission details
-                document.getElementById('viewOmMandatRef').textContent = om.mandatDeMission ? om.mandatDeMission.referenceMandat : 'Direct';
-                const refJustif = om.referenceJustification || (om.mandatDeMission ? om.mandatDeMission.referenceJustification : '') || '—';
-                document.getElementById('viewOmRefJustif').textContent = refJustif;
-                document.getElementById('viewOmDirection').textContent = om.directionInitiatrice || (om.mandatDeMission ? om.mandatDeMission.directionInitiatrice : '') || '—';
-                document.getElementById('viewOmType').textContent = om.typeMission === 'EXTERNE' ? 'EXTERNE (International)' : 'INTERNE (Cameroun)';
-                document.getElementById('viewOmDates').textContent = `${om.dateDebut || ''} au ${om.dateFin || ''}`;
-                
-                let transportMode = om.moyenTransport || (om.typeMission === 'EXTERNE' ? 'Avion' : 'Véhicule de service');
-                document.getElementById('viewOmTransport').textContent = transportMode;
-
-                document.getElementById('viewOmObjet').textContent = om.mandatDeMission ? (om.mandatDeMission.objetGeneral || 'Mission officielle') : 'Mission de service';
-                document.getElementById('viewOmObjectifs').textContent = om.objectifsSpecifiques || 'Exécution des tâches assignées par la Direction Générale.';
-
-                // Multi-step Table
-                const stepsContainer = document.getElementById('viewOmStepsContainer');
-                const etapes = (om.etapes && om.etapes.length > 0) 
-                    ? om.etapes 
-                    : (om.mandatDeMission && om.mandatDeMission.etapes ? om.mandatDeMission.etapes : []);
-
-                if (etapes.length > 0) {
-                    stepsContainer.innerHTML = `
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Étape</th>
-                                    <th>Itinéraire / Destination</th>
-                                    <th>Dates de Déplacement</th>
-                                    <th>Moyen de Transport</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${etapes.map((s, idx) => `
-                                    <tr>
-                                        <td><strong>Étape ${idx + 1}</strong></td>
-                                        <td>${s.lieu || 'Destination'}</td>
-                                        <td>${s.dateDebut || ''} au ${s.dateFin || ''}</td>
-                                        <td><span class="badge bg-light text-dark border">${s.transportMode || transportMode}</span></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-                } else {
-                    stepsContainer.innerHTML = `<p class="text-muted fst-italic">Trajet direct vers la destination de la mission (${transportMode}).</p>`;
-                }
-
-                // Financial text
-                const finText = document.getElementById('viewOmFinancialText');
-                if (om.sansFrais) {
-                    finText.innerHTML = `<strong class="text-danger">Régime Sans Frais :</strong> La présente mission ne donne lieu à aucun paiement d'indemnité journalière de mission ou de frais de déplacement par l'Agence.`;
-                } else {
-                    finText.innerHTML = `<strong>Régime Avec Frais :</strong> Prise en charge intégrale des frais de mission (transport, hébergement, restauration) selon le barème officiel ART en vigueur (Avance 75% interne / 90% externe, solde sur présentation du rapport et des pièces justificatives).`;
-                }
-
-                new bootstrap.Modal(document.getElementById('modalDetailedOmForm')).show();
-            } catch (err) {
-                alert('Impossible de charger les détails du formulaire OM.');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition') || '';
+                const match = cd.match(/filename="?([^";]+)"?/);
+                const filename = match ? match[1] : `ordre-mission-${id}.pdf`;
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 30000);
+            } catch (e) {
+                alert('Erreur lors du téléchargement du PDF : ' + e.message);
             }
+        }
+        function downloadOmPdfFromList(id) {
+            fetchAndOpenOmPdf(id);
         }
 
         function openUploadOmModal(id) {
             document.getElementById('uploadOmId').value = id;
             new bootstrap.Modal(document.getElementById('modalUploadOmScan')).show();
+        }
+
+        // Financial regime (Avec/Sans frais), dates, mission type and transport are edited per
+        // individual mission order here — no longer decided on the mandate.
+        function openEditOm(id) {
+            const o = allOrdres.find(x => x.id === id);
+            if (!o) return;
+            document.getElementById('editOmId').value = id;
+            document.getElementById('editFraisSans').checked = !!o.sansFrais;
+            document.getElementById('editFraisAvec').checked = !o.sansFrais;
+            document.getElementById('editOmType').value = o.typeMission || 'INTERNE';
+            document.getElementById('editOmTransport').value = o.moyenTransport || 'Véhicule de service';
+            document.getElementById('editOmDateDebut').value = o.dateDebut || '';
+            document.getElementById('editOmDateFin').value = o.dateFin || '';
+            new bootstrap.Modal(document.getElementById('modalEditOm')).show();
+        }
+
+        async function saveEditOm() {
+            const id = document.getElementById('editOmId').value;
+            const isSans = document.getElementById('editFraisSans').checked;
+            const payload = {
+                sansFrais: isSans,
+                avecFrais: !isSans,
+                typeMission: document.getElementById('editOmType').value,
+                moyenTransport: document.getElementById('editOmTransport').value,
+                dateDebut: document.getElementById('editOmDateDebut').value,
+                dateFin: document.getElementById('editOmDateFin').value
+            };
+            try {
+                const res = await fetch(`/api/ordres-mission/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Email': localStorage.getItem('art_user_email') || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalEditOm')).hide();
+                    loadOrdres();
+                } else {
+                    let msg = 'Impossible de modifier l\'ordre de mission (HTTP ' + res.status + ').';
+                    try { const err = await res.json(); msg = err.error || msg; } catch (_) {}
+                    alert('Erreur: ' + msg);
+                }
+            } catch (e) {
+                alert('Erreur réseau: ' + e.message);
+            }
         }
 
         async function submitOmScan() {
@@ -924,22 +1043,20 @@
         }
 
         // Notification bell: surfaces MANDATE_SIGNED alerts (mandate GM-signed, OM drafts ready)
-        // and MISSION_ASSIGNED/other DRH-relevant alerts, matched by matricule or username.
+        // and MISSION_ASSIGNED/other DRH-relevant alerts. Identity is resolved server-side from
+        // the X-User-Email header — see NotificationController — not guessed from a matricule
+        // that may not even be cached in this browser yet.
         function omNotifIdentity() {
-            return {
-                mat: localStorage.getItem('art_user_matricule') || '',
-                user: localStorage.getItem('art_user_email') || ''
-            };
+            return localStorage.getItem('art_user_email') || '';
         }
 
         async function loadOmNotifications() {
-            const { mat, user } = omNotifIdentity();
+            const user = omNotifIdentity();
             const badge = document.getElementById('omNotifCount');
             const box = document.getElementById('omNotifList');
-            if (!mat && !user) { badge.classList.add('d-none'); return; }
+            if (!user) { badge.classList.add('d-none'); return; }
             try {
-                const res = await fetch('/api/notifications?matricule=' + encodeURIComponent(mat)
-                    + '&username=' + encodeURIComponent(user));
+                const res = await fetch('/api/notifications', { headers: { 'X-User-Email': user } });
                 const list = res.ok ? await res.json() : [];
                 const unread = list.filter(n => !n.lu).length;
                 badge.textContent = unread;
@@ -951,9 +1068,9 @@
                 }
                 box.innerHTML = list.slice(0, 20).map(n => `
                     <div class="p-2 mb-1 rounded ${n.lu ? '' : 'bg-light'}" onclick="markOmNotifRead(${n.id})" style="cursor:pointer; border-left:3px solid ${n.lu ? '#cbd5e1' : '#0d6efd'};">
-                        <div class="fw-bold small">${n.titre || ''}</div>
-                        <div class="small text-muted">${n.message || ''}</div>
-                        <div class="small text-secondary">${(n.dateCreation || '').replace('T', ' ').slice(0, 16)}</div>
+                        <div class="fw-bold small">${escapeHtml(n.titre)}</div>
+                        <div class="small text-muted">${escapeHtml(n.message)}</div>
+                        <div class="small text-secondary">${escapeHtml((n.dateCreation || '').replace('T', ' ').slice(0, 16))}</div>
                     </div>
                 `).join('');
             } catch (e) {
@@ -962,16 +1079,15 @@
         }
 
         async function markOmNotifRead(id) {
-            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST' }); } catch (e) {}
+            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST', headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } }); } catch (e) {}
             loadOmNotifications();
         }
 
         async function markAllOmNotifRead() {
-            const { mat, user } = omNotifIdentity();
-            if (!mat && !user) return;
+            const user = omNotifIdentity();
+            if (!user) return;
             try {
-                await fetch('/api/notifications/mark-all-read?matricule=' + encodeURIComponent(mat)
-                    + '&username=' + encodeURIComponent(user), { method: 'POST' });
+                await fetch('/api/notifications/mark-all-read', { method: 'POST', headers: { 'X-User-Email': user } });
             } catch (e) {}
             loadOmNotifications();
         }

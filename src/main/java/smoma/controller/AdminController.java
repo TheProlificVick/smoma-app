@@ -38,6 +38,13 @@ public class AdminController {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    /**
+     * Local-account fallback password for a user created from the admin panel. Real users sign in
+     * through the Active Directory bind (see AuthController, which tries LDAP first); this only
+     * matters for a test account used before AD sync runs, so the admin is never asked to type one.
+     */
+    private static final String DEFAULT_LOCAL_PASSWORD = "password123";
+
     @Value("${spring.ldap.urls:ldap://192.168.0.101:389}")
     private String ldapServer;
 
@@ -184,7 +191,7 @@ public class AdminController {
     private User currentUser(Principal principal, String requestEmail) {
         User u = null;
         if (principal != null) {
-            u = userRepository.findByIdentity(principal.getName()).orElse(null);
+            u = userRepository.findAllByIdentity(principal.getName()).stream().findFirst().orElse(null);
         }
         if (u == null && requestEmail != null) {
             u = accessPolicy.resolve(requestEmail);
@@ -195,7 +202,6 @@ public class AdminController {
     @PostMapping("/users")
     public ResponseEntity<?> createUser(@RequestBody CreateUserRequest request,
                                       Principal principal,
-                                      @RequestHeader(value = "X-User-Role", required = false) String requestRole,
                                       @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
         User actor = currentUser(principal, requestEmail);
         if (!accessPolicy.canCreateOrgEntities(actor)) {
@@ -203,10 +209,15 @@ public class AdminController {
                     "Seuls l'administrateur système et le personnel DRH peuvent créer un compte utilisateur."));
         }
 
-        if (request == null || request.getUsername() == null || request.getPassword() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required."));
+        if (request == null || request.getUsername() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username is required."));
         }
-        if (request.getPassword().length() < 8) {
+        // Accounts created here authenticate through the Active Directory bind in production (see
+        // AuthController, which tries LDAP first); this local password only matters for a test
+        // account created before AD sync runs, so it defaults rather than asking the admin for one.
+        String rawPassword = (request.getPassword() == null || request.getPassword().isBlank())
+                ? DEFAULT_LOCAL_PASSWORD : request.getPassword();
+        if (rawPassword.length() < 8) {
             return ResponseEntity.badRequest().body(Map.of("error", "Le mot de passe doit compter au moins 8 caractères."));
         }
 
@@ -225,7 +236,7 @@ public class AdminController {
 
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(rawPassword));
         user.setEmail(request.getEmail());
         user.setNom(request.getNom());
         user.setPrenom(request.getPrenom());
@@ -257,7 +268,6 @@ public class AdminController {
     @PostMapping("/departments")
     public ResponseEntity<?> createDepartment(@RequestBody CreateDepartmentRequest request,
                                             Principal principal,
-                                            @RequestHeader(value = "X-User-Role", required = false) String requestRole,
                                             @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
         User actor = currentUser(principal, requestEmail);
         if (!accessPolicy.canCreateOrgEntities(actor)) {
@@ -316,11 +326,9 @@ public class AdminController {
             return ResponseEntity.status(404).body(Map.of("error", "Direction introuvable: " + id));
         }
         // Detach any user still pointing at this department so the FK does not block the delete.
-        userRepository.findAll().forEach(u -> {
-            if (u.getDepartment() != null && u.getDepartment().getId().equals(id)) {
-                u.setDepartment(null);
-                userRepository.save(u);
-            }
+        userRepository.findByDepartment_Id(id).forEach(u -> {
+            u.setDepartment(null);
+            userRepository.save(u);
         });
         departmentRepository.delete(target);
         return ResponseEntity.ok(Map.of("status", "deleted", "id", id));

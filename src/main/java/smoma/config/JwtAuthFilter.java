@@ -14,10 +14,17 @@ import java.io.IOException;
  * Closes the identity-spoofing hole at the root of the app's authorization model: every
  * AccessPolicy check resolves "who is calling" from the client-supplied X-User-Email header,
  * with nothing verifying the caller actually authenticated as that person. This filter requires
- * that any mutating request (POST/PUT/PATCH/DELETE) claiming an identity via that header also
- * present a validly signed JWT — obtainable only from a real successful login (AuthController) —
- * whose subject matches the claimed identity. A request with no claimed identity is left alone;
- * the existing AccessPolicy null-checks already reject it downstream.
+ * that any request claiming an identity via that header — GET included, not just mutations —
+ * also present a validly signed JWT (obtainable only from a real successful login via
+ * AuthController) whose subject matches the claimed identity. A request with no claimed identity
+ * is left alone; the existing AccessPolicy null-checks already reject it downstream.
+ *
+ * GET requests used to be exempt entirely, which meant an endpoint like
+ * GET /api/ordres-mission/{id} (or its /pdf variant) could not tell who was actually asking even
+ * once it started checking — any caller could claim any identity via the header with nothing to
+ * verify it. Covering GET here is what makes that kind of per-record authorization check (see
+ * AccessPolicy#canViewOrdreDeMission) actually mean something instead of trusting an unverified
+ * header.
  */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -31,11 +38,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String method = request.getMethod();
-        boolean isMutation = "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method) || "DELETE".equals(method);
         String claimedIdentity = request.getHeader("X-User-Email");
 
-        if (isMutation && claimedIdentity != null && !claimedIdentity.isBlank()) {
+        if (claimedIdentity != null && !claimedIdentity.isBlank()) {
             String authHeader = request.getHeader("Authorization");
             String token = (authHeader != null && authHeader.startsWith("Bearer "))
                     ? authHeader.substring(7).trim() : null;

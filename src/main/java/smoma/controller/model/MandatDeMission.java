@@ -48,6 +48,14 @@ public class MandatDeMission {
     @Column(name = "type_mission", length = 64)
     private TypeMission typeMission;
 
+    /** Ville de départ de la mission, saisie une fois sur le mandat et reprise sur chaque OM généré. */
+    @Column(name = "ville_depart")
+    private String villeDepart;
+
+    /** Destination de la mission, saisie une fois sur le mandat et reprise sur chaque OM généré. */
+    @Column(name = "destination")
+    private String destination;
+
     @ElementCollection
     @CollectionTable(name = "mandat_transport_modes", joinColumns = @JoinColumn(name = "mandat_id"))
     @Column(name = "transport_mode")
@@ -74,6 +82,17 @@ public class MandatDeMission {
 
     @Column(name = "scan_signed_path", length = 500)
     private String scanSignedPath;
+
+    /**
+     * When the official document was first printed (or its PDF downloaded) from the system —
+     * required before a signed scan can be imported, since a scan of a document the system never
+     * actually produced would break the paper trail back to a real DG signature.
+     */
+    @Column(name = "printed_at")
+    private LocalDate printedAt;
+
+    @Column(name = "printed_by")
+    private String printedBy;
 
     @Column(name = "force_majeure")
     private boolean forceMajeure;
@@ -191,6 +210,22 @@ public class MandatDeMission {
         this.typeMission = typeMission;
     }
 
+    public String getVilleDepart() {
+        return villeDepart;
+    }
+
+    public void setVilleDepart(String villeDepart) {
+        this.villeDepart = villeDepart;
+    }
+
+    public String getDestination() {
+        return destination;
+    }
+
+    public void setDestination(String destination) {
+        this.destination = destination;
+    }
+
     public List<String> getTransportModes() {
         return transportModes;
     }
@@ -261,6 +296,22 @@ public class MandatDeMission {
 
     public void setScanSignedPath(String scanSignedPath) {
         this.scanSignedPath = scanSignedPath;
+    }
+
+    public LocalDate getPrintedAt() {
+        return printedAt;
+    }
+
+    public void setPrintedAt(LocalDate printedAt) {
+        this.printedAt = printedAt;
+    }
+
+    public String getPrintedBy() {
+        return printedBy;
+    }
+
+    public void setPrintedBy(String printedBy) {
+        this.printedBy = printedBy;
     }
 
     public boolean isForceMajeure() {

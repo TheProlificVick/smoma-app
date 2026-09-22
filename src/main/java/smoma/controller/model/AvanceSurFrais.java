@@ -111,20 +111,12 @@ public class AvanceSurFrais {
         this.pourcentageAvance = pourcentageAvance;
     }
 
-    public void setPourcentageAvance(int pct) {
-        this.pourcentageAvance = BigDecimal.valueOf(pct);
-    }
-
     public BigDecimal getMontantAvance() {
         return montantAvance;
     }
 
     public void setMontantAvance(BigDecimal montantAvance) {
         this.montantAvance = montantAvance;
-    }
-
-    public void setMontant(BigDecimal montant) {
-        this.montantAvance = montant;
     }
 
     public BigDecimal getMontantSolde() {

@@ -1,5 +1,7 @@
 package smoma.controller.model.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import smoma.dto.AdDirectoryEntryDTO;
@@ -19,6 +21,8 @@ import java.util.*;
 
 @Service
 public class LdapDirectoryService {
+
+    private static final Logger log = LoggerFactory.getLogger(LdapDirectoryService.class);
 
     // LDAP Configuration sourced from application.properties (spring.ldap.*)
     @Value("${spring.ldap.urls:}")
@@ -82,7 +86,13 @@ public class LdapDirectoryService {
             DirContext context = new InitialDirContext(env);
             context.close();
             return true;
-        } catch (NamingException ignored) {
+        } catch (NamingException e) {
+            // Exception type distinguishes "wrong password" (AuthenticationException) from
+            // "AD server unreachable/timed out" (CommunicationException) and other failure modes
+            // that have nothing to do with the credentials themselves — never logs the password.
+            // WARN, not DEBUG: this is exactly the detail needed to tell a credentials problem
+            // apart from a network/connectivity one, and DEBUG doesn't show by default.
+            log.warn("LDAP bind failed for principal '{}': {} — {}", username, e.getClass().getSimpleName(), e.getMessage());
             return false;
         }
     }
@@ -132,6 +142,10 @@ public class LdapDirectoryService {
                     bindOk = authenticate(domainUser, password);
                 }
 
+                if (!bindOk) {
+                    log.warn("LDAP login failed for '{}': AD entry found (dn={}, sam={}) but none of the DN/UPN/sAMAccountName@art.cm bind attempts succeeded — password mismatch, disabled account, or account lockout in AD.", cleanId, dn, sam);
+                }
+
                 if (bindOk) {
                     Map<String, Object> userDetails = new HashMap<>();
                     String nom = getAttributeValue(attrs, "givenName");
@@ -161,9 +175,16 @@ public class LdapDirectoryService {
                 }
             } else {
                 ctx.close();
+                log.warn("LDAP login failed for '{}': no AD entry matched sAMAccountName/userPrincipalName/mail/employeeID/employeeNumber/description under base '{}'.", cleanId, baseDn);
             }
-        } catch (Exception ignored) {
-            // LDAP directory admin bind failed or network unavailable, try direct bind fallback
+        } catch (Exception e) {
+            // The admin-bind directory SEARCH failed — most commonly the AD server at
+            // spring.ldap.urls is unreachable/timed out, or the service account
+            // (spring.ldap.username/password) itself is invalid. Logged so this is diagnosable
+            // instead of silently falling through to "incorrect credentials", which is misleading
+            // when the real cause has nothing to do with what the user typed.
+            log.warn("LDAP directory search failed for '{}' ({}): {} — falling back to a direct bind attempt.",
+                    cleanId, e.getClass().getSimpleName(), e.getMessage());
         }
 
         // 2. Direct simple bind attempt as fallback
@@ -178,6 +199,7 @@ public class LdapDirectoryService {
             return fallback;
         }
 
+        log.warn("LDAP login failed for '{}': direct bind fallback (as '{}' and '{}') also failed.", cleanId, cleanId, candidateUpn);
         return null;
     }
 
@@ -212,7 +234,11 @@ public class LdapDirectoryService {
     }
 
     private String extractMatricule(Attributes attrs) {
-        String[] priorityList = {"description", "info", "comment", "employeeID", "employeeNumber"};
+        // The purpose-built employeeID/employeeNumber fields come first: description/info/comment
+        // are freeform notes any AD admin can put anything in ("Stagiaire", a phone extension, a
+        // leave note, ...), and reading them first meant a coincidental non-blank note silently
+        // became someone's matricule even when a correct employeeID was sitting right there.
+        String[] priorityList = {"employeeID", "employeeNumber", "description", "info", "comment"};
         for (String attr : priorityList) {
             String val = getAttributeValue(attrs, attr);
             if (!val.isEmpty()) {
@@ -260,40 +286,54 @@ public class LdapDirectoryService {
         // their actual current AD group membership. The application's own bootstrap admin
         // account (created locally when no admin exists — see DataLoader) is separate from AD.
 
-        // AD group based mapping
+        // AD group based mapping — matched ONLY against purpose-built "smoma-*" group names, never
+        // against generic AD group names like "Administrators", "Domain Admins", "Human Resources"
+        // or bare "Staff". Those generic names get reused across a real organization's AD for
+        // reasons that have nothing to do with SMOMA (workstation-local admin rights, a helpdesk
+        // support group, an all-staff distribution list, ...), and matching on them as a substring
+        // silently granted SMOMA's most powerful role to anyone who happened to be in one of those
+        // unrelated groups. Confirmed in production: 14+ accounts with titles like "STAGIAIRE"
+        // (intern), "PA" (support staff) and "CA" (a generic staff grade) — none of them holding
+        // any AD group actually named for SMOMA — had ROLE_ADMIN purely from this bare
+        // "administrators" match. A role this consequential must come from a group created and
+        // controlled specifically for this application, not borrowed from an overloaded AD group.
         if (memberOf != null) {
             String groups = String.join(",", memberOf).toLowerCase();
-            if (groups.contains("smoma-admin") || groups.contains("domain admins") || groups.contains("administrators")) {
+            if (groups.contains("smoma-admin")) {
                 return Role.ROLE_ADMIN;
             }
-            if (groups.contains("smoma-general-manager") || groups.contains("general managers") || groups.contains("smoma-gm")) {
+            if (groups.contains("smoma-general-manager") || groups.contains("smoma-gm")) {
                 return Role.ROLE_GENERAL_MANAGER;
             }
-            if (groups.contains("smoma-hr") || groups.contains("human resources") || groups.contains("smoma-hr-officer")) {
+            if (groups.contains("smoma-hr") || groups.contains("smoma-hr-officer")) {
                 return Role.ROLE_HR_OFFICER;
             }
-            if (groups.contains("smoma-directeur") || groups.contains("directeurs") || groups.contains("smoma-director")) {
+            if (groups.contains("smoma-directeur") || groups.contains("smoma-director")) {
                 return Role.ROLE_DIRECTEUR;
             }
-            if (groups.contains("smoma-chef-service") || groups.contains("chefs de service") || groups.contains("smoma-hod")) {
+            if (groups.contains("smoma-chef-service") || groups.contains("smoma-hod")) {
                 return Role.ROLE_CHEF_SERVICE;
             }
-            if (groups.contains("smoma-department-representative") || groups.contains("department representatives")) {
+            if (groups.contains("smoma-department-representative")) {
                 return Role.ROLE_DEPARTMENT_REPRESENTATIVE;
             }
-            if (groups.contains("smoma-staff") || groups.contains("staff")) {
+            if (groups.contains("smoma-staff")) {
                 return Role.ROLE_STAFF_MEMBER;
             }
         }
 
+        // ROLE_ADMIN is deliberately NOT grantable from title text at all, by any match, however
+        // narrow — it bypasses nearly every check in AccessPolicy (mandate deletion, report
+        // validation, personnel management, all of it), and a free-text AD title is HR-assigned
+        // for organizational/payroll purposes, never curated with this application's security
+        // model in mind. The only legitimate paths to ROLE_ADMIN are the "smoma-admin" AD group
+        // above, or the local bootstrap admin account created outside of AD (see DataLoader).
         if (title != null) {
             String lowerTitle = title.toLowerCase();
             if (lowerTitle.contains("directeur") || lowerTitle.contains("chef de département")) {
                 return Role.ROLE_DIRECTEUR;
             } else if (lowerTitle.contains("chef de service") || lowerTitle.contains("responsable")) {
                 return Role.ROLE_CHEF_SERVICE;
-            } else if (lowerTitle.contains("administrateur") || lowerTitle.contains("sysadmin") || lowerTitle.contains("admin")) {
-                return Role.ROLE_ADMIN;
             } else if (lowerTitle.contains("general manager") || lowerTitle.contains("directeur général")) {
                 return Role.ROLE_GENERAL_MANAGER;
             } else if (lowerTitle.contains("rh") || lowerTitle.contains("ressources humaines") || lowerTitle.contains("hr")) {

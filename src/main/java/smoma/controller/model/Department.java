@@ -18,8 +18,14 @@ public class Department {
     @Column(nullable = false, unique = true)
     private String name;
 
+    /** English translation of {@link #name}, shown instead of it when the UI language is English. */
+    private String nameEn;
+
     private String acronym;
     private String headName;
+
+    /** English translation of {@link #headName}, shown instead of it when the UI language is English. */
+    private String headNameEn;
 
     public Department() {
     }
@@ -46,6 +52,14 @@ public class Department {
         this.name = name;
     }
 
+    public String getNameEn() {
+        return nameEn;
+    }
+
+    public void setNameEn(String nameEn) {
+        this.nameEn = nameEn;
+    }
+
     public String getAcronym() {
         return acronym;
     }
@@ -60,5 +74,13 @@ public class Department {
 
     public void setHeadName(String headName) {
         this.headName = headName;
+    }
+
+    public String getHeadNameEn() {
+        return headNameEn;
+    }
+
+    public void setHeadNameEn(String headNameEn) {
+        this.headNameEn = headNameEn;
     }
 }

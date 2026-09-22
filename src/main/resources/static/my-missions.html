@@ -25,7 +25,7 @@
                 </div>
                 <div>
                     <div class="fw-bold fs-5" data-i18n="appTitle">AGENCE DE REGULATION DES TELECOMMUNICATIONS</div>
-                    <small class="text-light opacity-75" data-i18n="myMissionsSub">Vos ordres de mission, notifications, téléchargement du PDF officiel et dépôt du rapport de mission</small>
+                    <small class="text-light opacity-75" data-i18n="myMissionsSub">Vos ordres de mission, notifications et téléchargement du PDF officiel</small>
                 </div>
             </div>
             <div class="d-flex align-items-center">
@@ -39,13 +39,17 @@
         <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm flex-wrap gap-2">
             <div>
                 <h4 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-user-clock text-success me-2"></i><span data-i18n="myMissionsTitle">Portail de l'Agent — Mes Missions</span></h4>
-                <p class="text-muted small mb-0" data-i18n="myMissionsSub">Vos ordres de mission, notifications, téléchargement du PDF officiel et dépôt du rapport de mission</p>
+                <p class="text-muted small mb-0" data-i18n="myMissionsSub">Vos ordres de mission, notifications et téléchargement du PDF officiel</p>
             </div>
             <div class="input-group input-group-sm" style="max-width: 320px;">
                 <span class="input-group-text bg-white" data-i18n="thMatricule">Matricule</span>
-                <input type="text" class="form-control" id="mmMatricule" placeholder="ART-2026-002" onchange="lastUnreadCount = null; reload();">
+                <input type="text" class="form-control" id="mmMatricule" placeholder="Ex: ART-2026-002" onchange="lastUnreadCount = null; reload();">
                 <button class="btn btn-primary" onclick="lastUnreadCount = null; reload();"><i class="fa-solid fa-arrows-rotate"></i></button>
             </div>
+        </div>
+
+        <div class="alert alert-warning small border-start border-4 border-warning">
+            <i class="fa-solid fa-lock me-1"></i> <span data-i18n="myMissionsPrivacyNote">Vous ne voyez ici que vos propres ordres de mission, notifications et PDF — jamais ceux d'un autre agent. Seul le personnel de la DRH peut consulter ceux de l'ensemble du personnel.</span>
         </div>
 
         <div class="row g-4">
@@ -89,49 +93,6 @@
         </div>
     </div>
 
-    <!-- Modal: submit my report -->
-    <div class="modal fade" id="modalMyReport" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header art-header text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-arrow-up me-2"></i><span data-i18n="mmReportModalTitle">Déposer mon rapport de mission</span></h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" id="rpOmId">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold" data-i18n="thReportTitle">Titre du Rapport</label>
-                        <input type="text" class="form-control" id="rpTitre" required>
-                    </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold" data-i18n="repCategoryLabel">Catégorie du Rapport</label>
-                            <select class="form-select" id="rpCategorie">
-                                <option value="CONTRÔLE" data-i18n="catControl">Contrôle / Régulation</option>
-                                <option value="FORMATION" data-i18n="catTraining">Formation / Stage</option>
-                                <option value="ETUDE" data-i18n="catStudy">Étude et Analyse</option>
-                                <option value="REPRESENTATION" data-i18n="catRepresentation">Représentation Officielle</option>
-                                <option value="AUTRE" data-i18n="catOther">Autre</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold" data-i18n="mmReportFileLabel">Fichier scanné du rapport (PDF)</label>
-                            <input type="file" class="form-control" id="rpFile" accept="application/pdf,image/*">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold" data-i18n="repSummaryLabel">Résumé / Synthèse des Déplacements</label>
-                        <textarea class="form-control" id="rpDesc" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnCancel">Annuler</button>
-                    <button type="button" class="btn btn-success btn-sm px-4" onclick="submitMyReport()"><i class="fa-solid fa-check me-1"></i> <span data-i18n="repSubmitBtn">Soumettre le Rapport</span></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast host for live "new mission assigned" alerts -->
     <div id="mmToastHost" style="position:fixed; top:1rem; right:1rem; z-index:1080; max-width:360px;"></div>
 
@@ -151,14 +112,14 @@
             return localStorage.getItem('art_user_email') || '';
         }
 
+        // Notifications belong to whoever is logged in — resolved server-side from the identity
+        // header, not from a matricule the page would otherwise have to guess or ask for.
         async function loadNotifications() {
-            const mat = currentMatricule();
             const user = currentUsername();
             const box = document.getElementById('notifList');
-            if (!mat && !user) { box.innerHTML = `<p class="text-muted small p-2 mb-0">${t('mmIdentifyPrompt')}</p>`; return; }
+            if (!user) { box.innerHTML = `<p class="text-muted small p-2 mb-0">${t('mmIdentifyPrompt')}</p>`; return; }
             try {
-                const res = await fetch('/api/notifications?matricule=' + encodeURIComponent(mat)
-                    + '&username=' + encodeURIComponent(user));
+                const res = await fetch('/api/notifications', { headers: { 'X-User-Email': user } });
                 const list = res.ok ? await res.json() : [];
                 const unread = list.filter(n => !n.lu).length;
 
@@ -181,9 +142,9 @@
                 }
                 box.innerHTML = list.map(n => `
                     <div class="notif-item ${n.lu ? '' : 'unread'} p-2 mb-1 rounded" onclick="markRead(${n.id})" style="cursor:pointer;">
-                        <div class="fw-bold small">${n.titre || ''}</div>
-                        <div class="small text-muted">${n.message || ''}</div>
-                        <div class="small text-secondary">${(n.dateCreation || '').replace('T', ' ').slice(0, 16)}</div>
+                        <div class="fw-bold small">${escapeHtml(n.titre)}</div>
+                        <div class="small text-muted">${escapeHtml(n.message)}</div>
+                        <div class="small text-secondary">${escapeHtml((n.dateCreation || '').replace('T', ' ').slice(0, 16))}</div>
                     </div>
                 `).join('');
             } catch (e) {
@@ -198,7 +159,7 @@
             el.className = 'toast align-items-center text-bg-primary border-0 show mb-2';
             el.setAttribute('role', 'alert');
             el.innerHTML = `<div class="d-flex">
-                <div class="toast-body"><i class="fa-solid fa-bell me-2"></i><strong>${title}</strong><div class="small mt-1">${body}</div></div>
+                <div class="toast-body"><i class="fa-solid fa-bell me-2"></i><strong>${escapeHtml(title)}</strong><div class="small mt-1">${escapeHtml(body)}</div></div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.toast').remove()"></button>
             </div>`;
             host.appendChild(el);
@@ -206,36 +167,44 @@
         }
 
         async function markRead(id) {
-            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST' }); } catch (e) {}
+            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST', headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } }); } catch (e) {}
             loadNotifications();
         }
 
         async function markAllRead() {
-            const mat = currentMatricule();
             const user = currentUsername();
-            if (!mat && !user) return;
+            if (!user) return;
             try {
-                await fetch('/api/notifications/mark-all-read?matricule=' + encodeURIComponent(mat)
-                    + '&username=' + encodeURIComponent(user), { method: 'POST' });
+                await fetch('/api/notifications/mark-all-read', { method: 'POST', headers: { 'X-User-Email': user } });
             } catch (e) {}
             loadNotifications();
         }
 
         async function loadOrders() {
+            const user = currentUsername();
             const mat = currentMatricule();
             const tbody = document.getElementById('mmTbody');
-            if (!mat) { tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">${t('mmIdentifyPrompt')}</td></tr>`; return; }
+            if (!user && !mat) { tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">${t('mmIdentifyPrompt')}</td></tr>`; return; }
             try {
+                // GET /api/ordres-mission is authorized server-side: a non-DRH/admin caller only ever
+                // gets back the orders actually issued to them (see AccessPolicy#canViewOrdreDeMission).
+                // The matricule box narrows *that* roster to look up one specific agent — DRH/admin
+                // get the full roster and can use it that way — but it must never be the gate that
+                // decides whether an agent's own, already-scoped orders show up at all: a blank box
+                // means "show me what the server already scoped to me", not "show nothing".
+                const authHeaders = { 'X-User-Email': user };
                 const [omRes, rpRes] = await Promise.all([
-                    fetch('/api/ordres-mission'),
-                    fetch('/api/rapports')
+                    fetch('/api/ordres-mission', { headers: authHeaders }),
+                    fetch('/api/rapports', { headers: authHeaders })
                 ]);
                 const allOm = omRes.ok ? await omRes.json() : [];
                 const allRp = rpRes.ok ? await rpRes.json() : [];
                 myReports = {};
                 allRp.forEach(r => { if (r.ordreDeMission && r.ordreDeMission.id != null) myReports[r.ordreDeMission.id] = r; });
 
-                myOrders = allOm.filter(o => o.personnel && (o.personnel.matricule || '').toLowerCase() === mat.toLowerCase());
+                myOrders = mat
+                    ? allOm.filter(o => o.personnel && (o.personnel.matricule || '').toLowerCase() === mat.toLowerCase())
+                    : allOm;
                 if (myOrders.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">${t('mmNoOrders')}</td></tr>`;
                     return;
@@ -245,23 +214,41 @@
                     let reportCell;
                     if (rp && rp.statutValidation === 'VALIDE') {
                         reportCell = `<span class="badge bg-success">${t('mmReportValidated')}</span>`;
+                    } else if (rp && rp.statutValidation === 'REJETE') {
+                        reportCell = `<span class="badge bg-danger d-block mb-1">${t('mmReportRejected')}</span>
+                            <div class="small text-danger mb-1" style="max-width:220px;">${escapeHtml(rp.motifRejet)}</div>`;
                     } else if (rp || o.rapportSoumis) {
                         reportCell = `<span class="badge bg-warning text-dark">${t('mmReportSubmitted')}</span>`;
                     } else {
-                        reportCell = `<button class="btn btn-outline-success btn-sm" onclick="openMyReport(${o.id})"><i class="fa-solid fa-upload me-1"></i> ${t('mmUploadReport')}</button>`;
+                        reportCell = '';
                     }
                     const signed = o.statut === 'SIGNE' || o.scanSignedPath;
                     const statusBadge = signed
                         ? `<span class="badge bg-success"><i class="fa-solid fa-lock me-1"></i>${t('badgeSignedLocked')}</span>`
                         : `<span class="badge bg-secondary">${t('badgeDraftShort')}</span>`;
+
+                    // Checking a step off frees the agent up for a new assignment right away instead
+                    // of waiting for the originally planned end date (see MissionCapacityService).
+                    let completionCell;
+                    if (o.missionTerminee) {
+                        completionCell = `<span class="badge bg-success d-block mt-1"><i class="fa-solid fa-flag-checkered me-1"></i>${t('mmStepCompleted')}</span>`;
+                    } else {
+                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                        const notStarted = o.dateDebut && new Date(o.dateDebut) > today;
+                        completionCell = notStarted
+                            ? `<button type="button" class="btn btn-outline-secondary btn-sm mt-1" disabled title="${t('mmCompleteNotStarted')}"><i class="fa-solid fa-flag-checkered me-1"></i> ${t('mmMarkComplete')}</button>
+                               <div class="small text-muted mt-1">${t('mmAvailableFrom')} ${o.dateDebut}</div>`
+                            : `<button type="button" class="btn btn-outline-primary btn-sm mt-1" onclick="completeMissionStep(${o.id})"><i class="fa-solid fa-flag-checkered me-1"></i> ${t('mmMarkComplete')}</button>`;
+                    }
+
                     return `
                         <tr>
                             <td class="fw-bold text-primary">${o.referenceOrdre || 'OM-#' + o.id}</td>
                             <td><small>${o.dateDebut || ''} ${t('commonTo')} ${o.dateFin || ''}</small></td>
                             <td><span class="badge bg-info text-dark">${o.typeMission || 'INTERNE'}</span></td>
-                            <td>${statusBadge}</td>
+                            <td>${statusBadge}<div>${completionCell}</div></td>
                             <td class="text-end">
-                                <a href="/api/ordres-mission/${o.id}/pdf" target="_blank" class="btn btn-outline-danger btn-sm me-1"><i class="fa-solid fa-file-pdf me-1"></i> ${t('mmDownloadPdf')}</a>
+                                <button type="button" class="btn btn-outline-danger btn-sm me-1" onclick="downloadMyOmPdf(${o.id})"><i class="fa-solid fa-file-pdf me-1"></i> ${t('mmDownloadPdf')}</button>
                                 ${reportCell}
                             </td>
                         </tr>`;
@@ -271,50 +258,54 @@
             }
         }
 
-        function openMyReport(omId) {
-            document.getElementById('rpOmId').value = omId;
-            const o = myOrders.find(x => x.id === omId);
-            document.getElementById('rpTitre').value = 'Rapport de mission ' + (o ? (o.referenceOrdre || ('OM-#' + omId)) : omId);
-            document.getElementById('rpDesc').value = '';
-            new bootstrap.Modal(document.getElementById('modalMyReport')).show();
+        // Checked off by the agent themselves (or DRH/admin on their behalf) — irreversible by
+        // design, so confirm before sending it: there's no "uncheck" once a step is marked done.
+        async function completeMissionStep(id) {
+            if (!confirm(t('mmCompleteConfirm'))) return;
+            try {
+                const res = await fetch(`/api/ordres-mission/${id}/terminer`, {
+                    method: 'POST',
+                    headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' }
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || t('commonLoadError'));
+                    return;
+                }
+                loadOrders();
+            } catch (e) {
+                alert('Erreur : ' + e.message);
+            }
         }
 
-        async function submitMyReport() {
-            const omId = document.getElementById('rpOmId').value;
-            const fileInput = document.getElementById('rpFile');
-            const file = fileInput.files[0];
-            if (!file) { alert('Veuillez sélectionner le fichier scanné du rapport (PDF, JPG ou PNG).'); return; }
-
-            const btn = document.querySelector('#modalMyReport .btn-success');
-            const originalLabel = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> ...';
+        // The PDF endpoint is authorized the same way as the order list, so it can't be a plain
+        // <a href> anymore — fetch it with the identity header and hand the browser the result as
+        // a blob. Saved via a download-anchor rather than window.open(): a window opened after an
+        // "await" has no user-gesture context left, so browsers silently block it as a popup — the
+        // file never appeared and no error showed.
+        async function downloadMyOmPdf(id) {
             try {
-                const formData = new FormData();
-                formData.append('omId', omId);
-                formData.append('titre', document.getElementById('rpTitre').value);
-                formData.append('description', document.getElementById('rpDesc').value);
-                formData.append('categorie', document.getElementById('rpCategorie').value);
-                formData.append('file', file);
-
-                const res = await fetch('/api/rapports', {
-                    method: 'POST',
-                    headers: { 'X-User-Email': currentUsername() },
-                    body: formData
-                });
-                if (res.ok) {
-                    bootstrap.Modal.getInstance(document.getElementById('modalMyReport')).hide();
-                    fileInput.value = '';
-                    reload();
-                } else {
-                    const err = await res.json();
-                    alert('Erreur / Error: ' + (err.error || ''));
+                const res = await fetch(`/api/ordres-mission/${id}/pdf`, { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
+                if (res.status === 403) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || "Vous n'êtes pas autorisé(e) à télécharger cet ordre de mission.");
+                    return;
                 }
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition') || '';
+                const match = cd.match(/filename="?([^";]+)"?/);
+                const filename = match ? match[1] : `ordre-mission-${id}.pdf`;
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 30000);
             } catch (e) {
-                alert(t('commonLoadError'));
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalLabel;
+                alert('Erreur lors du téléchargement du PDF : ' + e.message);
             }
         }
 

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMOMA - Ordre de Mission Officiel</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+>
+<script src="/js/auth-guard.js"></script>
+<style>
+    :root { --navy: #0b2545; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #6b7280; font-family: 'Times New Roman', Times, serif; color: #000; }
+
+    
+    .toolbar {
+        position: sticky; top: 0; z-index: 10;
+        background: var(--navy); color: #fff;
+        padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .toolbar a, .toolbar button {
+        border: 1px solid #fff; background: transparent; color: #fff;
+        padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; text-decoration: none;
+    }
+    .toolbar button.primary { background: #fff; color: var(--navy); font-weight: bold; }
+    .toolbar .title { font-weight: bold; }
+    .access-note {
+        background: #fff8e1; color: #7a5b00; border-bottom: 1px solid #f0d98c;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12.5px;
+        text-align: center; padding: 6px 16px;
+    }
+    #loadError { max-width: 900px; margin: 20px auto; padding: 16px; background: #fff3f3; border: 1px solid #d33; color: #900; font-family: sans-serif; }
+
+    /* ---------- Printable sheets ---------- */
+    .sheet-wrap { max-width: 850px; margin: 20px auto; }
+    .sheet {
+        background: #fff; padding: 16mm 14mm; margin: 0 auto 20px auto;
+        width: 210mm; min-height: 297mm; box-shadow: 0 0 8px rgba(0,0,0,.3);
+        font-size: 12.5px; line-height: 1.35;
+    }
+
+    table { border-collapse: collapse; width: 100%; }
+    .no-border td, .no-border th { border: none; }
+
+    /* Bilingual header */
+    .hdr-table td { border: none; vertical-align: middle; text-align: center; padding: 2px 4px; }
+    .hdr-fr { font-weight: bold; font-size: 11px; }
+    .hdr-fr .motto { font-style: italic; font-weight: normal; }
+    .hdr-en { font-weight: bold; font-size: 11px; color: #333; }
+    .hdr-en .motto { font-style: italic; font-weight: normal; }
+    .hdr-logo img { width: 62px; height: 62px; object-fit: contain; }
+    .hdr-rule { border: none; border-top: 2px solid #000; margin: 6px 0 10px 0; }
+
+    .refdate { display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; margin-bottom: 8px; }
+
+    .stamp-box { border: 2px solid #c00; color: #c00; background: #ffecec; font-weight: bold;
+        text-align: center; padding: 6px; width: 60%; margin: 4px 0 10px 0; font-size: 12px; }
+
+    .title-box { border: 2px solid #000; text-align: center; padding: 8px; margin: 6px 0 14px 0; }
+    .title-box span { font-size: 19px; font-weight: bold; letter-spacing: 1px; }
+
+    .field-table td { border: 1px solid #000; padding: 5px 7px; vertical-align: top; }
+    .field-table .flabel { width: 40%; background: #f5f5f5; }
+    .flabel .fr { font-weight: bold; display: block; }
+    .flabel .en { font-style: italic; color: #333; font-size: 11px; display: block; }
+
+    .sig-line { text-align: right; font-weight: bold; margin: 10px 0 16px 0; font-size: 12px; }
+    .sig-line .rule { display: inline-block; border-bottom: 1px solid #000; width: 260px; margin-top: 4px; }
+
+    .section-hdr { text-align: center; font-weight: bold; font-size: 13px; border-bottom: 1.5px solid #000;
+        padding: 4px 0; margin: 10px 0 8px 0; }
+
+    .paiement-table td { border: 1px solid #000; padding: 6px 8px; font-size: 12px; }
+    .chk { display: inline-block; width: 13px; height: 13px; border: 1px solid #000; vertical-align: middle; margin-right: 4px; }
+
+    .decompte-table th, .decompte-table td { border: 1px solid #000; padding: 5px; text-align: center; }
+    .decompte-table th { font-weight: bold; }
+
+    .blankline { margin: 10px 0; font-size: 12px; }
+    .footnote { font-size: 10.5px; margin-top: 6px; }
+
+    .obs-table th, .obs-table td { border: 1px solid #000; padding: 4px; text-align: center; font-size: 11px; }
+    .obs-table td { height: 46px; }
+
+    .prolong { font-size: 11.5px; margin: 6px 0; }
+
+    .avances-caption { text-align: center; font-weight: bold; font-size: 12px; margin: 6px 0 4px 0; }
+    .indem-table th, .indem-table td { border: 1px solid #000; padding: 4px; text-align: center; font-size: 10.5px; }
+    .indem-table th { font-weight: bold; }
+
+    .arrete-paye { margin-top: 8px; }
+    .arrete-paye td { border: 1px solid #000; padding: 6px; font-size: 11px; vertical-align: top; width: 50%; }
+
+    .payee-note { font-size: 11px; margin: 6px 0 10px 0; }
+
+    .notefrais-row td { border: 1px solid #000; padding: 5px; font-size: 11.5px; }
+    .notefrais2 th, .notefrais2 td { border: 1px solid #000; padding: 6px; text-align: center; font-size: 11.5px; }
+
+    .acquit-table td { border: 1px solid #000; padding: 8px; font-size: 11px; vertical-align: top; width: 50%; }
+    .acquit-table .sig-word { display: block; text-align: center; font-weight: bold; margin-top: 22px; }
+
+    .motto-footer { text-align: center; font-style: italic; margin-top: 16px; font-size: 12px; }
+    .addr-footer { text-align: center; font-size: 10px; color: #333; margin-top: 4px; }
+
+    .dots { border-bottom: 1px dotted #000; display: inline-block; min-width: 60%; }
+
+    /* ---------- Verso: fillable fields ---------- */
+    .finput {
+        font-family: 'Times New Roman', Times, serif; font-size: 11px; border: none;
+        border-bottom: 1px dotted #000; background: transparent; padding: 1px 2px; color: #000; width: 100%;
+    }
+    .finput:focus { outline: none; background: #eef3fb; }
+    .indem-table .finput { text-align: center; font-size: 10.5px; padding: 2px; }
+    textarea.finput { resize: vertical; font-family: inherit; min-height: 40px; }
+    .verso-save-bar {
+        display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 10px;
+        border-top: 1px dashed #999; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .verso-save-bar button {
+        background: var(--navy); color: #fff; border: none; border-radius: 4px;
+        padding: 7px 16px; font-size: 13px; cursor: pointer;
+    }
+    .verso-save-bar button:disabled { opacity: .6; cursor: default; }
+    .verso-save-status { font-size: 12.5px; color: #333; }
+    .verso-save-status.ok { color: #1f6e43; }
+    .verso-save-status.err { color: #9a3324; }
+    @media print { .finput { border-bottom: 1px dotted #000; } }
+
+    @media print {
+        body { background: #fff; }
+        .toolbar, #loadError, .no-print { display: none !important; }
+        .sheet-wrap { max-width: none; margin: 0; }
+        .sheet { box-shadow: none; margin: 0; width: auto; min-height: 0; page-break-after: always; }
+        .sheet:last-child { page-break-after: auto; }
+    }
+    @page { size: A4; margin: 10mm; }
+</style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+    <span class="title"><i class="fa-solid fa-file-invoice me-1"></i> Ordre de Mission Officiel</span>
+    <span>
+        <a href="/mission-requests.html"><i class="fa-solid fa-arrow-left me-1"></i> Retour</a>
+        <button onclick="downloadOwnPdf()"><i class="fa-solid fa-file-pdf me-1"></i> Télécharger PDF</button>
+        <button class="primary" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> Imprimer (recto-verso)</button>
+    </span>
+</div>
+<div class="access-note no-print">
+    <i class="fa-solid fa-lock me-1"></i>
+    Cet ordre de mission n'est consultable que par l'agent concerné et par le personnel de la DRH — personne d'autre.
+    / This mission order is only visible to the staff member it was issued to and to DRH personnel — no one else.
+</div>
+
+<div id="loadError" style="display:none;"></div>
+
+<div class="sheet-wrap" id="sheetsRoot" style="display:none;">
+
+    <!-- ============ PAGE 1 — FRONT ============ -->
+    <div class="sheet" id="pageFront">
+        <table class="hdr-table">
+            <tr>
+                <td class="hdr-fr" style="width:42%;">
+                    RÉPUBLIQUE DU CAMEROUN<br>
+                    <span class="motto">Paix - Travail - Patrie</span><br>
+                    ---------------<br>
+                    AGENCE DE RÉGULATION<br>DES TÉLÉCOMMUNICATIONS
+                </td>
+                <td class="hdr-logo" style="width:16%;"><img src="/images/ART%20logo.jpg" alt="ART"></td>
+                <td class="hdr-en" style="width:42%;">
+                    REPUBLIC OF CAMEROON<br>
+                    <span class="motto">Peace - Work - Fatherland</span><br>
+                    ---------------<br>
+                    TELECOMMUNICATIONS<br>REGULATORY BOARD
+                </td>
+            </tr>
+        </table>
+        <hr class="hdr-rule">
+
+        <div class="refdate">
+            <span id="fRef">N° .................. /ART/DG</span>
+            <span id="fDate">Yaoundé, le ..................</span>
+        </div>
+
+        <div class="stamp-box" id="fStamp" style="display:none;">SCEAU : SANS FRAIS / WITHOUT EXPENSES</div>
+
+        <div class="title-box"><span>ORDRE DE MISSION</span></div>
+
+        <table class="field-table">
+            <tr>
+                <td class="flabel"><span class="fr">Noms et Prénoms.........</span><span class="en">(Name, First name):</span></td>
+                <td id="fNom"></td>
+            </tr>
+            <tr>
+                <td class="flabel"><span class="fr">Grade.........</span><span class="en">(Rank):</span></td>
+                <td id="fGrade"></td>
+            </tr>
+            <tr>
+                <td class="flabel"><span class="fr">Fonction / Service.........</span><span class="en">(Function/Office):</span></td>
+                <td id="fFonction"></td>
+            </tr>
+            <tr>
+                <td class="flabel"><span class="fr">Destination.........</span></td>
+                <td id="fDestination"></td>
+            </tr>
+            <tr>
+                <td class="flabel"><span class="fr">Motif.........</span><span class="en">(Purpose of journey):</span></td>
+                <td id="fMotif"></td>
+            </tr>
+            <tr>
+                <td class="flabel"><span class="fr">Moyen de transport.........</span><span class="en">(Means of transport):</span></td>
+                <td id="fTransport"></td>
+            </tr>
+            <tr>
+                <td class="flabel"><span class="fr">Durée.........</span><span class="en">(Duration):</span></td>
+                <td id="fDuree"></td>
+            </tr>
+        </table>
+
+        <div class="sig-line">SIGNATURE DU DIRECTEUR GENERAL<div class="rule"></div></div>
+
+        <div class="section-hdr">MODE DE PAIEMENT</div>
+        <table class="paiement-table">
+            <tr>
+                <td><span class="chk"></span> Espèces : Frs CFA</td>
+                <td><span class="chk"></span> Chèque Ordinaire</td>
+            </tr>
+            <tr>
+                <td><span class="chk"></span> Devise (1)</td>
+                <td><span class="chk"></span> Chèque de voyage (1)</td>
+            </tr>
+        </table>
+
+        <table class="decompte-table" style="margin-top:8px;">
+            <tr><th>Nombre de jours</th><th>Taux</th><th>Décompte</th></tr>
+            <tr><td id="fJours"></td><td id="fTaux"></td><td id="fDecompte"></td></tr>
+        </table>
+
+        <div class="blankline">Arrêté le présent décompte à la somme de <span class="dots">&nbsp;</span></div>
+        <div class="blankline">A <span class="dots" style="min-width:35%;">&nbsp;</span> le <span class="dots" style="min-width:35%;">&nbsp;</span></div>
+
+        <div class="footnote">(1) Préciser la nature des devises</div>
+    </div>
+
+    <!-- ============ PAGE 2 — BACK ============ -->
+    <div class="sheet" id="pageBack">
+        <div class="section-hdr">OBSERVATIONS</div>
+        <table class="obs-table">
+            <tr><th>Visa au départ</th><th>Visa à l'arrivée</th><th>Visa au départ</th><th>Visa à l'arrivée</th></tr>
+            <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        </table>
+        <div class="prolong">Durée et raison du prolongement : <span class="dots" style="min-width:45%;">&nbsp;</span> Visa du Directeur Général : <span class="dots" style="min-width:20%;">&nbsp;</span></div>
+        <div class="prolong">Durée et raison de fin précoce de la mission : <span class="dots" style="min-width:40%;">&nbsp;</span> Visa du Directeur Général : <span class="dots" style="min-width:20%;">&nbsp;</span></div>
+
+        <div class="section-hdr">DÉCOMPTES DES AVANCES - DETAILS OF ADVANCES</div>
+        <div class="avances-caption">AU DEPART - AT DEPARTURE</div>
+        <table class="indem-table">
+            <tr>
+                <th rowspan="1">Indemnité Journalière<br><span style="font-weight:normal;">Daily allowance</span></th>
+                <th>Nombre<br>Number</th><th>Taux<br>Rate</th><th>Décompte<br>Sub-total</th>
+                <th>Nombre<br>Number</th><th>Taux<br>Rate</th><th>Décompte<br>Sub-total</th>
+                <th style="font-size:9px;">Indication des réquisitions Délivrées au départ<br>Indication of requisitions Issued on departure</th>
+            </tr>
+            <tr>
+                <td>Normale - Normal</td>
+                <td id="bJours"></td><td id="bTaux"></td><td id="bDecompte"></td>
+                <td></td><td></td><td></td>
+                <td rowspan="3"><textarea class="finput" id="vIndicationRequisitions" rows="4"></textarea></td>
+            </tr>
+            <tr>
+                <td>Réduite - Reduced</td>
+                <td><input class="finput" id="vIndReduiteNombre"></td>
+                <td><input class="finput" id="vIndReduiteTaux"></td>
+                <td><input class="finput" id="vIndReduiteDecompte"></td>
+                <td></td><td></td><td></td>
+            </tr>
+            <tr>
+                <td>Partielle - Partial</td>
+                <td><input class="finput" id="vIndPartielleNombre"></td>
+                <td><input class="finput" id="vIndPartielleTaux"></td>
+                <td><input class="finput" id="vIndPartielleDecompte"></td>
+                <td></td><td></td><td></td>
+            </tr>
+            <tr>
+                <td><strong>TOTAL</strong></td>
+                <td></td><td></td><td id="bTotal1"></td>
+                <td></td><td></td><td></td>
+                <td></td>
+            </tr>
+        </table>
+
+        <table class="arrete-paye">
+            <tr>
+                <td>ARRETE A LA SOMME DE <input class="finput" id="vArreteSomme" style="min-width:60%;"><br>CLOSE AT THE SUM OF</td>
+                <td>PAYE LA SOMME DE <input class="finput" id="vPayeSomme" style="min-width:60%;"><br>PAID THE SUM OF</td>
+            </tr>
+        </table>
+        <div class="payee-note">Payée à titre d'avance <input class="finput" id="vPayeeAvanceMontant" style="min-width:20%; display:inline-block; width:auto;"> / Paid as advance<br>
+            A (At) <input class="finput" id="vPayeeAvanceLieu" style="min-width:25%; display:inline-block; width:auto;">, le (on the) <input type="date" class="finput" id="vPayeeAvanceDate" style="min-width:25%; display:inline-block; width:auto;"> &nbsp;&nbsp;&nbsp;
+            Le (The) <span class="dots" style="min-width:25%;">&nbsp;</span> (Signature)</div>
+
+        <div class="section-hdr">NOTE DE FRAIS</div>
+        <table class="notefrais-row">
+            <tr><td>Imputation : <input class="finput" id="vImputation" style="display:inline-block; width:80%;"></td></tr>
+            <tr><td>Montant total des frais..................... <span id="bMontantTotal"></span></td></tr>
+        </table>
+        <table class="notefrais2" style="margin-top:6px;">
+            <tr><th>DECOMPTE DES AVANCES</th><th>DECOMPTE DU RESTE</th></tr>
+            <tr><td id="bMontantAvance"></td><td id="bMontantSolde"></td></tr>
+        </table>
+
+        <table class="acquit-table" style="margin-top:10px;">
+            <tr>
+                <td>
+                    Acquit du bénéficiaire<br>
+                    Reçu : <input class="finput" id="vAcquitDepartRecu" style="min-width:50%; display:inline-block; width:auto;"><br>
+                    CNI N° : <input class="finput" id="vAcquitDepartCni" style="min-width:50%; display:inline-block; width:auto;"><br>
+                    Délivrée le : <input type="date" class="finput" id="vAcquitDepartDate" style="min-width:25%; display:inline-block; width:auto;"> A : <input class="finput" id="vAcquitDepartLieu" style="min-width:25%; display:inline-block; width:auto;">
+                    <span class="sig-word">SIGNATURE</span>
+                </td>
+                <td>
+                    Acquit du bénéficiaire<br>
+                    Reçu : <input class="finput" id="vAcquitSoldeRecu" style="min-width:50%; display:inline-block; width:auto;">
+                    <span class="sig-word">SIGNATURE</span>
+                </td>
+            </tr>
+        </table>
+
+        <div class="verso-save-bar no-print">
+            <button type="button" id="verso-save-btn" onclick="saveVerso()"><i class="fa-solid fa-floppy-disk me-1"></i> Enregistrer ces informations</button>
+            <span class="verso-save-status" id="verso-save-status"></span>
+        </div>
+
+        <div class="motto-footer">Réguler c'est faciliter</div>
+        <div class="addr-footer">
+            Yaoundé – Cameroun, Boulevard du 20 mai 1972, Immeuble siège ART<br>
+            B.P.: 6132  Tél.: (+237) 222 23 03 80 - 222 23 25 30  Fax: (+237) 222 23 37 48<br>
+            Site web: www.art.cm - Email: art@art.cm
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function safe(v) { return (v === null || v === undefined || v === '') ? 'N/A' : v; }
+    function fmt(n) {
+        if (n === null || n === undefined || isNaN(n)) return '0';
+        return Math.round(n).toLocaleString('fr-FR').replace(/,/g, ' ');
+    }
+
+    let currentOmId = null;
+
+    // Every request to the OM endpoints is authorized server-side against the logged-in identity
+    // (see AccessPolicy#canViewOrdreDeMission) — only the agent this mission order was issued to,
+    // or DRH/admin, may load it. "art_user_email" is the login identity token despite its name
+    // (see login.html), and JwtAuthFilter verifies it against the session's signed JWT.
+    function authHeaders() {
+        return { 'X-User-Email': localStorage.getItem('art_user_email') || '' };
+    }
+
+    async function load() {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        const errBox = document.getElementById('loadError');
+        if (!id) {
+            errBox.style.display = 'block';
+            errBox.textContent = "Aucun identifiant d'ordre de mission fourni (paramètre ?id= manquant).";
+            return;
+        }
+        currentOmId = id;
+        try {
+            const [omRes, rangsRes] = await Promise.all([
+                fetch('/api/ordres-mission/' + id, { headers: authHeaders() }),
+                fetch('/api/referentiels/rangs')
+            ]);
+            if (omRes.status === 403) {
+                const err = await omRes.json().catch(() => ({}));
+                throw new Error(err.error || "Vous n'êtes pas autorisé(e) à consulter cet ordre de mission.");
+            }
+            if (!omRes.ok) throw new Error('Ordre de mission introuvable (HTTP ' + omRes.status + ').');
+            const om = await omRes.json();
+            const rangs = rangsRes.ok ? await rangsRes.json() : [];
+            const rangByCode = {};
+            rangs.forEach(r => { rangByCode[r.code] = r.libelle; });
+
+            const p = om.personnel || {};
+            const genrePrefix = p.genre === 'FEMME' ? 'Madame ' : 'Monsieur ';
+            const rangLibelle = p.rang ? (rangByCode[p.rang] || p.rang) : 'N/A';
+
+            let destination = om.lieuDestination;
+            if ((!destination || !destination.trim()) && om.etapes && om.etapes.length > 0) {
+                destination = om.etapes.map(e => e.lieu).filter(Boolean).join(' - ');
+            }
+            // The paper form has a single "Destination" line — the departure city (captured on the
+            // mandate) is prefixed onto it rather than added as an extra row, to keep the recto
+            // an exact match of the physical form.
+            if (om.lieuDepart && om.lieuDepart.trim()) {
+                destination = om.lieuDepart.trim() + (destination && destination.trim() ? ' → ' + destination.trim() : '');
+            }
+            let motif = om.objectifsSpecifiques;
+            if ((!motif || !motif.trim()) && om.mandatDeMission) motif = om.mandatDeMission.objetGeneral;
+
+            let days = 1;
+            if (om.dateDebut && om.dateFin) {
+                const d1 = new Date(om.dateDebut), d2 = new Date(om.dateFin);
+                days = Math.round((d2 - d1) / 86400000) + 1;
+                if (days <= 0) days = 1;
+            }
+            const totalIndemnite = om.montantIndemnite != null ? om.montantIndemnite : 0;
+            const dailyRate = days > 0 ? totalIndemnite / days : 0;
+            const montantAvance = om.montantAvance != null ? om.montantAvance : 0;
+            const montantSolde = om.montantSolde != null ? om.montantSolde : (totalIndemnite - montantAvance);
+
+            document.getElementById('fRef').textContent = 'N° ' + safe(om.referenceOrdre) + ' /ART/DG';
+            document.getElementById('fDate').textContent = 'Yaoundé, le ' + (om.dateEmission || '..................');
+            if (om.sansFrais) document.getElementById('fStamp').style.display = 'block';
+
+            document.getElementById('fNom').textContent = p.nom ? (genrePrefix + p.nom + ' ' + (p.prenom || '')) : 'N/A';
+            document.getElementById('fGrade').textContent = rangLibelle;
+            document.getElementById('fFonction').textContent = safe(p.fonction);
+            document.getElementById('fDestination').textContent = safe(destination);
+            document.getElementById('fMotif').textContent = safe(motif);
+            document.getElementById('fTransport').textContent = safe(om.moyenTransport);
+            document.getElementById('fDuree').textContent = 'Du ' + safe(om.dateDebut) + ' au ' + safe(om.dateFin) + '.';
+
+            document.getElementById('fJours').textContent = om.sansFrais ? '-' : days;
+            document.getElementById('fTaux').textContent = om.sansFrais ? '-' : fmt(dailyRate) + ' FCFA';
+            document.getElementById('fDecompte').textContent = om.sansFrais ? '-' : fmt(totalIndemnite) + ' FCFA';
+
+            document.getElementById('bJours').textContent = om.sansFrais ? '-' : days;
+            document.getElementById('bTaux').textContent = om.sansFrais ? '-' : fmt(dailyRate);
+            document.getElementById('bDecompte').textContent = om.sansFrais ? '-' : fmt(totalIndemnite);
+            document.getElementById('bTotal1').textContent = om.sansFrais ? '-' : fmt(totalIndemnite);
+
+            document.getElementById('bMontantTotal').textContent = om.sansFrais ? '-' : fmt(totalIndemnite) + ' FCFA';
+            document.getElementById('bMontantAvance').textContent = om.sansFrais ? '-' : fmt(montantAvance) + ' FCFA';
+            document.getElementById('bMontantSolde').textContent = om.sansFrais ? '-' : fmt(montantSolde) + ' FCFA';
+
+            fillVersoFields(om);
+
+            document.getElementById('sheetsRoot').style.display = 'block';
+        } catch (e) {
+            errBox.style.display = 'block';
+            errBox.textContent = 'Erreur de chargement : ' + e.message;
+        }
+    }
+
+    // Verso fields (advance decompte, expense note, receipt acknowledgment) are filled in as the
+    // mission actually happens, independently of the recto's DG-signed, locked figures — so they
+    // stay editable regardless of the order's own statut.
+    const VERSO_FIELD_IDS = {
+        indemniteReduiteNombre: 'vIndReduiteNombre', indemniteReduiteTaux: 'vIndReduiteTaux',
+        indemniteReduiteDecompte: 'vIndReduiteDecompte', indemnitePartielleNombre: 'vIndPartielleNombre',
+        indemnitePartielleTaux: 'vIndPartielleTaux', indemnitePartielleDecompte: 'vIndPartielleDecompte',
+        indicationRequisitions: 'vIndicationRequisitions', arreteSomme: 'vArreteSomme', payeSomme: 'vPayeSomme',
+        payeeAvanceMontant: 'vPayeeAvanceMontant', payeeAvanceLieu: 'vPayeeAvanceLieu', payeeAvanceDate: 'vPayeeAvanceDate',
+        imputationBudgetaire: 'vImputation', acquitDepartRecu: 'vAcquitDepartRecu', acquitDepartCni: 'vAcquitDepartCni',
+        acquitDepartLieu: 'vAcquitDepartLieu', acquitDepartDate: 'vAcquitDepartDate', acquitSoldeRecu: 'vAcquitSoldeRecu'
+    };
+
+    function fillVersoFields(om) {
+        Object.entries(VERSO_FIELD_IDS).forEach(([field, id]) => {
+            const el = document.getElementById(id);
+            if (el && om[field] != null) el.value = om[field];
+        });
+    }
+
+    async function saveVerso() {
+        if (!currentOmId) return;
+        const btn = document.getElementById('verso-save-btn');
+        const status = document.getElementById('verso-save-status');
+        const payload = {};
+        Object.entries(VERSO_FIELD_IDS).forEach(([field, id]) => {
+            const el = document.getElementById(id);
+            payload[field] = el ? (el.value || null) : null;
+        });
+        btn.disabled = true;
+        status.textContent = 'Enregistrement...';
+        status.className = 'verso-save-status';
+        try {
+            const res = await fetch('/api/ordres-mission/' + currentOmId + '/verso', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify(payload)
+            });
+            if (res.status === 403) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || "Vous n'êtes pas autorisé(e) à modifier cet ordre de mission.");
+            }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            status.textContent = 'Enregistré ✓';
+            status.className = 'verso-save-status ok';
+        } catch (e) {
+            status.textContent = 'Erreur : ' + e.message;
+            status.className = 'verso-save-status err';
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // The PDF endpoint is authorized the same way as the page itself, so a plain <a href="...pdf">
+    // can't carry the required header — fetch it with auth, then hand the browser the resulting
+    // file as a blob. Saved via a download-anchor rather than window.open(): a window opened after
+    // an "await" has no user-gesture context left, so browsers silently block it as a popup — the
+    // file never appeared and no error showed.
+    async function downloadOwnPdf() {
+        if (!currentOmId) return;
+        try {
+            const res = await fetch('/api/ordres-mission/' + currentOmId + '/pdf', { headers: authHeaders() });
+            if (res.status === 403) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || "Vous n'êtes pas autorisé(e) à télécharger cet ordre de mission.");
+                return;
+            }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const blob = await res.blob();
+            const cd = res.headers.get('Content-Disposition') || '';
+            const match = cd.match(/filename="?([^";]+)"?/);
+            const filename = match ? match[1] : `ordre-mission-${currentOmId}.pdf`;
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch (e) {
+            alert('Erreur lors du téléchargement du PDF : ' + e.message);
+        }
+    }
+
+    load();
+</script>
+</body>
+</html>

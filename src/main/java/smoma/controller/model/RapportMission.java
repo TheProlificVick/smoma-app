@@ -40,6 +40,14 @@ public class RapportMission {
 
     private String statutValidation;
 
+    /** Justification typed by DRH/admin when the report is rejected — required for that action. */
+    @Column(columnDefinition = "TEXT")
+    private String motifRejet;
+
+    /** When the report was last validated or rejected, and by whom (username/email). */
+    private LocalDate dateValidation;
+    private String validateurUsername;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 64)
     private CategorieRapport categorie;
@@ -131,6 +139,30 @@ public class RapportMission {
 
     public void setStatutValidation(String statutValidation) {
         this.statutValidation = statutValidation;
+    }
+
+    public String getMotifRejet() {
+        return motifRejet;
+    }
+
+    public void setMotifRejet(String motifRejet) {
+        this.motifRejet = motifRejet;
+    }
+
+    public LocalDate getDateValidation() {
+        return dateValidation;
+    }
+
+    public void setDateValidation(LocalDate dateValidation) {
+        this.dateValidation = dateValidation;
+    }
+
+    public String getValidateurUsername() {
+        return validateurUsername;
+    }
+
+    public void setValidateurUsername(String validateurUsername) {
+        this.validateurUsername = validateurUsername;
     }
 
     public CategorieRapport getCategorie() {

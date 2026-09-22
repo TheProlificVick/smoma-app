@@ -234,10 +234,36 @@ public class MandatService {
         return savedMandat;
     }
 
+    /**
+     * Records that the official document was actually produced by the system — printed or its
+     * PDF downloaded — before anyone can claim a scan of it was signed. Idempotent: printing again
+     * (e.g. a second copy) does not move the original timestamp, which is what traceability needs.
+     */
+    @Transactional
+    public MandatDeMission markPrinted(Long mandatId, String actor) {
+        MandatDeMission mandat = mandatRepository.findById(mandatId)
+                .orElseThrow(() -> new IllegalArgumentException("Mandat introuvable: " + mandatId));
+        if (mandat.getPrintedAt() == null) {
+            mandat.setPrintedAt(LocalDate.now());
+            mandat.setPrintedBy(actor != null && !actor.isBlank() ? actor : "SYSTEM");
+            mandat = mandatRepository.save(mandat);
+            auditLogRepository.save(new AuditLog("PRINT_MANDAT",
+                    actor != null && !actor.isBlank() ? actor : "SYSTEM",
+                    "Document officiel imprimé pour le mandat " + mandat.getReferenceMandat()));
+        }
+        return mandat;
+    }
+
     @Transactional
     public MandatDeMission uploadSignedScan(Long mandatId, String scanPath) {
         MandatDeMission mandat = mandatRepository.findById(mandatId)
                 .orElseThrow(() -> new IllegalArgumentException("Mandat introuvable: " + mandatId));
+
+        if (mandat.getPrintedAt() == null) {
+            throw new IllegalStateException(
+                    "Le document officiel du mandat doit d'abord être imprimé (ou son PDF téléchargé) "
+                            + "avant d'importer le scan signé — impossible de rattacher un scan à un document que le système n'a jamais produit.");
+        }
 
         mandat.setScanSignedPath(scanPath);
         mandat.setDateValidation(LocalDate.now());
@@ -313,13 +339,21 @@ public class MandatService {
                     om.setTypeMission(mandat.getTypeMission() == MandatDeMission.TypeMission.INTERNE 
                             ? OrdreDeMission.TypeMission.INTERNE : OrdreDeMission.TypeMission.EXTERNE);
                     om.setObjectifsSpecifiques(mandat.getObjectifsSpecifiques());
-                    om.setSansFrais(mandat.isSansFrais());
-                    om.setAvecFrais(!mandat.isSansFrais());
+                    // "Sans frais" is decided per mission order, not on the mandate — DRH can toggle it
+                    // afterwards on the individual OM (while still a draft) if a specific agent needs it.
+                    om.setSansFrais(false);
+                    om.setAvecFrais(true);
                     om.setDateDebut(etape.getDateDebut() != null ? etape.getDateDebut() : mandat.getDateDebut());
                     om.setDateFin(etape.getDateFin() != null ? etape.getDateFin() : mandat.getDateFin());
                     om.setMoyenTransport(etape.getTransportMode() != null && !etape.getTransportMode().isBlank()
                             ? etape.getTransportMode()
                             : String.join(", ", mandat.getTransportModes()));
+                    om.setLieuDepart(mandat.getVilleDepart());
+                    // The mandate-wide destination (captured once at mandate creation) takes priority;
+                    // fall back to the step's own "lieu" for older mandates that never set it.
+                    om.setLieuDestination(mandat.getDestination() != null && !mandat.getDestination().isBlank()
+                            ? mandat.getDestination()
+                            : etape.getLieu());
                     om.setDirectionInitiatrice(mandat.getDirectionInitiatrice());
                     om.setReferenceJustification(mandat.getReferenceJustification());
                     om.setDateEmission(LocalDate.now());
@@ -327,9 +361,7 @@ public class MandatService {
 
                     // Automatic indemnity computation from the official barème (spec 4.6): rang/grade/fonction x
                     // internal/external x number of days. Advance stays 0 until explicitly requested; solde = full.
-                    java.math.BigDecimal indemnite = mandat.isSansFrais()
-                            ? java.math.BigDecimal.ZERO
-                            : indemniteService.calculateTotalIndemnite(om);
+                    java.math.BigDecimal indemnite = indemniteService.calculateTotalIndemnite(om);
                     om.setMontantIndemnite(indemnite);
                     om.setMontantAvance(java.math.BigDecimal.ZERO);
                     om.setMontantSolde(indemnite);

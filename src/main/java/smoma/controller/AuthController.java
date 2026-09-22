@@ -1,5 +1,7 @@
 package smoma.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.Service.JwtService;
@@ -19,6 +21,8 @@ import java.util.Optional;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
     private final UserRepository userRepository;
     private final LdapDirectoryService ldapDirectoryService;
     private final JwtService jwtService;
@@ -28,6 +32,18 @@ public class AuthController {
         this.userRepository = userRepository;
         this.ldapDirectoryService = ldapDirectoryService;
         this.jwtService = jwtService;
+    }
+
+    /**
+     * Duplicate-tolerant identity lookup — matricule carries no DB-level uniqueness constraint
+     * (unlike username), and AD auto-provisioning can write a colliding one. The plain
+     * Optional-returning UserRepository.findByIdentity throws NonUniqueResultException in that
+     * case, which would fail login with a 500 for every user matching that identity; this never
+     * throws, it just takes the first match.
+     */
+    private Optional<User> findUser(String identity) {
+        if (identity == null || identity.isBlank()) return Optional.empty();
+        return userRepository.findAllByIdentity(identity).stream().findFirst();
     }
 
     @PostMapping("/login")
@@ -57,31 +73,44 @@ public class AuthController {
                 Role role = (Role) adUser.getOrDefault("role", Role.ROLE_AGENT);
 
                 // Auto-sync or update local user record
-                User user = userRepository.findByIdentity(sam)
-                        .or(() -> (email != null && !email.isBlank()) ? userRepository.findByIdentity(email) : Optional.empty())
-                        .or(() -> (matricule != null && !matricule.isBlank()) ? userRepository.findByIdentity(matricule) : Optional.empty())
+                User user = findUser(sam)
+                        .or(() -> findUser(email))
+                        .or(() -> findUser(matricule))
                         .orElseGet(User::new);
 
                 user.setUsername(sam != null && !sam.isBlank() ? sam : identity);
                 if (user.getEmail() == null || user.getEmail().isBlank()) user.setEmail(email);
                 if (user.getNom() == null || user.getNom().isBlank()) user.setNom((String) adUser.get("nom"));
                 if (user.getPrenom() == null || user.getPrenom().isBlank()) user.setPrenom((String) adUser.get("prenom"));
-                if (matricule != null && !matricule.isBlank()) user.setMatricule(matricule);
+                if (matricule != null && !matricule.isBlank()) {
+                    user.setMatricule(matricule);
+                } else if (user.getMatricule() == null || user.getMatricule().isBlank()) {
+                    // AD has no real matricule attribute for this account — same "LDAP-<username>"
+                    // fallback DataLoader uses, applied here too so the login response (and anything
+                    // downstream that trusts it client-side, like the notification identity) carries a
+                    // matricule immediately instead of a blank one until the next server restart.
+                    user.setMatricule("LDAP-" + user.getUsername());
+                }
                 if (title != null && !title.isBlank()) user.setTitle(title);
                 if (dept != null && !dept.isBlank()) user.setStructure(dept);
                 user.setRole(role);
                 user.setActive(true);
                 userRepository.save(user);
 
-                return buildSuccessResponse(fullName, role.name(), user.getUsername(), matricule, user.getTitle());
+                return buildSuccessResponse(fullName, role.name(), user.getUsername(), user.getMatricule(), user.getTitle());
             }
-        } catch (Exception ignored) {
-            // Proceed to local database verification if LDAP service encounters an error
+            log.info("Login attempt for '{}': LDAP returned no match/failed bind — falling back to the local database.", identity);
+        } catch (Exception e) {
+            // Logged, not swallowed silently: a caller told "incorrect credentials" when the real
+            // cause was an LDAP exception (e.g. the AD server unreachable) needs this to be
+            // diagnosable server-side instead of indistinguishable from a genuine bad password.
+            log.warn("Login attempt for '{}': LDAP lookup threw {} — {} — falling back to the local database.",
+                    identity, e.getClass().getSimpleName(), e.getMessage());
         }
 
         // 2. Local Database Check — BCrypt for real accounts (bootstrap admin, AD-synced, admin-
         //    created), plain-text only reachable for legacy/dev-seeded demo accounts.
-        Optional<User> localUserOpt = userRepository.findByIdentity(identity);
+        Optional<User> localUserOpt = findUser(identity);
         if (localUserOpt.isPresent()) {
             User user = localUserOpt.get();
             boolean pwdMatch = false;
@@ -102,6 +131,9 @@ public class AuthController {
                 if (displayName.isBlank()) displayName = user.getUsername();
                 return buildSuccessResponse(displayName.trim(), roleName, user.getUsername(), user.getMatricule(), user.getTitle());
             }
+            log.warn("Login attempt for '{}': local account exists but the password didn't match.", identity);
+        } else {
+            log.warn("Login attempt for '{}': no local account either — both LDAP and the local database rejected this identity.", identity);
         }
 
         return ResponseEntity.status(401).body(Map.of("message", "Identifiants professionnels incorrects ou accès refusé. / Incorrect credentials or access denied."));
@@ -120,7 +152,7 @@ public class AuthController {
             return ResponseEntity.status(400).body(Map.of("error", "Le nouveau mot de passe doit compter au moins 8 caractères."));
         }
 
-        User user = userRepository.findByIdentity(identity.trim()).orElse(null);
+        User user = findUser(identity.trim()).orElse(null);
         if (user == null || user.getPassword() == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Compte introuvable."));
         }

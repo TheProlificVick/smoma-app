@@ -24,8 +24,16 @@ public class PersonnelController {
         this.accessPolicy = accessPolicy;
     }
 
+    /**
+     * Reverted to open (no identity check) — the X-User-Email + JWT requirement added here was
+     * running into a session/token issue in production that made the whole staff directory
+     * unusable, and a working directory matters more than closing this particular gap right now.
+     * The directory is read by every role across the app (staff search for mandates/OMs, the
+     * personnel module itself), so re-adding a check here later should keep it permissive (any
+     * resolvable identity, not a specific role) rather than reintroducing the same failure mode.
+     */
     @GetMapping
-    public ResponseEntity<List<Personnel>> search(
+    public ResponseEntity<?> search(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String structure,
             @RequestParam(required = false) String grade,
@@ -34,7 +42,7 @@ public class PersonnelController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Personnel> getById(@PathVariable Long id) {
+    public ResponseEntity<?> getById(@PathVariable Long id) {
         return ResponseEntity.ok(personnelService.getById(id));
     }
 
@@ -50,7 +58,7 @@ public class PersonnelController {
     }
 
     @GetMapping("/{id}/compte-individuel")
-    public ResponseEntity<Map<String, Object>> getCompteIndividuel(
+    public ResponseEntity<?> getCompteIndividuel(
             @PathVariable Long id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {

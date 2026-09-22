@@ -217,18 +217,15 @@
                             </div>
                         </div>
 
-                        <div class="row g-3 mb-3 bg-light p-3 rounded border">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="mSansFrais">
-                                    <label class="form-check-label fw-bold text-danger" for="mSansFrais" data-i18n="lblSansFrais">Mandat SANS FRAIS (Sceau Rouge)</label>
-                                </div>
+                                <label class="form-label fw-bold" data-i18n="lblVilleDepart">Ville de Départ</label>
+                                <input type="text" class="form-control" id="mVilleDepart" list="cmrCities" data-i18n-placeholder="phVilleDepart" placeholder="Ex : Yaoundé">
                             </div>
                             <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="mForceMajeure">
-                                    <label class="form-check-label fw-bold text-warning" for="mForceMajeure" data-i18n="lblForceMajeure">Régularisation Force Majeure (&lt; 48h)</label>
-                                </div>
+                                <label class="form-label fw-bold" data-i18n="lblDestinationMandat">Destination</label>
+                                <input type="text" class="form-control" id="mDestination" list="cmrCities" data-i18n-placeholder="phDestination" placeholder="Ex : Douala">
+                                <small class="text-muted" data-i18n="hintDestinationMandat">Reprise automatiquement sur chaque ordre de mission généré à partir de ce mandat.</small>
                             </div>
                         </div>
 
@@ -406,8 +403,11 @@
                 </div>
                 <div class="modal-footer no-print">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btnClose">Fermer</button>
-                    <button type="button" class="btn btn-primary btn-sm px-3" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> <span data-i18n="btnPrintForm">Imprimer</span></button>
-                    <a id="vmPdfLink" href="#" target="_blank" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-file-pdf me-1"></i> <span data-i18n="btnDownloadPdf">Télécharger PDF</span></a>
+                    <button type="button" class="btn btn-primary btn-sm px-3" onclick="printMandatOfficiel()"><i class="fa-solid fa-print me-1"></i> <span data-i18n="btnPrintForm">Imprimer</span></button>
+                    <button type="button" id="vmPdfLink" class="btn btn-danger btn-sm px-3" onclick="downloadMandatPdf()"><i class="fa-solid fa-file-pdf me-1"></i> <span data-i18n="btnDownloadPdf">Télécharger PDF</span></button>
+                    <button type="button" id="vmUploadScanBtn" class="btn btn-success btn-sm px-3" onclick="openUploadFromView()" title="Une fois le document ci-dessus imprimé et signé à la main par le Directeur Général, importez-en le scan ici pour l'approuver officiellement et générer les Ordres de Mission individuels.">
+                        <i class="fa-solid fa-signature me-1"></i> <span data-i18n="btnGmSignatureUpload">Signature du DG — Importer le Scan Signé</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -426,6 +426,10 @@
         let mandatCount = 0;
         // Persisted set of selected staff ids so a search keyword never drops an agent already chosen.
         let selectedStaffIds = new Set();
+        // The mandate currently open in the official print/view modal — lets the "Importer Scan
+        // Signé" button there act on the right record without the admin leaving to find it in the list.
+        let currentViewedMandatId = null;
+        let currentMandatPrinted = false;
 
         // Client-side mirror of AccessPolicy.canInitiateMandat (the server enforces it too).
         function currentUserCanInitiateMandat() {
@@ -437,6 +441,22 @@
                 || d.includes('chef de cellule')
                 || d.includes('sous-directeur') || d.includes('sous directeur')
                 || d.includes('directeur');
+        }
+
+        // Labelled "General Manager signature" button shown under the row icons of a mandate whose signed
+        // scan has not been imported yet. The GM signs the printed paper by hand; whoever may import the
+        // scan (admin, DRH, or a mandate initiator — same rule as the server's canUploadMandatScan)
+        // uploads it here. Disabled until the official document has been printed/downloaded.
+        function currentUserCanImportScan() {
+            const role = (localStorage.getItem('art_user_role') || '').toUpperCase();
+            return role === 'ROLE_ADMIN' || role === 'ROLE_HR_OFFICER' || currentUserCanInitiateMandat();
+        }
+        function gmSignatureButtonHtml(m) {
+            if (m.scanSignedPath || !currentUserCanImportScan()) return '';
+            const label = `<i class="fa-solid fa-signature me-1"></i>${t('btnGmSignShort')}`;
+            return m.printedAt
+                ? `<div class="mt-1"><button class="btn btn-success btn-sm text-nowrap" onclick="openUploadModal(${m.id})" title="${t('gmSignHintReady')}">${label}</button></div>`
+                : `<div class="mt-1"><button class="btn btn-outline-secondary btn-sm text-nowrap" disabled title="${t('gmSignHintPrintFirst')}">${label}</button></div>`;
         }
 
         // Admin + DRH (HR) can delete an erroneous mandate. Server enforces AccessPolicy.canDeleteMandat.
@@ -492,8 +512,9 @@
                     const list = await res.json();
                     const opts = list.map(s => {
                         const name = s.name || s.nom || s.libelle || '';
+                        const label = tl(name, s.nameEn) || name;
                         const acr = s.acronym || s.code || '';
-                        return name ? `<option value="${name}" data-acr="${acr}">${name}${acr ? ' (' + acr + ')' : ''}</option>` : '';
+                        return name ? `<option value="${name}" data-acr="${acr}">${label}${acr ? ' (' + acr + ')' : ''}</option>` : '';
                     }).join('');
                     select.innerHTML = `<option value="" data-acr="">${t('selectDirectionPlaceholder')}</option>` + opts;
                 }
@@ -699,14 +720,21 @@
                     <div class="row g-2 mt-1">
                         <div class="col-12">
                             <small class="fw-bold text-secondary d-block mb-1"><i class="fa-solid fa-user-check me-1"></i><span data-i18n="stepAgentsLabel">Agents affectés à cette étape</span> :</small>
-                            ${team.length === 0
-                                ? `<small class="text-muted fst-italic" data-i18n="stepAgentsEmptyHint">Sélectionnez d'abord l'équipe du mandat ci-dessus.</small>`
-                                : team.map(s => {
-                                    const checked = (step.personnelIds || []).map(String).includes(String(s.id));
-                                    return `<span class="form-check form-check-inline small me-3">
-                                        <input class="form-check-input" type="checkbox" id="stepAgent_${step.id}_${s.id}" ${checked ? 'checked' : ''} onchange="toggleStepAgent(${step.id}, ${s.id}, this.checked)">
-                                        <label class="form-check-label" for="stepAgent_${step.id}_${s.id}">${s.nom} ${s.prenom || ''} <span class="text-muted">(${s.matricule || 'N/A'})</span></label>
-                                    </span>`;
+                            <div class="position-relative mb-2" style="max-width:320px;">
+                                <input type="text" class="form-control form-control-sm" id="stepAgentSearch_${step.id}" autocomplete="off"
+                                       data-i18n-placeholder="stepAgentSearchPlaceholder" placeholder="Nom ou matricule..."
+                                       oninput="filterStepAgentPicker(${step.id}, this.value)"
+                                       onfocus="filterStepAgentPicker(${step.id}, this.value)"
+                                       onkeydown="handleStepAgentSearchKeydown(event, ${step.id})">
+                                <div id="stepAgentSuggestions_${step.id}" class="list-group position-absolute w-100 shadow-sm" style="z-index:1060; max-height:220px; overflow-y:auto; display:none;"></div>
+                            </div>
+                            ${(step.personnelIds || []).length === 0
+                                ? `<small class="text-muted fst-italic" data-i18n="stepAgentsEmptyHint2">Aucun agent affecté pour l'instant — tapez un nom ci-dessus et sélectionnez-le.</small>`
+                                : (step.personnelIds || []).map(id => {
+                                    const s = allStaff.find(x => String(x.id) === String(id));
+                                    if (!s) return '';
+                                    return `<span class="badge bg-primary d-inline-flex align-items-center gap-1 me-1 mb-1">${s.nom} ${s.prenom || ''} (${s.matricule || 'N/A'})
+                                        <i class="fa-solid fa-xmark" style="cursor:pointer" onclick="toggleStepAgent(${step.id}, ${s.id}, false); renderMandatSteps();"></i></span>`;
                                 }).join('')
                             }
                         </div>
@@ -715,6 +743,90 @@
             `).join('');
             smomaI18n.applyTranslations();
         }
+
+        // Live name/matricule suggestions per step, keyed by step id so several steps can each
+        // have their own popup open independently. Clicking (or Enter-selecting) a suggestion
+        // assigns that agent to the step immediately — no separate "Affecter" click needed — and
+        // also adds them to the overall team, since a step-level agent is necessarily part of it.
+        let stepSuggestionItems = {};
+        let stepSuggestionActiveIndex = {};
+
+        function filterStepAgentPicker(stepId, keyword) {
+            const box = document.getElementById('stepAgentSuggestions_' + stepId);
+            if (!box) return;
+            const step = mandatSteps.find(s => s.id === stepId);
+            const assignedIds = (step && step.personnelIds || []).map(String);
+            const kw = (keyword || '').toLowerCase().trim();
+
+            const matches = s => {
+                if (!kw) return true;
+                return (s.matricule || '').toLowerCase().includes(kw)
+                    || (s.nom || '').toLowerCase().includes(kw)
+                    || (s.prenom || '').toLowerCase().includes(kw);
+            };
+
+            const pool = allStaff.filter(s => !assignedIds.includes(String(s.id)) && matches(s));
+            const items = (kw ? pool : pool.slice(0, 25));
+            stepSuggestionItems[stepId] = items;
+            stepSuggestionActiveIndex[stepId] = -1;
+
+            if (items.length === 0) {
+                box.innerHTML = `<div class="list-group-item text-muted small">Aucun agent trouvé${kw ? ' pour « ' + kw + ' »' : ''}.</div>`;
+            } else {
+                box.innerHTML = items.map((s, i) => `
+                    <button type="button" class="list-group-item list-group-item-action py-2" data-idx="${i}" onmousedown="event.preventDefault(); selectStepAgent(${stepId}, ${s.id});">
+                        <strong>${s.nom} ${s.prenom || ''}</strong>
+                        <span class="text-muted small d-block">Matricule : ${s.matricule || 'N/A'}</span>
+                    </button>`).join('');
+            }
+            box.style.display = 'block';
+        }
+
+        function handleStepAgentSearchKeydown(event, stepId) {
+            const box = document.getElementById('stepAgentSuggestions_' + stepId);
+            if (!box || box.style.display === 'none') return;
+            const items = stepSuggestionItems[stepId] || [];
+            const buttons = () => Array.from(box.querySelectorAll('[data-idx]'));
+            let idx = stepSuggestionActiveIndex[stepId] ?? -1;
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                idx = Math.min(idx + 1, items.length - 1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                idx = Math.max(idx - 1, 0);
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                const pick = idx >= 0 ? idx : 0;
+                if (items[pick]) selectStepAgent(stepId, items[pick].id);
+                return;
+            } else if (event.key === 'Escape') {
+                box.style.display = 'none';
+                return;
+            } else {
+                return;
+            }
+            stepSuggestionActiveIndex[stepId] = idx;
+            buttons().forEach((b, i) => b.classList.toggle('active', i === idx));
+        }
+
+        function selectStepAgent(stepId, personnelId) {
+            toggleStepAgent(stepId, Number(personnelId), true);
+            if (!selectedStaffIds.has(String(personnelId))) {
+                selectedStaffIds.add(String(personnelId));
+                lastTeamSnapshot.add(String(personnelId));
+                filterMandatStaff(document.getElementById('mStaffSearch').value);
+                renderSelectedStaffChips();
+            }
+            renderMandatSteps();
+        }
+
+        document.addEventListener('click', (e) => {
+            Object.keys(stepSuggestionItems).forEach(stepId => {
+                const box = document.getElementById('stepAgentSuggestions_' + stepId);
+                const input = document.getElementById('stepAgentSearch_' + stepId);
+                if (box && input && !box.contains(e.target) && e.target !== input) box.style.display = 'none';
+            });
+        });
 
         function updateStepField(stepId, field, value) {
             const st = mandatSteps.find(s => s.id === stepId);
@@ -801,7 +913,7 @@
                 if (res.ok) {
                     const motifs = (await res.json()).filter(m => m.actif !== false);
                     if (motifs.length > 0) {
-                        select.innerHTML = motifs.map(m => `<option value="${m.libelle}">${m.libelle}</option>`).join('');
+                        select.innerHTML = motifs.map(m => `<option value="${m.libelle}">${tl(m.libelle, m.libelleEn)}</option>`).join('');
                         return;
                     }
                 }
@@ -814,7 +926,9 @@
         async function loadMandats() {
             const tbody = document.getElementById('mandatsTbody');
             try {
-                const res = await fetch('/api/mandats');
+                // GET /api/mandats is scoped server-side: DRH/admin/mandate-initiators get the full
+                // roster, anyone else only the mandates they are personally assigned to.
+                const res = await fetch('/api/mandats', { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
                 if (res.ok) {
                     const mandats = await res.json();
                     mandatCount = mandats.length;
@@ -827,9 +941,11 @@
                         const sansFraisBadge = m.sansFrais 
                             ? `<span class="badge badge-sans-frais"><i class="fa-solid fa-stamp me-1"></i>SANS FRAIS</span>` 
                             : `<span class="badge bg-success">AVEC FRAIS</span>`;
-                        const scanStatus = m.scanSignedPath 
+                        const scanStatus = m.scanSignedPath
                             ? `<span class="badge badge-signed"><i class="fa-solid fa-file-circle-check me-1"></i>Scan Validé</span>`
-                            : `<span class="badge badge-pending"><i class="fa-solid fa-clock me-1"></i>En attente scan</span>`;
+                            : m.printedAt
+                            ? `<span class="badge badge-pending"><i class="fa-solid fa-clock me-1"></i>En attente scan</span>`
+                            : `<span class="badge bg-secondary"><i class="fa-solid fa-print me-1"></i>Non imprimé</span>`;
 
                         const stepsCount = (m.etapes || []).length;
                         const stepsBadge = stepsCount > 0 
@@ -865,8 +981,11 @@
                                 <td class="text-end">
                                     <button class="btn btn-outline-primary btn-sm me-1" onclick="viewMandatOfficiel(${m.id})" title="${t('mandatOfficialDoc')}"><i class="fa-solid fa-file-contract"></i></button>
                                     <button class="btn btn-outline-info btn-sm me-1" onclick="viewSideBySide(${m.id})" title="Voir côte à côte"><i class="fa-solid fa-columns"></i></button>
-                                    <button class="btn btn-outline-success btn-sm me-1" onclick="openUploadModal(${m.id})" title="Importer Scan Signé"><i class="fa-solid fa-file-arrow-up"></i></button>
-                                    ${currentUserCanDeleteMandat() ? `<button class="btn btn-outline-danger btn-sm" onclick="deleteMandat(${m.id}, '${(m.referenceMandat || ('#' + m.id)).replace(/'/g, "\\'")}')" title="${t('mandatDeleteTitle')}"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                    ${m.printedAt
+                                        ? `<button class="btn btn-outline-success btn-sm me-1" onclick="openUploadModal(${m.id})" title="Importer Scan Signé"><i class="fa-solid fa-file-arrow-up"></i></button>`
+                                        : `<button class="btn btn-outline-secondary btn-sm me-1" disabled title="Imprimez d'abord le document officiel (bouton « Imprimer » ou « Télécharger PDF ») avant d'importer le scan signé."><i class="fa-solid fa-file-arrow-up"></i></button>`}
+                                    ${currentUserCanDeleteMandat() ? `<button class="btn btn-outline-danger btn-sm" onclick="deleteMandat(${m.id}, '${escapeHtml(m.referenceMandat || ('#' + m.id)).replace(/'/g, "\\'")}')" title="${t('mandatDeleteTitle')}"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                    ${gmSignatureButtonHtml(m)}
                                 </td>
                             </tr>
                         `;
@@ -915,8 +1034,8 @@
                 transportModes: chosenModes,
                 dateDebut: dateDebut,
                 dateFin: dateFin,
-                sansFrais: document.getElementById('mSansFrais').checked,
-                forceMajeure: document.getElementById('mForceMajeure').checked
+                villeDepart: document.getElementById('mVilleDepart').value.trim() || null,
+                destination: document.getElementById('mDestination').value.trim() || null
             };
 
             // Format steps payload — drop empty rows, fall back to the global period for missing dates.
@@ -973,6 +1092,17 @@
             new bootstrap.Modal(document.getElementById('modalUploadScan')).show();
         }
 
+        // Reached from the "Signature du DG" button on the official print/view sheet — lets the
+        // admin go straight from "here's the blank signature line" to "here's the signed scan"
+        // without hunting for the small upload icon back in the list.
+        function openUploadFromView() {
+            if (!currentViewedMandatId) return;
+            const viewModalEl = document.getElementById('modalMandatOfficiel');
+            const viewModal = bootstrap.Modal.getInstance(viewModalEl) || new bootstrap.Modal(viewModalEl);
+            viewModal.hide();
+            openUploadModal(currentViewedMandatId);
+        }
+
         async function submitScan() {
             const id = document.getElementById('uploadMandatId').value;
             const fileInput = document.getElementById('scanFile');
@@ -1014,9 +1144,14 @@
         // General Manager's electronic approval stamp once the signed scan has been imported.
         async function viewMandatOfficiel(id) {
             try {
-                const res = await fetch(`/api/mandats/${id}`);
+                const res = await fetch(`/api/mandats/${id}`, { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
+                if (res.status === 403) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || "Vous n'êtes pas autorisé(e) à consulter ce mandat.");
+                }
                 if (!res.ok) throw new Error('Mandat introuvable');
                 const m = await res.json();
+                currentViewedMandatId = m.id;
 
                 document.getElementById('vmRef').textContent = 'RÉF : ' + (m.referenceMandat || ('MANDAT-#' + m.id));
                 document.getElementById('vmJustif').textContent = m.referenceJustification || '—';
@@ -1054,29 +1189,105 @@
                         + '</tbody></table>'
                     : '<p class="fst-italic text-muted">Aucun agent désigné.</p>';
 
-                // GM electronic approval stamp — shown only once the signed scan is imported.
+                // GM electronic approval stamp — shown only once the signed scan is imported. The
+                // "import scan" button itself only appears once the document has actually been
+                // printed/downloaded from the system — a scan can't be traced back to a document
+                // the system never produced.
                 const stampBox = document.getElementById('vmGmStamp');
                 const stampCap = document.getElementById('vmGmStampCaption');
+                const uploadBtn = document.getElementById('vmUploadScanBtn');
+                currentMandatPrinted = !!m.printedAt;
                 if (m.scanSignedPath) {
                     const d = m.dateValidation || new Date().toISOString().split('T')[0];
                     stampBox.innerHTML = '<span class="gm-stamp">APPROUVÉ / APPROVED<br><span style="font-size:10px;">DIRECTEUR GÉNÉRAL — ART</span></span>';
                     stampCap.textContent = 'Signé électroniquement le ' + d + ' — version signée scannée importée.';
+                    if (uploadBtn) uploadBtn.hidden = true;
+                } else if (m.printedAt) {
+                    stampBox.innerHTML = '<small class="text-secondary">______________________________</small>';
+                    stampCap.textContent = 'Imprimé le ' + m.printedAt + '. À signer par le Directeur Général, puis importer le scan signé.';
+                    if (uploadBtn) uploadBtn.hidden = false;
                 } else {
                     stampBox.innerHTML = '<small class="text-secondary">______________________________</small>';
-                    stampCap.textContent = 'À signer par le Directeur Général après impression, puis importer le scan signé.';
+                    stampCap.textContent = 'Imprimez ce document (ci-dessous) avant de pouvoir importer le scan signé par le Directeur Général.';
+                    if (uploadBtn) uploadBtn.hidden = true;
                 }
 
-                document.getElementById('vmPdfLink').href = `/api/mandats/${m.id}/pdf`;
                 smomaI18n.applyTranslations();
                 new bootstrap.Modal(document.getElementById('modalMandatOfficiel')).show();
             } catch (e) {
-                alert('Impossible de charger le document officiel du mandat.');
+                alert(e.message || 'Impossible de charger le document officiel du mandat.');
+            }
+        }
+
+        // Records that the official document was actually produced by the system — required
+        // before a signed scan can be imported for this mandate (see MandatService.uploadSignedScan).
+        // Fire-and-forget from the caller's point of view: printing/downloading proceeds either way,
+        // this just leaves the paper trail. Idempotent server-side, so calling it again (re-printing
+        // a copy) never moves the original timestamp.
+        async function markMandatPrinted(id) {
+            try {
+                await fetch(`/api/mandats/${id}/mark-printed`, {
+                    method: 'POST',
+                    headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' }
+                });
+                if (!currentMandatPrinted) {
+                    currentMandatPrinted = true;
+                    const uploadBtn = document.getElementById('vmUploadScanBtn');
+                    const stampCap = document.getElementById('vmGmStampCaption');
+                    if (uploadBtn && uploadBtn.hidden) uploadBtn.hidden = false;
+                    if (stampCap && stampCap.textContent.startsWith('Imprimez ce document')) {
+                        stampCap.textContent = 'Imprimé à l\'instant. À signer par le Directeur Général, puis importer le scan signé.';
+                    }
+                }
+            } catch (e) { /* printing/downloading still proceeds even if this call fails */ }
+        }
+
+        function printMandatOfficiel() {
+            if (currentViewedMandatId) markMandatPrinted(currentViewedMandatId);
+            window.print();
+        }
+
+        // The PDF endpoint requires the same identity header as the mandate itself, so a plain
+        // <a href> can't carry it — fetch it with auth and hand the browser the result as a
+        // download. A window opened after an "await" has no user-gesture context left, so
+        // window.open() here would be silently blocked as a popup — save via a download-anchor
+        // instead, same fix as the mission-order PDFs.
+        async function downloadMandatPdf() {
+            if (!currentViewedMandatId) return;
+            markMandatPrinted(currentViewedMandatId);
+            try {
+                const res = await fetch(`/api/mandats/${currentViewedMandatId}/pdf`, { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
+                if (res.status === 403) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || "Vous n'êtes pas autorisé(e) à télécharger ce mandat.");
+                    return;
+                }
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition') || '';
+                const match = cd.match(/filename="?([^";]+)"?/);
+                const filename = match ? match[1] : `mandat-${currentViewedMandatId}.pdf`;
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 30000);
+            } catch (e) {
+                alert('Erreur lors du téléchargement du PDF : ' + e.message);
             }
         }
 
         async function viewSideBySide(id) {
             try {
-                const res = await fetch(`/api/mandats/${id}`);
+                const res = await fetch(`/api/mandats/${id}`, { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
+                if (res.status === 403) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || "Vous n'êtes pas autorisé(e) à consulter ce mandat.");
+                    return;
+                }
                 if (res.ok) {
                     const m = await res.json();
                     
@@ -1136,22 +1347,20 @@
         }
 
         // Notification bell: surfaces MANDATE_SIGNED alerts (DRH/SP, ready to issue OMs) and
-        // STEP_COMPLETED alerts (mandate initiator + DRH/SP), matched by matricule or username.
+        // STEP_COMPLETED alerts (mandate initiator + DRH/SP). Identity is resolved server-side
+        // from the X-User-Email header — see NotificationController — not guessed from a
+        // matricule that may not even be cached in this browser yet.
         function mandatNotifIdentity() {
-            return {
-                mat: localStorage.getItem('art_user_matricule') || '',
-                user: localStorage.getItem('art_user_email') || ''
-            };
+            return localStorage.getItem('art_user_email') || '';
         }
 
         async function loadMandatNotifications() {
-            const { mat, user } = mandatNotifIdentity();
+            const user = mandatNotifIdentity();
             const badge = document.getElementById('mandatNotifCount');
             const box = document.getElementById('mandatNotifList');
-            if (!mat && !user) { badge.classList.add('d-none'); return; }
+            if (!user) { badge.classList.add('d-none'); return; }
             try {
-                const res = await fetch('/api/notifications?matricule=' + encodeURIComponent(mat)
-                    + '&username=' + encodeURIComponent(user));
+                const res = await fetch('/api/notifications', { headers: { 'X-User-Email': user } });
                 const list = res.ok ? await res.json() : [];
                 const unread = list.filter(n => !n.lu).length;
                 badge.textContent = unread;
@@ -1163,9 +1372,9 @@
                 }
                 box.innerHTML = list.slice(0, 20).map(n => `
                     <div class="p-2 mb-1 rounded ${n.lu ? '' : 'bg-light'}" onclick="markMandatNotifRead(${n.id})" style="cursor:pointer; border-left:3px solid ${n.lu ? '#cbd5e1' : '#0d6efd'};">
-                        <div class="fw-bold small">${n.titre || ''}</div>
-                        <div class="small text-muted">${n.message || ''}</div>
-                        <div class="small text-secondary">${(n.dateCreation || '').replace('T', ' ').slice(0, 16)}</div>
+                        <div class="fw-bold small">${escapeHtml(n.titre)}</div>
+                        <div class="small text-muted">${escapeHtml(n.message)}</div>
+                        <div class="small text-secondary">${escapeHtml((n.dateCreation || '').replace('T', ' ').slice(0, 16))}</div>
                     </div>
                 `).join('');
             } catch (e) {
@@ -1174,16 +1383,15 @@
         }
 
         async function markMandatNotifRead(id) {
-            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST' }); } catch (e) {}
+            try { await fetch('/api/notifications/' + id + '/read', { method: 'POST', headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } }); } catch (e) {}
             loadMandatNotifications();
         }
 
         async function markAllMandatNotifRead() {
-            const { mat, user } = mandatNotifIdentity();
-            if (!mat && !user) return;
+            const user = mandatNotifIdentity();
+            if (!user) return;
             try {
-                await fetch('/api/notifications/mark-all-read?matricule=' + encodeURIComponent(mat)
-                    + '&username=' + encodeURIComponent(user), { method: 'POST' });
+                await fetch('/api/notifications/mark-all-read', { method: 'POST', headers: { 'X-User-Email': user } });
             } catch (e) {}
             loadMandatNotifications();
         }
@@ -1207,6 +1415,7 @@
             renderMandatSteps();
             renderSelectedStaffChips();
             loadDirections();
+            loadMotifs();
             loadMandats();
         });
     </script>

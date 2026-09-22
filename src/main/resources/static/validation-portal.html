@@ -71,6 +71,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- Bootstrap 5 Bundle JS -->
@@ -80,7 +81,7 @@
         async function loadPending() {
             const tbody = document.getElementById('pendingTbody');
             try {
-                const res = await fetch('/api/mandats');
+                const res = await fetch('/api/mandats', { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
                 if (res.ok) {
                     const mandats = await res.json();
                     const pending = mandats.filter(m => !m.scanSignedPath);

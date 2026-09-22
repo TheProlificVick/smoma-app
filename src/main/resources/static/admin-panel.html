@@ -64,7 +64,83 @@
     </ul>
 
     <div class="tab-content mt-3">
-        
+
+        <!-- Synced Users + AD Statistics -->
+        <div class="tab-pane fade show active" id="tabUsers">
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body">
+                            <div class="text-muted small">Entrées AD totales</div>
+                            <div class="fs-3 fw-bold" id="statTotalEntries">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body">
+                            <div class="text-muted small">Comptes actifs</div>
+                            <div class="fs-3 fw-bold text-success" id="statActiveUsers">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body">
+                            <div class="text-muted small">Comptes désactivés</div>
+                            <div class="fs-3 fw-bold text-danger" id="statDisabledUsers">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body">
+                            <div class="text-muted small">Directions représentées</div>
+                            <div class="fs-3 fw-bold" id="statDepartments">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-secondary text-white">Répartition par type d'entrée</div>
+                        <div class="card-body" id="statByType"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-secondary text-white">Top 10 directions / structures</div>
+                        <div class="card-body" id="statByDept"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title m-0" data-i18n="tabUsers">Utilisateurs Synchronisés</h5>
+                    <small id="ldapServerLabel"></small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Login</th>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Fonction</th>
+                                    <th>Structure</th>
+                                    <th>Matricule</th>
+                                    <th>Rôle</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adUsersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="tab-pane fade" id="tabGroups">
             <div class="card shadow-sm">
                 <div class="card-header bg-secondary text-white"><h5 class="card-title m-0"></h5></div>
@@ -128,26 +204,18 @@
                     <form id="createUserForm">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label" data-i18n="adUsername">Nom d'utilisateur</label>
-                                <input type="text" id="newUsername" class="form-control" placeholder="hr@art.cm" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" data-i18n="adPassword">Mot de passe</label>
-                                <input type="text" id="newPassword" class="form-control" placeholder="password123" required>
-                            </div>
-                            <div class="col-md-6">
                                 <label class="form-label" data-i18n="adEmailLabel">Email</label>
-                                <input type="email" id="newEmail" class="form-control" placeholder="user@art.cm">
+                                <input type="email" id="newEmail" class="form-control" placeholder="user@art.cm" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" data-i18n="adRole">Rôle</label>
                                 <select id="newRole" class="form-select">
-                                    <option value="ROLE_ADMIN">ROLE_ADMIN</option>
-                                    <option value="ROLE_GENERAL_MANAGER">ROLE_GENERAL_MANAGER</option>
-                                    <option value="ROLE_HR_OFFICER">ROLE_HR_OFFICER</option>
-                                    <option value="ROLE_DEPARTMENT_REPRESENTATIVE">ROLE_DEPARTMENT_REPRESENTATIVE</option>
-                                    <option value="ROLE_STAFF_MEMBER">ROLE_STAFF_MEMBER</option>
-                                    <option value="ROLE_AGENT">ROLE_AGENT</option>
+                                    <option value="ROLE_ADMIN" data-i18n="adRoleAdmin">Administrateur</option>
+                                    <option value="ROLE_GENERAL_MANAGER" data-i18n="adRoleGeneralManager">Directeur Général</option>
+                                    <option value="ROLE_HR_OFFICER" data-i18n="adRoleHrOfficer">Agent DRH</option>
+                                    <option value="ROLE_DEPARTMENT_REPRESENTATIVE" data-i18n="adRoleDeptRep">Représentant de Direction</option>
+                                    <option value="ROLE_STAFF_MEMBER" data-i18n="adRoleStaffMember">Membre du Personnel</option>
+                                    <option value="ROLE_AGENT" data-i18n="adRoleAgent">Agent</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -300,7 +368,20 @@
             smomaI18n.applyTranslations();
         } catch (e) { console.warn('i18n init skipped:', e); }
     });
-    window.addEventListener('smoma_lang_changed', () => { try { smomaI18n.applyTranslations(); } catch (e) {} });
+    window.addEventListener('smoma_lang_changed', () => {
+        try { smomaI18n.applyTranslations(); } catch (e) {}
+        // Referentiel data (structures/rangs/fonctions) is fetched from the backend and rendered
+        // with tl(), not data-i18n — re-run the renderers so the FR/EN switch also relabels them.
+        try { if (typeof populateAdminDropdowns === 'function') populateAdminDropdowns(); } catch (e) {}
+        try { if (typeof loadDepartments === 'function') loadDepartments(); } catch (e) {}
+        try { if (typeof loadTariffs === 'function') loadTariffs(); } catch (e) {}
+        try {
+            const structureSelect = document.getElementById('newStructure');
+            if (structureSelect && structureSelect.value && typeof loadFonctionsForStructure === 'function') {
+                loadFonctionsForStructure(structureSelect.value);
+            }
+        } catch (e) {}
+    });
 </script>
 <script>
     function getAdminHeaders() {
@@ -327,7 +408,7 @@
             // byType
             const byTypeDiv = document.getElementById('statByType');
             byTypeDiv.innerHTML = Object.entries(data.entriesByType || {})
-                .map(([k, v]) => `<span class="badge bg-secondary me-1 mb-1">${k}: ${v}</span>`)
+                .map(([k, v]) => `<span class="badge bg-secondary me-1 mb-1">${escapeHtml(k)}: ${v}</span>`)
                 .join('');
 
             // byDept
@@ -335,7 +416,7 @@
             byDeptDiv.innerHTML = Object.entries(data.entriesByDepartment || {})
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10)
-                .map(([k, v]) => `<div>${k}: <strong>${v}</strong></div>`)
+                .map(([k, v]) => `<div>${escapeHtml(k)}: <strong>${v}</strong></div>`)
                 .join('');
         } catch (e) {
             console.error('stats error', e);
@@ -413,13 +494,13 @@
             const tbody = document.getElementById('adUsersTable');
             tbody.innerHTML = (data.users || []).map(u => `
                 <tr>
-                    <td><strong>${u.login || '-'}</strong></td>
-                    <td>${(u.nom || '') + ' ' + (u.prenom || '')}</td>
-                    <td>${u.email || '-'}</td>
-                    <td>${u.codeFonction || '-'}</td>
-                    <td>${u.nomStructure || '-'}</td>
-                    <td>${u.matricule || '-'}</td>
-                    <td><span class="badge bg-dark">${u.role}</span></td>
+                    <td><strong>${escapeHtml(u.login) || '-'}</strong></td>
+                    <td>${escapeHtml((u.nom || '') + ' ' + (u.prenom || ''))}</td>
+                    <td>${escapeHtml(u.email) || '-'}</td>
+                    <td>${escapeHtml(u.codeFonction) || '-'}</td>
+                    <td>${escapeHtml(u.nomStructure) || '-'}</td>
+                    <td>${escapeHtml(u.matricule) || '-'}</td>
+                    <td><span class="badge bg-dark">${escapeHtml(u.role)}</span></td>
                 </tr>
             `).join('');
         } catch (e) {
@@ -437,9 +518,9 @@
             const tbody = document.getElementById('adGroupsTable');
             tbody.innerHTML = (data.groups || []).map(g => `
                 <tr>
-                    <td><strong>${g.cn || '-'}</strong></td>
-                    <td class="text-small">${g.distinguishedName || '-'}</td>
-                    <td class="text-small">${g.description || '-'}</td>
+                    <td><strong>${escapeHtml(g.cn) || '-'}</strong></td>
+                    <td class="text-small">${escapeHtml(g.distinguishedName) || '-'}</td>
+                    <td class="text-small">${escapeHtml(g.description) || '-'}</td>
                     <td>${(g.memberOf || []).length}</td>
                 </tr>
             `).join('');
@@ -481,9 +562,9 @@
         tbody.innerHTML = depts.map(d => `
             <tr>
                 <td>${d.id}</td>
-                <td><strong>${d.name || ''}</strong></td>
+                <td><strong>${tl(d.name, d.nameEn) || ''}</strong></td>
                 <td>${d.acronym || ''}</td>
-                <td>${d.headName || ''}</td>
+                <td>${tl(d.headName, d.headNameEn) || ''}</td>
                 <td class="text-end">
                     ${canDelete ? `<button class="btn btn-outline-danger btn-sm" onclick="deleteDepartment(${d.id})"><i class="fa-solid fa-trash me-1"></i>${(typeof t === 'function') ? t('adDelete') : 'Delete'}</button>` : '<span class="text-muted small">—</span>'}
                 </td>
@@ -513,13 +594,13 @@
             const externe = tariffBaremes.find(b => b.rang === r.code && b.typeMission === 'EXTERNE');
             return `
                 <tr>
-                    <td><strong>${r.libelle}</strong> <span class="text-muted small">(${r.code})</span></td>
+                    <td><strong>${tl(r.libelle, r.libelleEn)}</strong> <span class="text-muted small">(${r.code})</span></td>
                     <td><input type="number" min="1" step="1" class="form-control form-control-sm" style="max-width:160px"
                         id="tariffInterne_${r.code}" value="${interne ? interne.montantJournalier : ''}"></td>
                     <td><input type="number" min="1" step="1" class="form-control form-control-sm" style="max-width:160px"
                         id="tariffExterne_${r.code}" value="${externe ? externe.montantJournalier : ''}"></td>
                     <td class="text-end">
-                        <button class="btn btn-outline-primary btn-sm" onclick="saveTariffRow('${r.code}')">
+                        <button class="btn btn-outline-primary btn-sm" id="tariffSaveBtn_${r.code}" onclick="saveTariffRow('${r.code}')">
                             <i class="fa-solid fa-floppy-disk me-1"></i><span data-i18n="adSave">Enregistrer</span>
                         </button>
                     </td>
@@ -531,6 +612,7 @@
     async function saveTariffRow(rangCode) {
         const interneVal = document.getElementById('tariffInterne_' + rangCode).value;
         const externeVal = document.getElementById('tariffExterne_' + rangCode).value;
+        const btn = document.getElementById('tariffSaveBtn_' + rangCode);
 
         async function upsert(typeMission, montant) {
             if (montant === '' || montant === null) return;
@@ -552,8 +634,25 @@
             await upsert('INTERNE', interneVal);
             await upsert('EXTERNE', externeVal);
             await loadTariffs();
+            // Editing succeeds silently otherwise (loadTariffs just re-renders the same-looking
+            // values), so flash a transient confirmation on the button rather than an alert() that
+            // would force the admin to dismiss a popup for every single rank they update.
+            const savedBtn = document.getElementById('tariffSaveBtn_' + rangCode);
+            if (savedBtn) {
+                const original = savedBtn.innerHTML;
+                savedBtn.classList.remove('btn-outline-primary');
+                savedBtn.classList.add('btn-success');
+                savedBtn.innerHTML = `<i class="fa-solid fa-check me-1"></i>${(typeof t === 'function') ? t('adSaved') : 'Saved'}`;
+                setTimeout(() => {
+                    savedBtn.classList.remove('btn-success');
+                    savedBtn.classList.add('btn-outline-primary');
+                    savedBtn.innerHTML = original;
+                }, 1800);
+            }
         } catch (e) {
+            if (btn) btn.classList.add('btn-danger');
             alert('Erreur: ' + e.message);
+            if (btn) btn.classList.remove('btn-danger');
         }
     }
 
@@ -574,17 +673,16 @@
     }
 
     // Populates the department datalist (duplicate-prevention on create) and the
-    // Département/Rang/Fonction dropdowns of the create-user form from the organigramme referentials.
+    // Département/Rang dropdowns of the create-user form from the organigramme referentials.
+    // Fonction is populated separately, filtered by the chosen Structure (see loadFonctionsForStructure).
     async function populateAdminDropdowns() {
         try {
-            const [deptsRes, rangsRes, fonctionsRes] = await Promise.all([
+            const [deptsRes, rangsRes] = await Promise.all([
                 fetch('/api/referentiels/structures'),
-                fetch('/api/referentiels/rangs'),
-                fetch('/api/referentiels/fonctions')
+                fetch('/api/referentiels/rangs')
             ]);
             const depts = deptsRes.ok ? await deptsRes.json() : [];
             const rangsList = rangsRes.ok ? await rangsRes.json() : [];
-            const fonctionsList = fonctionsRes.ok ? await fonctionsRes.json() : [];
 
             document.getElementById('existingDeptNames').innerHTML = depts
                 .map(d => `<option value="${(d.name || '').replace(/"/g, '&quot;')}"></option>`).join('');
@@ -592,31 +690,59 @@
             const structureSelect = document.getElementById('newStructure');
             structureSelect.innerHTML = '<option value="">—</option>' + depts
                 .slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-                .map(d => `<option value="${d.id}">${d.name || ''}</option>`).join('');
+                .map(d => `<option value="${d.id}">${tl(d.name, d.nameEn) || ''}</option>`).join('');
 
             const rangSelect = document.getElementById('newRang');
             rangSelect.innerHTML = '<option value="">—</option>' + rangsList
                 .filter(r => r.actif !== false)
                 .sort((a, b) => (a.niveau || 99) - (b.niveau || 99))
-                .map(r => `<option value="${r.code}">${r.libelle} (${r.code})</option>`).join('');
+                .map(r => `<option value="${r.code}">${tl(r.libelle, r.libelleEn)} (${r.code})</option>`).join('');
 
-            const fonctionSelect = document.getElementById('newFonction');
-            fonctionSelect.innerHTML = '<option value="">—</option>' + fonctionsList
-                .filter(f => f.actif !== false)
-                .sort((a, b) => (a.libelle || '').localeCompare(b.libelle || ''))
-                .map(f => `<option value="${f.code}">${f.libelle}</option>`).join('');
+            loadFonctionsForStructure('');
         } catch (e) {
             console.warn('populateAdminDropdowns failed', e);
         }
     }
 
+    // Fonction only lists the real postes that exist within the CHOSEN Structure/Direction in the
+    // organigramme (Fonction.department) — picking one auto-fills the correct Rang from
+    // Fonction.rang, since that's what actually drives the mission-indemnity rate downstream.
+    let adminFonctionRangByCode = {};
+    async function loadFonctionsForStructure(departmentId) {
+        const fonctionSelect = document.getElementById('newFonction');
+        if (!fonctionSelect) return;
+        if (!departmentId) {
+            fonctionSelect.innerHTML = `<option value="" data-i18n="adOptionNone">—</option>`;
+            adminFonctionRangByCode = {};
+            return;
+        }
+        try {
+            const res = await fetch('/api/referentiels/fonctions?departmentId=' + encodeURIComponent(departmentId));
+            const fonctionsList = res.ok ? await res.json() : [];
+            adminFonctionRangByCode = {};
+            fonctionsList.forEach(f => { if (f.rang) adminFonctionRangByCode[f.code] = f.rang.code; });
+            fonctionSelect.innerHTML = '<option value="">—</option>' + fonctionsList
+                .filter(f => f.actif !== false)
+                .sort((a, b) => (a.libelle || '').localeCompare(b.libelle || ''))
+                .map(f => `<option value="${f.code}">${tl(f.libelle, f.libelleEn)}</option>`).join('');
+        } catch (e) {
+            console.warn('loadFonctionsForStructure failed', e);
+        }
+    }
+
+    document.getElementById('newStructure').addEventListener('change', (e) => loadFonctionsForStructure(e.target.value));
+    document.getElementById('newFonction').addEventListener('change', (e) => {
+        const rangCode = adminFonctionRangByCode[e.target.value];
+        if (rangCode) document.getElementById('newRang').value = rangCode;
+    });
+
     document.getElementById('createUserForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const departmentId = document.getElementById('newStructure').value;
+        const email = document.getElementById('newEmail').value.trim();
         const payload = {
-            username: document.getElementById('newUsername').value.trim(),
-            password: document.getElementById('newPassword').value,
-            email: document.getElementById('newEmail').value.trim(),
+            username: email,
+            email: email,
             role: document.getElementById('newRole').value,
             nom: document.getElementById('newNom').value.trim(),
             prenom: document.getElementById('newPrenom').value.trim(),
@@ -637,7 +763,7 @@
             return;
         }
 
-        alert('User created successfully! Username: ' + payload.username + ' Password: ' + payload.password);
+        alert('User created successfully! Email: ' + payload.email + ' Password: password123 (default — the user should sign in with their Active Directory credentials once synced)');
         document.getElementById('createUserForm').reset();
         loadUsers();
     });

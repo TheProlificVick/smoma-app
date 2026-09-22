@@ -33,6 +33,8 @@ const SMOMA_TRANSLATIONS = {
         identityLabel: "Identifiant (Email, Nom d'utilisateur ou Matricule)",
         identityPlaceholder: "nom.prenom@art.cm ou matricule (ex: ART-002)",
         passwordLabel: "Mot de passe sécurisé",
+        passwordToggleShow: "Afficher le mot de passe",
+        passwordToggleHide: "Masquer le mot de passe",
         loginSubmitBtn: "Se connecter au Portail",
         loginErrorMsg: "Identifiants professionnels incorrects ou accès refusé.",
         networkErrorMsg: "Erreur réseau : Impossible de joindre le serveur Spring Boot.",
@@ -64,7 +66,7 @@ const SMOMA_TRANSLATIONS = {
         modReportsTitle: "Impression & Rapports",
         modReportsDesc: "Génération PDF officiels et numérisation des rapports de fin de mission.",
         modPaymentsTitle: "Paiements de Mission",
-        modPaymentsDesc: "Suivi des frais, validation des paiements et contrôle de conformité pour les missions.",
+        modPaymentsDesc: "Suivi consultatif des indemnités et paiements de mission (géré par la Direction des Finances).",
 
         statMandats: "Mandats DG Signés",
         statOrders: "Ordres de Mission",
@@ -99,10 +101,14 @@ const SMOMA_TRANSLATIONS = {
         btnCreateMandat: "Créer un Nouveau Mandat",
         btnCreateDirectOm: "Créer un OM Direct",
         btnUploadScan: "Importer Scan Signé",
+        btnGmSignatureUpload: "Signature du DG — Importer le Scan Signé",
+        btnGmSignShort: "Signature du DG",
+        gmSignHintReady: "Importer le scan du mandat signé par le Directeur Général : active le mandat et génère les ordres de mission.",
+        gmSignHintPrintFirst: "Imprimez d'abord le document officiel (Imprimer ou Télécharger PDF), puis importez ici le scan signé par le Directeur Général.",
         btnViewSideBySide: "Voir côte à côte",
         btnDownloadPdf: "PDF",
         btnViewForm: "Consulter Formulaire OM",
-        btnPrintForm: "Imprimer le Formulaire",
+        btnPrintForm: "Imprimer le Formulaire Officiel",
         btnCancel: "Annuler",
         btnSave: "Enregistrer",
         btnClose: "Fermer",
@@ -119,6 +125,8 @@ const SMOMA_TRANSLATIONS = {
         stepCityPrompt: "Saisir la ville / le lieu de l'étape (hors liste) :",
         stepAgentsLabel: "Agents affectés à cette étape",
         stepAgentsEmptyHint: "Sélectionnez d'abord l'équipe du mandat ci-dessus.",
+        stepAgentsEmptyHint2: "Aucun agent affecté pour l'instant — tapez un nom ci-dessus et sélectionnez-le.",
+        stepAgentSearchPlaceholder: "Nom ou matricule...",
         lblObjetGeneral: "Objet Général de la Mission",
         lblObjectifsSpecifiques: "Objectifs Spécifiques",
         lblTypeMission: "Type de Mission",
@@ -126,8 +134,13 @@ const SMOMA_TRANSLATIONS = {
         lblTransportMode: "Moyen(s) de Transport",
         lblStartDate: "Date de Début",
         lblEndDate: "Date de Fin",
+        lblVilleDepart: "Ville de Départ",
+        phVilleDepart: "Ex : Yaoundé",
+        lblDestinationMandat: "Destination",
+        phDestination: "Ex : Douala",
+        hintDestinationMandat: "Reprise automatiquement sur chaque ordre de mission généré à partir de ce mandat.",
         lblSansFrais: "Mandat SANS FRAIS (Sceau Rouge)",
-        lblForceMajeure: "Régularisation Force Majeure (< 48h)",
+        btnEditOm: "Modifier l'Ordre de Mission",
         lblTeamSelection: "Équipe d'Agents Concernés",
         lblSearchMatriculePlaceholder: "Rechercher par matricule ou nom...",
         lblSelectAgent: "Sélectionner un agent",
@@ -243,6 +256,27 @@ const SMOMA_TRANSLATIONS = {
         analysisMissionsByType: "Missions par Type",
         analysisType: "Type",
         analysisByDepartment: "Missions par Direction / Structure (Top 10)",
+        analysisTotalDays: "Total Jours",
+        analysisReportCompliance: "Taux de Dépôt des Rapports",
+        analysisByDestination: "Missions par Destination (Top 10)",
+        analysisDestination: "Destination",
+        analysisByTransport: "Missions par Moyen de Transport",
+        analysisTransportMode: "Moyen de Transport",
+        analysisByYear: "Évolution des Missions par Année",
+        analysisYear: "Année",
+        analysisTopAgents: "Agents les Plus Sollicités (Top 10)",
+        analysisAgentName: "Agent",
+        analysisConclusionTemplate: "{genre} a effectué le plus de missions ({h} hommes contre {f} femmes).",
+        analysisConclusionEqual: "Égalité parfaite entre hommes et femmes sur le nombre de missions.",
+        aiAnalysisTitle: "Analyse IA du Bilan (Mandats & Ordres de Mission)",
+        aiAnalysisIntro: "Analyse automatique de tous les mandats et ordres de mission enregistrés, recoupée avec les chiffres du bilan ci-dessus.",
+        aiAnalysisRun: "Lancer l'analyse",
+        aiAnalysisRunning: "Analyse en cours...",
+        aiAnalysisError: "L'analyse n'a pas pu être effectuée.",
+        aiAnalysisFindings: "Constats",
+        aiAnalysisChecks: "Contrôles de cohérence avec le bilan",
+        aiAnalysisChecksPassed: "conformes",
+        aiAnalysisGeneratedAt: "Analyse générée le",
 
         // Admin Panel
         adminTitle: "Administration & Synchronisation Active Directory",
@@ -278,6 +312,8 @@ const SMOMA_TRANSLATIONS = {
         thMissionTypeShort: "Type Mission",
         thTotalIndemnity: "Total Indemnité",
         thRegime: "Régime",
+        thPaymentStatus: "Statut",
+        payStatusUnknown: "Géré par la Direction des Finances",
 
         // Validation portal
         hdrValidationSub: "Guichet de Validation Hiérarchique & Direction Générale (DG)",
@@ -286,6 +322,13 @@ const SMOMA_TRANSLATIONS = {
         valPendingCard: "Mandats en Attente de Signature",
         valNoPending: "Aucun mandat en attente de validation.",
         valProcessBtn: "Traiter dans le Module Mandats",
+        valRejectBtn: "Rejeter",
+        valRejectTitle: "Rejeter le rapport de mission",
+        valRejectMotifLabel: "Motif du rejet (obligatoire)",
+        valRejectMotifPlaceholder: "Expliquez à l'agent ce qui doit être corrigé avant de redéposer le rapport...",
+        valRejectMotifRequired: "La justification est obligatoire.",
+        valRejectConfirm: "Rejeter le rapport",
+        commonCancel: "Annuler",
 
         // Reports / HR processing
         hdrReportsSub: "Dépôt des Rapports de Mission & Pièces Justificatives",
@@ -345,6 +388,7 @@ const SMOMA_TRANSLATIONS = {
         persColLastFirst: "Nom & Prénom",
         persColStructure: "Structure / Direction",
         persColFunction: "Fonction",
+        persFonctionSelectDeptFirst: "Choisissez d'abord la structure / direction ci-dessus.",
         persColGrade: "Grade",
         persColContact: "Contact",
         persColStatus: "Statut",
@@ -359,6 +403,8 @@ const SMOMA_TRANSLATIONS = {
         persGenreLabel: "Genre",
         persDobLabel: "Date de Naissance",
         persContractLabel: "Type de Contrat",
+        persContractCDI: "CDI (Contrat à Durée Indéterminée)",
+        persContractCDD: "CDD (Contrat à Durée Déterminée)",
         persHireDateLabel: "Date d'Embauche",
         persHirePlaceLabel: "Lieu d'Embauche",
         persRetirementEligible: "Éligible à la retraite",
@@ -386,6 +432,12 @@ const SMOMA_TRANSLATIONS = {
         adPassword: "Mot de passe",
         adEmailLabel: "Email",
         adRole: "Rôle",
+        adRoleAdmin: "Administrateur",
+        adRoleGeneralManager: "Directeur Général",
+        adRoleHrOfficer: "Agent DRH",
+        adRoleDeptRep: "Représentant de Direction",
+        adRoleStaffMember: "Membre du Personnel",
+        adRoleAgent: "Agent",
         adFirstName: "Prénom",
         adLastName: "Nom",
         adDeptStructure: "Direction / Structure",
@@ -404,6 +456,7 @@ const SMOMA_TRANSLATIONS = {
         adFonction: "Fonction",
         adOptionNone: "—",
         adSave: "Enregistrer",
+        adSaved: "Enregistré",
         adTariffTitle: "Grille Tarifaire des Indemnités de Mission (par Rang)",
         adTariffAdminOnly: "Réservé à l'administrateur système.",
         adTariffHint: "Taux journalier (FCFA) appliqué automatiquement selon le rang de l'agent, en mission Interne ou Externe. Une modification s'applique immédiatement au calcul des indemnités.",
@@ -427,7 +480,7 @@ const SMOMA_TRANSLATIONS = {
         // Dashboard access notices
         dashDrhOnlyNotice: "Important : seul le personnel de la DRH est habilité à établir un ordre de mission. L'établissement d'un mandat de mission est réservé aux agents ayant la désignation CEA, Chef de Cellule, Sous-Directeur ou Directeur (le compte administrateur conserve toutes les fonctionnalités).",
         modMyMissionsTitle: "Mes Missions (Agent)",
-        modMyMissionsDesc: "Vos ordres de mission, notifications, PDF officiel et dépôt de votre rapport.",
+        modMyMissionsDesc: "Vos ordres de mission, notifications et PDF officiel.",
         modReservedDrh: "Réservé au personnel DRH",
         omRuleShort: "Seul le personnel de la DRH est habilité à établir un ordre de mission.",
         navMyMissions: "Mes Missions",
@@ -444,7 +497,8 @@ const SMOMA_TRANSLATIONS = {
 
         // Staff portal (my-missions)
         myMissionsTitle: "Portail de l'Agent — Mes Missions",
-        myMissionsSub: "Vos ordres de mission, notifications, téléchargement du PDF officiel et dépôt du rapport de mission",
+        myMissionsSub: "Vos ordres de mission, notifications et téléchargement du PDF officiel",
+        myMissionsPrivacyNote: "Vous ne voyez ici que vos propres ordres de mission, notifications et PDF — jamais ceux d'un autre agent. Seul le personnel de la DRH peut consulter ceux de l'ensemble du personnel.",
         mmNotifications: "Notifications",
         mmNoNotifications: "Aucune notification.",
         mmMarkAllRead: "Tout marquer comme lu",
@@ -454,12 +508,19 @@ const SMOMA_TRANSLATIONS = {
         mmUploadReport: "Scanner / Déposer mon rapport",
         mmReportSubmitted: "Rapport déposé (en attente de validation DRH)",
         mmReportValidated: "Rapport validé",
+        mmReportRejected: "Rapport rejeté",
+        mmResubmitReport: "Corriger et redéposer",
+        mmStepCompleted: "Étape terminée",
+        mmMarkComplete: "Marquer comme terminée",
+        mmCompleteNotStarted: "Cette étape n'a pas encore commencé — elle ne peut pas être marquée terminée à l'avance.",
+        mmAvailableFrom: "Disponible à partir du",
+        mmCompleteConfirm: "Confirmer que cette étape de mission est terminée ? Vous serez alors disponible pour une nouvelle affectation. Cette action ne peut pas être annulée.",
         mmReportModalTitle: "Déposer mon rapport de mission",
         mmReportFileLabel: "Fichier scanné du rapport (PDF)",
         mmIdentifyPrompt: "Saisissez votre matricule pour afficher vos missions",
 
         // Report validation note (HR)
-        repValidateNoteSP: "La validation d'un rapport est réservée au personnel DRH du Service du Personnel (désignation « SP »)."
+        repValidateNoteSP: "La validation ou le rejet d'un rapport est réservé au personnel explicitement identifié comme appartenant à la DRH dans l'annuaire (Active Directory)."
     },
 
     en: {
@@ -490,6 +551,8 @@ const SMOMA_TRANSLATIONS = {
         identityLabel: "Identity (Email, Username or Matricule)",
         identityPlaceholder: "name.surname@art.cm or matricule (e.g. ART-002)",
         passwordLabel: "Secure Password",
+        passwordToggleShow: "Show password",
+        passwordToggleHide: "Hide password",
         loginSubmitBtn: "Log in to Portal",
         loginErrorMsg: "Incorrect institutional credentials or access denied.",
         networkErrorMsg: "Network error: Unable to connect to the Spring Boot server.",
@@ -521,7 +584,7 @@ const SMOMA_TRANSLATIONS = {
         modReportsTitle: "Print & Reports",
         modReportsDesc: "Official PDF generation and digitization of end-of-mission reports.",
         modPaymentsTitle: "Mission Payments",
-        modPaymentsDesc: "Expense tracking, payment validation, and mission financial compliance.",
+        modPaymentsDesc: "Read-only tracker of mission indemnities and payments (managed by the Directorate of Finance).",
 
         statMandats: "Signed DG Mandates",
         statOrders: "Mission Orders",
@@ -556,10 +619,14 @@ const SMOMA_TRANSLATIONS = {
         btnCreateMandat: "Create New Mandate",
         btnCreateDirectOm: "Create Direct OM",
         btnUploadScan: "Upload Signed Scan",
+        btnGmSignatureUpload: "GM Signature — Upload Signed Scan",
+        btnGmSignShort: "GM Signature",
+        gmSignHintReady: "Upload the scan of the mandate signed by the General Manager: it activates the mandate and generates the mission orders.",
+        gmSignHintPrintFirst: "Print the official document first (Print or Download PDF), then upload the General Manager's signed scan here.",
         btnViewSideBySide: "Side by Side View",
         btnDownloadPdf: "PDF",
         btnViewForm: "View OM Form",
-        btnPrintForm: "Print Form",
+        btnPrintForm: "Print Official Form",
         btnCancel: "Cancel",
         btnSave: "Save",
         btnClose: "Close",
@@ -576,6 +643,8 @@ const SMOMA_TRANSLATIONS = {
         stepCityPrompt: "Enter the step city / location (not in the list):",
         stepAgentsLabel: "Staff assigned to this step",
         stepAgentsEmptyHint: "Select the mandate team above first.",
+        stepAgentsEmptyHint2: "No staff assigned yet — type a name above and select it.",
+        stepAgentSearchPlaceholder: "Name or staff ID...",
         lblObjetGeneral: "Mission General Purpose",
         lblObjectifsSpecifiques: "Specific Objectives",
         lblTypeMission: "Mission Type",
@@ -583,8 +652,13 @@ const SMOMA_TRANSLATIONS = {
         lblTransportMode: "Means of Transport",
         lblStartDate: "Start Date",
         lblEndDate: "End Date",
+        lblVilleDepart: "Departure City",
+        phVilleDepart: "E.g. Yaoundé",
+        lblDestinationMandat: "Destination",
+        phDestination: "E.g. Douala",
+        hintDestinationMandat: "Carried over automatically onto every mission order generated from this mandate.",
         lblSansFrais: "WITHOUT EXPENSES Mandate (Red Stamp)",
-        lblForceMajeure: "Force Majeure Regularization (< 48h)",
+        btnEditOm: "Edit Mission Order",
         lblTeamSelection: "Designated Staff Members",
         lblSearchMatriculePlaceholder: "Search by matricule or name...",
         lblSelectAgent: "Select a staff member",
@@ -688,6 +762,27 @@ const SMOMA_TRANSLATIONS = {
         analysisMissionsByType: "Missions by Type",
         analysisType: "Type",
         analysisByDepartment: "Missions by Directorate / Department (Top 10)",
+        analysisTotalDays: "Total Days",
+        analysisReportCompliance: "Report Filing Rate",
+        analysisByDestination: "Missions by Destination (Top 10)",
+        analysisDestination: "Destination",
+        analysisByTransport: "Missions by Transport Mode",
+        analysisTransportMode: "Transport Mode",
+        analysisByYear: "Missions Trend by Year",
+        analysisYear: "Year",
+        analysisTopAgents: "Most Frequently Deployed Staff (Top 10)",
+        analysisAgentName: "Staff Member",
+        analysisConclusionTemplate: "{genre} carried out the most missions ({h} men vs {f} women).",
+        analysisConclusionEqual: "Perfect parity between men and women in mission count.",
+        aiAnalysisTitle: "AI Analysis of the Report (Mandates & Mission Orders)",
+        aiAnalysisIntro: "Automatic analysis of every mission mandate and mission order on file, cross-checked against the figures in the report above.",
+        aiAnalysisRun: "Run analysis",
+        aiAnalysisRunning: "Analysing...",
+        aiAnalysisError: "The analysis could not be completed.",
+        aiAnalysisFindings: "Findings",
+        aiAnalysisChecks: "Consistency checks against the report",
+        aiAnalysisChecksPassed: "passed",
+        aiAnalysisGeneratedAt: "Analysis generated on",
 
         // Admin Panel
         adminTitle: "Active Directory Administration & Sync",
@@ -723,6 +818,8 @@ const SMOMA_TRANSLATIONS = {
         thMissionTypeShort: "Mission Type",
         thTotalIndemnity: "Total Allowance",
         thRegime: "Regime",
+        thPaymentStatus: "Status",
+        payStatusUnknown: "Managed by the Directorate of Finance",
 
         // Validation portal
         hdrValidationSub: "Hierarchical Validation Desk & General Management (GM)",
@@ -731,6 +828,13 @@ const SMOMA_TRANSLATIONS = {
         valPendingCard: "Mandates Awaiting Signature",
         valNoPending: "No mandate awaiting validation.",
         valProcessBtn: "Process in the Mandates Module",
+        valRejectBtn: "Reject",
+        valRejectTitle: "Reject the mission report",
+        valRejectMotifLabel: "Reason for rejection (required)",
+        valRejectMotifPlaceholder: "Explain to the agent what needs to be corrected before resubmitting the report...",
+        valRejectMotifRequired: "A justification is required.",
+        valRejectConfirm: "Reject the report",
+        commonCancel: "Cancel",
 
         // Reports / HR processing
         hdrReportsSub: "Submission of Mission Reports & Supporting Documents",
@@ -790,6 +894,7 @@ const SMOMA_TRANSLATIONS = {
         persColLastFirst: "Full Name",
         persColStructure: "Structure / Directorate",
         persColFunction: "Job Title",
+        persFonctionSelectDeptFirst: "Choose the structure / directorate above first.",
         persColGrade: "Grade",
         persColContact: "Contact",
         persColStatus: "Status",
@@ -804,6 +909,8 @@ const SMOMA_TRANSLATIONS = {
         persGenreLabel: "Gender",
         persDobLabel: "Date of Birth",
         persContractLabel: "Contract Type",
+        persContractCDI: "CDI (Permanent Contract)",
+        persContractCDD: "CDD (Fixed-Term Contract)",
         persHireDateLabel: "Hire Date",
         persHirePlaceLabel: "Place of Hire",
         persRetirementEligible: "Eligible for retirement",
@@ -843,6 +950,12 @@ const SMOMA_TRANSLATIONS = {
         adPassword: "Password",
         adEmailLabel: "Email",
         adRole: "Role",
+        adRoleAdmin: "Administrator",
+        adRoleGeneralManager: "General Manager",
+        adRoleHrOfficer: "HR Officer",
+        adRoleDeptRep: "Department Representative",
+        adRoleStaffMember: "Staff Member",
+        adRoleAgent: "Agent",
         adFirstName: "First Name",
         adLastName: "Last Name",
         adDeptStructure: "Department / Structure",
@@ -861,6 +974,7 @@ const SMOMA_TRANSLATIONS = {
         adFonction: "Function",
         adOptionNone: "—",
         adSave: "Save",
+        adSaved: "Saved",
         adTariffTitle: "Mission Indemnity Tariff Grid (by Rank)",
         adTariffAdminOnly: "Reserved for the system administrator.",
         adTariffHint: "Daily rate (XAF) applied automatically according to the staff member's rank, for Internal or External missions. A change applies immediately to indemnity calculations.",
@@ -884,7 +998,7 @@ const SMOMA_TRANSLATIONS = {
         // Dashboard access notices
         dashDrhOnlyNotice: "Important: only HR (DRH) staff are authorized to issue a mission order. Creating a mission mandate is restricted to staff holding the designation CEA, Chef de Cellule, Sous-Directeur or Directeur (the administrator account keeps every functionality).",
         modMyMissionsTitle: "My Missions (Staff)",
-        modMyMissionsDesc: "Your mission orders, notifications, official PDF and report submission.",
+        modMyMissionsDesc: "Your mission orders, notifications and official PDF.",
         modReservedDrh: "Restricted to HR (DRH) staff",
         omRuleShort: "Only HR (DRH) staff are authorized to issue a mission order.",
         navMyMissions: "My Missions",
@@ -901,7 +1015,8 @@ const SMOMA_TRANSLATIONS = {
 
         // Staff portal (my-missions)
         myMissionsTitle: "Staff Portal — My Missions",
-        myMissionsSub: "Your mission orders, notifications, official PDF download and mission report submission",
+        myMissionsSub: "Your mission orders, notifications and official PDF download",
+        myMissionsPrivacyNote: "You only see your own mission orders, notifications and PDFs here — never another agent's. Only DRH staff can view every employee's.",
         mmNotifications: "Notifications",
         mmNoNotifications: "No notifications.",
         mmMarkAllRead: "Mark all as read",
@@ -911,12 +1026,19 @@ const SMOMA_TRANSLATIONS = {
         mmUploadReport: "Scan / Submit my report",
         mmReportSubmitted: "Report submitted (awaiting HR validation)",
         mmReportValidated: "Report validated",
+        mmReportRejected: "Report rejected",
+        mmResubmitReport: "Fix and resubmit",
+        mmStepCompleted: "Step completed",
+        mmMarkComplete: "Mark as completed",
+        mmCompleteNotStarted: "This step hasn't started yet — it can't be marked completed in advance.",
+        mmAvailableFrom: "Available from",
+        mmCompleteConfirm: "Confirm this mission step is completed? You'll then be available for a new assignment. This cannot be undone.",
         mmReportModalTitle: "Submit my mission report",
         mmReportFileLabel: "Scanned report file (PDF)",
         mmIdentifyPrompt: "Enter your matricule to display your missions",
 
         // Report validation note (HR)
-        repValidateNoteSP: "Validating a report is restricted to HR staff of the Service du Personnel (designation \"SP\")."
+        repValidateNoteSP: "Validating or rejecting a report is restricted to staff explicitly identified as DRH in the directory (Active Directory)."
     }
 };
 
@@ -933,6 +1055,16 @@ class SMOMAI18n {
         if (!key) return '';
         const dict = SMOMA_TRANSLATIONS[this.currentLang] || SMOMA_TRANSLATIONS['fr'];
         return dict[key] || SMOMA_TRANSLATIONS['fr'][key] || key;
+    }
+
+    /**
+     * Picks the right language variant for referentiel data fetched from the backend (Department,
+     * Rang, Fonction, MotifReglementaire — libelle/nameEn fields), instead of static data-i18n keys.
+     * Falls back to the French text when no English translation was seeded for that row yet.
+     */
+    localize(frText, enText) {
+        if (this.currentLang === 'en' && enText) return enText;
+        return frText || '';
     }
 
     switchLanguage(lang) {
@@ -1017,6 +1149,21 @@ class SMOMAI18n {
 const smomaI18n = new SMOMAI18n();
 function t(key) { return smomaI18n.t(key); }
 function switchLanguage(lang) { smomaI18n.switchLanguage(lang); }
+/**
+ * Escapes text for safe insertion into innerHTML — every page loads this file, so this is the
+ * one place to call rather than re-implementing it per page. Free-text fields that end up in a
+ * template literal assigned to innerHTML (notification titles/messages, personnel names, mandate
+ * objects, ...) must go through this first; the DOM's own textContent/innerHTML round-trip is the
+ * only escaping that reliably covers every HTML metacharacter.
+ */
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+/** Picks fr/en text for referentiel data fetched from the backend (see SMOMAI18n.localize). */
+function tl(frText, enText) { return smomaI18n.localize(frText, enText); }
 
 // Auto-run on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {

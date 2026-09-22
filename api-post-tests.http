@@ -1,0 +1,440 @@
+### SMOMA — POST Endpoint Test Suite
+#
+# HOW TO USE (VS Code):
+#   1. Install the "REST Client" extension (humao.rest-client) if you don't have it.
+#   2. Start the app (mvnw spring-boot:run).
+#   3. Open this file. Above every request block you'll see a small "Send Request" link — click it.
+#   4. The response (status code + JSON body) opens in a pane on the right — that's what you screenshot.
+#   5. Run the requests TOP TO BOTTOM the first time: later requests reuse the ids/token captured
+#      from earlier ones (e.g. {{createMandat.response.body.$.id}}), so skipping around will break the chain.
+#
+# AUTH MODEL: every POST that sends X-User-Email must also send a matching Authorization: Bearer
+# token from a real /api/auth/login (JwtAuthFilter rejects a claimed identity with no/incorrect
+# token — see src/main/java/smoma/config/JwtAuthFilter.java). The single login below uses an
+# administrator account, which passes every permission check in AccessPolicy.java, so one token
+# is enough to exercise all 24 POST endpoints.
+#
+# BEFORE RUNNING: set the two variables below to a real admin login that exists in YOUR database.
+#   - If you run with the default profile (application.properties, port 8086) and never set
+#     SMOMA_SEED_DEMO_DATA=true, no demo accounts exist — use whatever admin account you already
+#     created, or check the startup console log for the one-time bootstrap admin password
+#     (search for "SMOMA: aucun compte administrateur trouvé").
+#   - If you run with -Dspring.profiles.active=local (application-local.properties, port 8087),
+#     demo data is seeded automatically and admin@art.cm / admin123 will work out of the box.
+
+@baseUrl = http://localhost:8086
+@email = admin@art.cm
+@password = admin123
+
+
+###############################################################################
+# 1. AUTH
+###############################################################################
+
+### 1.1 POST /api/auth/login — authenticate and obtain a JWT
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### capture the token for every authenticated request below
+@token = {{login.response.body.$.token}}
+
+
+###############################################################################
+# 2. REFERENTIELS (référentiels) — reference/lookup data
+###############################################################################
+
+### 2.1 POST /api/referentiels/structures — create a directorate/structure
+# @name createStructure
+POST {{baseUrl}}/api/referentiels/structures
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "name": "Direction de Test API",
+  "acronym": "DTA",
+  "headName": "Directeur de Test"
+}
+
+### 2.2 POST /api/referentiels/fonctions — create a job title
+# @name createFonction
+POST {{baseUrl}}/api/referentiels/fonctions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "libelle": "Agent de Test API",
+  "code": "AGENT_TEST_API",
+  "description": "Fonction créée par la suite de tests POST",
+  "actif": true
+}
+
+### 2.3 POST /api/referentiels/rangs — create a rank tier
+# @name createRang
+POST {{baseUrl}}/api/referentiels/rangs
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "libelle": "Rang de Test API",
+  "code": "RANG_TEST_API",
+  "niveau": 99,
+  "actif": true
+}
+
+### 2.4 POST /api/referentiels/motifs — create a regulatory justification motif
+# @name createMotif
+POST {{baseUrl}}/api/referentiels/motifs
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "code": "MOTIF_TEST_API",
+  "libelle": "Motif créé par la suite de tests POST",
+  "description": "Test automatisé"
+}
+
+### 2.5 POST /api/referentiels/baremes — create a daily indemnity rate (admin only)
+# @name createBareme
+POST {{baseUrl}}/api/referentiels/baremes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "rang": "RANG_TEST_API",
+  "fonction": "AGENT_TEST_API",
+  "typeMission": "INTERNE",
+  "montantJournalier": 25000,
+  "montantForfaitaire": 0,
+  "estActif": true
+}
+
+### 2.6 POST /api/referentiels/settings — update company settings
+# @name updateSettings
+POST {{baseUrl}}/api/referentiels/settings
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "companyName": "AGENCE DE REGULATION DES TELECOMMUNICATIONS",
+  "logoPath": "/images/ART%20logo.jpg",
+  "delegation": "Yaoundé"
+}
+
+
+###############################################################################
+# 3. ADMIN — users & directorates
+###############################################################################
+
+### 3.1 POST /api/admin/sync-ad — trigger an Active Directory sync
+# @name syncAd
+POST {{baseUrl}}/api/admin/sync-ad
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+### 3.2 POST /api/admin/departments — create a directorate (duplicate-name guarded)
+# @name createAdminDept
+POST {{baseUrl}}/api/admin/departments
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "name": "Direction de Test API Admin",
+  "acronym": "DTAA",
+  "headName": "Directeur de Test Admin"
+}
+
+### capture its id
+@adminDeptId = {{createAdminDept.response.body.$.id}}
+
+### 3.3 POST /api/admin/users — create a user account
+# @name createUser
+POST {{baseUrl}}/api/admin/users
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "username": "test.api@art.cm",
+  "password": "TestApi123!",
+  "email": "test.api@art.cm",
+  "nom": "API",
+  "prenom": "Test",
+  "matricule": "ART-TEST-API-001",
+  "structure": "Direction de Test API Admin",
+  "title": "Agent Technique",
+  "departmentId": {{adminDeptId}},
+  "role": "ROLE_STAFF_MEMBER",
+  "genre": "HOMME",
+  "rang": "RANG_TEST_API",
+  "fonction": "AGENT_TEST_API"
+}
+
+
+###############################################################################
+# 4. PERSONNEL
+###############################################################################
+
+### 4.1 POST /api/personnel — create a staff record
+# @name createPersonnel
+POST {{baseUrl}}/api/personnel
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "nom": "TESTAGENT",
+  "prenom": "Paul",
+  "matricule": "ART-TEST-API-002",
+  "email": "paul.testagent@art.cm",
+  "telephone": "+237600000000",
+  "departement": "Direction de Test API Admin",
+  "grade": "B",
+  "fonction": "AGENT_TEST_API",
+  "rang": "RANG_TEST_API",
+  "genre": "HOMME",
+  "statut": "ACTIF",
+  "typeContrat": "CDI"
+}
+
+### capture its id
+@personnelId = {{createPersonnel.response.body.$.id}}
+
+
+###############################################################################
+# 5. MANDATS DE MISSION
+###############################################################################
+
+### 5.1 POST /api/mandats — initiate a mission mandate for the test staff member
+# @name createMandat
+POST {{baseUrl}}/api/mandats
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "mandat": {
+    "titre": "Mission de Test API",
+    "description": "Mandat créé par la suite de tests POST",
+    "objetGeneral": "Vérification du fonctionnement de l'API",
+    "objectifsSpecifiques": "Tester les endpoints POST",
+    "motifReglementaire": "MISSION_SERVICE",
+    "directionInitiatrice": "Direction de Test API Admin",
+    "typeMission": "INTERNE",
+    "dateDebut": "2026-12-01",
+    "dateFin": "2026-12-05"
+  },
+  "personnelIds": [{{personnelId}}],
+  "etapes": [
+    {
+      "lieu": "Douala",
+      "dateDebut": "2026-12-01",
+      "dateFin": "2026-12-05",
+      "transportMode": "Route",
+      "commentaire": "Étape unique de test",
+      "personnelIds": [{{personnelId}}]
+    }
+  ]
+}
+
+### capture its id
+@mandatId = {{createMandat.response.body.$.id}}
+
+### 5.2 POST /api/mandats/{id}/upload-scan — import the GM-signed mandate scan (multipart)
+# Uses a real file already in the repo as a stand-in for a scanned document — swap the path
+# below for any PDF/image on your machine if you prefer.
+# @name uploadMandatScan
+POST {{baseUrl}}/api/mandats/{{mandatId}}/upload-scan
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+Content-Type: multipart/form-data; boundary=SmomaBoundary
+
+--SmomaBoundary
+Content-Disposition: form-data; name="file"; filename="mandat-signed.docx"
+Content-Type: application/octet-stream
+
+< ./Cahier_des_charges_ART_Ordres_Mission.docx
+--SmomaBoundary--
+
+
+###############################################################################
+# 6. ORDRES DE MISSION
+###############################################################################
+
+### 6.1 POST /api/ordres-mission — issue a direct individual mission order
+# @name createOrdre
+POST {{baseUrl}}/api/ordres-mission
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "om": {
+    "objectifsSpecifiques": "Tester les endpoints POST",
+    "typeMission": "INTERNE",
+    "lieuDepart": "Yaoundé",
+    "lieuDestination": "Douala",
+    "moyenTransport": "Route",
+    "dateDebut": "2026-12-01",
+    "dateFin": "2026-12-05"
+  },
+  "mandatId": {{mandatId}},
+  "personnelId": {{personnelId}}
+}
+
+### capture its id
+@omId = {{createOrdre.response.body.$.id}}
+
+### 6.2 POST /api/ordres-mission/{id}/upload-scan — import the signed individual order (multipart)
+# @name uploadOmScan
+POST {{baseUrl}}/api/ordres-mission/{{omId}}/upload-scan
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+Content-Type: multipart/form-data; boundary=SmomaBoundary
+
+--SmomaBoundary
+Content-Disposition: form-data; name="file"; filename="om-signed.docx"
+Content-Type: application/octet-stream
+
+< ./Cahier_des_charges_ART_Ordres_Mission.docx
+--SmomaBoundary--
+
+
+###############################################################################
+# 7. RAPPORTS DE MISSION
+###############################################################################
+
+### 7.1 POST /api/rapports — deposit the mission report (multipart, mixed fields + file)
+# @name depositRapport
+POST {{baseUrl}}/api/rapports
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+Content-Type: multipart/form-data; boundary=SmomaBoundary
+
+--SmomaBoundary
+Content-Disposition: form-data; name="omId"
+
+{{omId}}
+--SmomaBoundary
+Content-Disposition: form-data; name="titre"
+
+Rapport de Test API
+--SmomaBoundary
+Content-Disposition: form-data; name="description"
+
+Rapport déposé par la suite de tests POST
+--SmomaBoundary
+Content-Disposition: form-data; name="categorie"
+
+TEST
+--SmomaBoundary
+Content-Disposition: form-data; name="file"; filename="rapport-test.docx"
+Content-Type: application/octet-stream
+
+< ./Cahier_des_charges_ART_Ordres_Mission.docx
+--SmomaBoundary--
+
+### capture its id
+@rapportId = {{depositRapport.response.body.$.id}}
+
+### 7.2 POST /api/rapports/{id}/valider — DRH validates the deposited report
+# @name validateRapport
+POST {{baseUrl}}/api/rapports/{{rapportId}}/valider
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+
+###############################################################################
+# 8. FRAIS / AVANCES SUR FRAIS
+###############################################################################
+
+### 8.1 POST /api/frais-avances/demander-avance — request an advance on the OM above
+# Must be requested BEFORE the mission's dateDebut (2026-12-01) — today's date must be earlier.
+# @name demanderAvance
+POST {{baseUrl}}/api/frais-avances/demander-avance
+Content-Type: application/json
+
+{
+  "omId": {{omId}},
+  "dateDemande": "2026-09-13"
+}
+
+### capture its id
+@avanceId = {{demanderAvance.response.body.$.id}}
+
+### 8.2 POST /api/frais-avances/valider-avance/{id} — Direction des Finances approves the advance
+# @name validerAvance
+POST {{baseUrl}}/api/frais-avances/valider-avance/{{avanceId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "modePaiement": "VIREMENT",
+  "referenceVirement": "VIR-TEST-API-001"
+}
+
+### 8.3 POST /api/frais-avances/verser-solde/{id} — pay out the remaining balance
+# @name verserSolde
+POST {{baseUrl}}/api/frais-avances/verser-solde/{{avanceId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Email: {{email}}
+
+{
+  "modePaiement": "ESPECES"
+}
+
+
+###############################################################################
+# 9. NOTIFICATIONS
+###############################################################################
+
+### 9.1 POST /api/notifications/{id}/read — mark one notification as read
+# No notifications may exist yet in a fresh database, so this can legitimately 404/500 —
+# it still demonstrates the endpoint being called and its response for the report.
+POST {{baseUrl}}/api/notifications/1/read
+
+### 9.2 POST /api/notifications/mark-all-read — mark all of the admin's notifications as read
+POST {{baseUrl}}/api/notifications/mark-all-read?username={{email}}
+
+
+###############################################################################
+# 10. ASSISTANT IA
+###############################################################################
+
+### 10.1 POST /api/assistant-ia/query — ask the AI assistant a question
+POST {{baseUrl}}/api/assistant-ia/query
+Content-Type: application/json
+
+{
+  "prompt": "Combien de missions ont été effectuées ce mois-ci ?"
+}
+
+
+###############################################################################
+# 11. AUTH — change-password (run last: uses the throwaway user from section 3.3
+#     so it never touches the admin login the rest of this file depends on)
+###############################################################################
+
+### 11.1 POST /api/auth/change-password
+POST {{baseUrl}}/api/auth/change-password
+Content-Type: application/json
+
+{
+  "identity": "test.api@art.cm",
+  "oldPassword": "TestApi123!",
+  "newPassword": "NewTestApi123!"
+}

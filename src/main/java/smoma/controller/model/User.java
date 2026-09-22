@@ -1,5 +1,6 @@
 package smoma.controller.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import smoma.controller.model.Service.Role;
 import java.util.HashSet;
@@ -16,6 +17,11 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
 
+    // Never serialized to any client — every consumer of this entity's JSON (admin user list,
+    // AD-sync responses, ...) must never carry a hash or a legacy plaintext password over the
+    // wire. Deserialization is unaffected: no endpoint sets a password by binding straight to a
+    // User from client JSON (account creation goes through a separate CreateUserRequest DTO).
+    @JsonIgnore
     private String password;
     private String email;
     private String nom;

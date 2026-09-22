@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smoma.controller.model.*;
 import smoma.controller.model.Service.AccessPolicy;
+import smoma.dto.FonctionRequest;
 import smoma.repository.*;
 
 import java.util.List;
@@ -69,31 +70,67 @@ public class ReferentielController {
         return ResponseEntity.ok(departmentRepository.save(dept));
     }
 
+    /**
+     * Without a filter, returns the entire fonction catalogue (used by the admin Référentiels
+     * screen). Pass departmentId (preferred) or departmentName to get only the postes that
+     * actually exist within that directorate/structure in the organigramme — this is what the
+     * Personnel form uses so a fonction can only be picked once its department is chosen, and its
+     * linked rang can be auto-filled (see Fonction.department / Fonction.rang).
+     */
     @GetMapping("/fonctions")
-    public ResponseEntity<List<Fonction>> getFonctions() {
+    public ResponseEntity<List<Fonction>> getFonctions(
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) String departmentName) {
+        if (departmentId != null) {
+            return ResponseEntity.ok(fonctionRepository.findByDepartment_Id(departmentId));
+        }
+        if (departmentName != null && !departmentName.isBlank()) {
+            return ResponseEntity.ok(fonctionRepository.findByDepartment_NameIgnoreCase(departmentName));
+        }
         return ResponseEntity.ok(fonctionRepository.findAll());
     }
 
+    private Fonction applyFonctionRequest(Fonction target, FonctionRequest req) {
+        if (req.getCode() != null && !req.getCode().isBlank()) {
+            fonctionRepository.findByCode(req.getCode())
+                    .filter(existing -> target.getId() == null || !existing.getId().equals(target.getId()))
+                    .ifPresent(existing -> {
+                        throw new IllegalArgumentException("Une fonction avec le code « " + req.getCode() + " » existe déjà.");
+                    });
+        }
+        if (req.getLibelle() != null) target.setLibelle(req.getLibelle());
+        if (req.getLibelleEn() != null) target.setLibelleEn(req.getLibelleEn());
+        if (req.getCode() != null) target.setCode(req.getCode());
+        if (req.getDescription() != null) target.setDescription(req.getDescription());
+        target.setActif(req.isActif());
+        if (req.getDepartmentId() != null) {
+            target.setDepartment(departmentRepository.findById(req.getDepartmentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Direction/structure introuvable: " + req.getDepartmentId())));
+        }
+        if (req.getRangId() != null) {
+            target.setRang(rangRepository.findById(req.getRangId())
+                    .orElseThrow(() -> new IllegalArgumentException("Rang introuvable: " + req.getRangId())));
+        }
+        return target;
+    }
+
     @PostMapping("/fonctions")
-    public ResponseEntity<?> createFonction(@RequestBody Fonction f,
+    public ResponseEntity<?> createFonction(@RequestBody FonctionRequest req,
                                             @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         ResponseEntity<Map<String, String>> denied = denyUnlessOrgManager(userEmail);
         if (denied != null) return denied;
+        Fonction f = applyFonctionRequest(new Fonction(), req);
         return ResponseEntity.ok(fonctionRepository.save(f));
     }
 
     @PutMapping("/fonctions/{id}")
-    public ResponseEntity<?> updateFonction(@PathVariable Long id, @RequestBody Fonction f,
+    public ResponseEntity<?> updateFonction(@PathVariable Long id, @RequestBody FonctionRequest req,
                                             @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         ResponseEntity<Map<String, String>> denied = denyUnlessOrgManager(userEmail);
         if (denied != null) return denied;
         Fonction existing = fonctionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Fonction introuvable: " + id));
-        if (f.getLibelle() != null) existing.setLibelle(f.getLibelle());
-        if (f.getCode() != null) existing.setCode(f.getCode());
-        if (f.getDescription() != null) existing.setDescription(f.getDescription());
-        existing.setActif(f.isActif());
-        return ResponseEntity.ok(fonctionRepository.save(existing));
+        return ResponseEntity.ok(fonctionRepository.save(applyFonctionRequest(existing, req)));
     }
 
     @GetMapping("/rangs")
@@ -101,11 +138,21 @@ public class ReferentielController {
         return ResponseEntity.ok(rangRepository.findAll());
     }
 
+    private void assertRangCodeAvailable(String code, Long selfId) {
+        if (code == null || code.isBlank()) return;
+        rangRepository.findByCode(code)
+                .filter(existing -> selfId == null || !existing.getId().equals(selfId))
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException("Un rang avec le code « " + code + " » existe déjà.");
+                });
+    }
+
     @PostMapping("/rangs")
     public ResponseEntity<?> createRang(@RequestBody Rang r,
                                         @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         ResponseEntity<Map<String, String>> denied = denyUnlessOrgManager(userEmail);
         if (denied != null) return denied;
+        assertRangCodeAvailable(r.getCode(), null);
         return ResponseEntity.ok(rangRepository.save(r));
     }
 
@@ -116,7 +163,9 @@ public class ReferentielController {
         if (denied != null) return denied;
         Rang existing = rangRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Rang introuvable: " + id));
+        assertRangCodeAvailable(r.getCode(), id);
         if (r.getLibelle() != null) existing.setLibelle(r.getLibelle());
+        if (r.getLibelleEn() != null) existing.setLibelleEn(r.getLibelleEn());
         if (r.getCode() != null) existing.setCode(r.getCode());
         if (r.getNiveau() != null) existing.setNiveau(r.getNiveau());
         existing.setActif(r.isActif());

@@ -11,6 +11,18 @@ public interface PersonnelRepository extends JpaRepository<Personnel, Long> {
 
     Optional<Personnel> findByMatricule(String matricule);
 
+    /**
+     * Same lookup as {@link #findByMatricule}, tolerant of duplicate rows sharing one matricule —
+     * a pre-existing data-quality issue for some AD-synced accounts (a bug in the AD sync that
+     * created a new Personnel row on every restart before it was fixed; the duplicates themselves
+     * are still there and haven't been consolidated). Callers that can't assume uniqueness should
+     * use this instead of {@link #findByMatricule}, which throws when more than one row matches.
+     */
+    List<Personnel> findAllByMatricule(String matricule);
+
+    /** Duplicate-tolerant lookup — see {@link #findAllByMatricule}. */
+    List<Personnel> findAllByEmailIgnoreCase(String email);
+
     List<Personnel> findByNomContainingIgnoreCase(String nom);
 
     List<Personnel> findByDepartement(String departement);

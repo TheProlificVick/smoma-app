@@ -134,13 +134,44 @@
         </div>
     </div>
 
+    <!-- Modal: Reject Report -->
+    <div class="modal fade" id="modalRejectReport" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" data-i18n="valRejectTitle">Rejeter le rapport de mission</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted" id="rejectReportContext"></p>
+                    <label class="form-label fw-bold" data-i18n="valRejectMotifLabel">Motif du rejet (obligatoire)</label>
+                    <textarea class="form-control" id="rejectMotif" rows="4" data-i18n-placeholder="valRejectMotifPlaceholder" placeholder="Expliquez à l'agent ce qui doit être corrigé avant de redéposer le rapport..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="commonCancel">Annuler</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmRejectReport()"><i class="fa-solid fa-ban me-1"></i> <span data-i18n="valRejectConfirm">Rejeter le rapport</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // Client-side mirror of AccessPolicy.canValidateReport (the server enforces it too) — only
+        // an account whose AD role resolved to HR officer, or the administrator, sees these
+        // buttons at all, instead of finding out from a 403 alert after clicking.
+        function currentUserCanValidateReports() {
+            const role = (localStorage.getItem('art_user_role') || '').toUpperCase();
+            return role === 'ROLE_ADMIN' || role === 'ROLE_HR_OFFICER';
+        }
+
         async function loadOrdres() {
             try {
-                const res = await fetch('/api/ordres-mission');
+                // GET /api/ordres-mission now scopes to the caller's own orders unless they're
+                // DRH/admin — this report-processing tool needs the full roster to select from.
+                const res = await fetch('/api/ordres-mission', { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
                 if (res.ok) {
                     const ordres = await res.json();
                     document.getElementById('rOmSelect').innerHTML = ordres.map(o => `<option value="${o.id}">${o.referenceOrdre || 'OM-#' + o.id} - ${o.personnel ? o.personnel.nom : 'Agent'}</option>`).join('');
@@ -153,7 +184,7 @@
         async function loadReports() {
             const tbody = document.getElementById('rapportsTbody');
             try {
-                const res = await fetch('/api/rapports');
+                const res = await fetch('/api/rapports', { headers: { 'X-User-Email': localStorage.getItem('art_user_email') || '' } });
                 if (res.ok) {
                     const reports = await res.json();
                     if (reports.length === 0) {
@@ -174,11 +205,15 @@
                             <td>
                                 ${r.statutValidation === 'VALIDE'
                                     ? `<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>${t('repValidated')}</span>`
+                                    : r.statutValidation === 'REJETE'
+                                    ? `<span class="badge bg-danger" title="${escapeHtml(r.motifRejet)}"><i class="fa-solid fa-ban me-1"></i>${t('valRejectBtn')}</span>
+                                       <div class="small text-danger mt-1" style="max-width:220px;">${escapeHtml(r.motifRejet)}</div>`
                                     : `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>${t('repPendingCheck')}</span>`}
                             </td>
                             <td class="text-end">
                                 ${r.fichierPath ? `<a href="${r.fichierPath}" target="_blank" class="btn btn-outline-secondary btn-sm me-1"><i class="fa-solid fa-file-pdf"></i></a>` : ''}
-                                ${r.statutValidation !== 'VALIDE' ? `<button class="btn btn-outline-success btn-sm" onclick="validateReport(${r.id})"><i class="fa-solid fa-check"></i> ${t('repValidateBtn')}</button>` : ''}
+                                ${r.statutValidation !== 'VALIDE' && currentUserCanValidateReports() ? `<button class="btn btn-outline-success btn-sm me-1" onclick="validateReport(${r.id})"><i class="fa-solid fa-check"></i> ${t('repValidateBtn')}</button>` : ''}
+                                ${r.statutValidation !== 'VALIDE' && currentUserCanValidateReports() ? `<button class="btn btn-outline-danger btn-sm" onclick="openRejectReport(${r.id}, '${escapeHtml(r.ordreDeMission && r.ordreDeMission.referenceOrdre || '').replace(/'/g, "\\'")}', '${escapeHtml(r.personnel ? r.personnel.nom + ' ' + (r.personnel.prenom || '') : '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-ban"></i> ${t('valRejectBtn')}</button>` : ''}
                             </td>
                         </tr>
                     `).join('');
@@ -243,6 +278,41 @@
                     loadReports();
                 } else {
                     const err = await res.json();
+                    alert('Erreur / Error: ' + (err.error || t('repValidateNoteSP')));
+                }
+            } catch (e) {
+                alert(t('commonLoadError'));
+            }
+        }
+
+        let rejectReportId = null;
+        function openRejectReport(id, omRef, agent) {
+            rejectReportId = id;
+            document.getElementById('rejectReportContext').textContent = `${omRef || 'OM'} — ${agent || ''}`;
+            document.getElementById('rejectMotif').value = '';
+            new bootstrap.Modal(document.getElementById('modalRejectReport')).show();
+        }
+
+        async function confirmRejectReport() {
+            const motif = document.getElementById('rejectMotif').value.trim();
+            if (!motif) {
+                alert(t('valRejectMotifRequired'));
+                return;
+            }
+            try {
+                const res = await fetch(`/api/rapports/${rejectReportId}/rejeter`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Email': localStorage.getItem('art_user_email') || ''
+                    },
+                    body: JSON.stringify({ motif })
+                });
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalRejectReport')).hide();
+                    loadReports();
+                } else {
+                    const err = await res.json().catch(() => ({}));
                     alert('Erreur / Error: ' + (err.error || t('repValidateNoteSP')));
                 }
             } catch (e) {

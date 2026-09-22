@@ -35,25 +35,67 @@ public class MandatController {
         this.fileStorageService = fileStorageService;
     }
 
+    /**
+     * Whoever manages mandates (DRH/admin, or an agent entitled to initiate one) gets the full
+     * roster, same as before; anyone else only gets back mandates they are personally part of —
+     * a mandate is a fully approved record by the time it exists (printed, DG-signed, scanned
+     * back in), so the agents on it should be able to consult it, just not everyone else's.
+     */
     @GetMapping
-    public ResponseEntity<List<MandatDeMission>> getAllMandats() {
-        return ResponseEntity.ok(mandatService.getAllMandats());
+    public ResponseEntity<List<MandatDeMission>> getAllMandats(
+            @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        List<MandatDeMission> all = mandatService.getAllMandats();
+        User actor = accessPolicy.resolve(requestEmail);
+        if (accessPolicy.isAdmin(actor) || accessPolicy.isHrOfficer(actor) || accessPolicy.canInitiateMandat(actor)) {
+            return ResponseEntity.ok(all);
+        }
+        List<MandatDeMission> own = all.stream()
+                .filter(m -> accessPolicy.canViewMandat(actor, m))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(own);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<MandatDeMission> getMandatById(@PathVariable Long id) {
-        return ResponseEntity.ok(mandatService.getMandatById(id));
+    public ResponseEntity<?> getMandatById(@PathVariable Long id,
+                                           @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        MandatDeMission mandat = mandatService.getMandatById(id);
+        User actor = accessPolicy.resolve(requestEmail);
+        if (!accessPolicy.canViewMandat(actor, mandat)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeMandatViewRule()));
+        }
+        return ResponseEntity.ok(mandat);
     }
 
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<InputStreamResource> downloadPdf(@PathVariable Long id) {
+    public ResponseEntity<?> downloadPdf(@PathVariable Long id,
+                                         @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
         MandatDeMission mandat = mandatService.getMandatById(id);
+        User actor = accessPolicy.resolve(requestEmail);
+        if (!accessPolicy.canViewMandat(actor, mandat)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeMandatViewRule()));
+        }
         ByteArrayInputStream pdf = pdfService.generateMandatDeMissionPdf(mandat);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "inline; filename="
                 + (mandat.getReferenceMandat() != null ? mandat.getReferenceMandat() : ("mandat-" + id)) + ".pdf");
         return ResponseEntity.ok().headers(headers).contentType(MediaType.APPLICATION_PDF)
                 .body(new InputStreamResource(pdf));
+    }
+
+    /**
+     * Marked by the client when it actually triggers printing or a PDF download of the official
+     * document — whoever may view the mandate may print it (same population as canViewMandat).
+     */
+    @PostMapping("/{id}/mark-printed")
+    public ResponseEntity<?> markPrinted(@PathVariable Long id,
+                                         @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        MandatDeMission mandat = mandatService.getMandatById(id);
+        User actor = accessPolicy.resolve(requestEmail);
+        if (!accessPolicy.canViewMandat(actor, mandat)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeMandatViewRule()));
+        }
+        MandatDeMission updated = mandatService.markPrinted(id, actor != null ? actor.getUsername() : requestEmail);
+        return ResponseEntity.ok(updated);
     }
 
     public static class MandatCreateRequest {

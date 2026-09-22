@@ -17,6 +17,9 @@ public class MotifReglementaire {
     @Column(nullable = false)
     private String libelle;
 
+    /** English translation of {@link #libelle}, shown instead of it when the UI language is English. */
+    private String libelleEn;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
@@ -35,6 +38,11 @@ public class MotifReglementaire {
         this.code = code;
         this.libelle = libelle;
         this.description = description;
+    }
+
+    public MotifReglementaire(String code, String libelle, String libelleEn, String description) {
+        this(code, libelle, description);
+        this.libelleEn = libelleEn;
     }
 
     public Long getId() {
@@ -59,6 +67,14 @@ public class MotifReglementaire {
 
     public void setLibelle(String libelle) {
         this.libelle = libelle;
+    }
+
+    public String getLibelleEn() {
+        return libelleEn;
+    }
+
+    public void setLibelleEn(String libelleEn) {
+        this.libelleEn = libelleEn;
     }
 
     public String getDescription() {

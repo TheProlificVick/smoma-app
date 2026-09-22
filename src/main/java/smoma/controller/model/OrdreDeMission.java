@@ -69,6 +69,17 @@ public class OrdreDeMission {
     private String rapportScannePath;
     private boolean rapportSoumis;
 
+    /**
+     * Set by the assigned agent (or DRH/admin) checking this step off as done — independently of
+     * dateFin, so an agent who finishes early isn't stuck "occupied" until the originally planned
+     * end date. MissionCapacityService.assertNoOverlap skips a step marked this way when checking
+     * whether the agent is free for a new assignment.
+     */
+    private boolean missionTerminee;
+
+    @Column(name = "date_fin_reelle")
+    private LocalDate dateFinReelle;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 64)
     private StatutOrdre statut;
@@ -76,6 +87,29 @@ public class OrdreDeMission {
     @OneToMany(mappedBy = "ordreDeMission", cascade = CascadeType.ALL, orphanRemoval = true)
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"ordreDeMission", "mandatDeMission"})
     private List<EtapeMission> etapes = new ArrayList<>();
+
+    // ---- Verso fields (page 2 of the paper form) — filled in by DRH/Finance and the agent as the
+    // mission actually unfolds (advance decompte at departure, expense note, receipt acknowledgment),
+    // independently of whether the order itself is still a draft or already DG-signed.
+    private String indemniteReduiteNombre;
+    private String indemniteReduiteTaux;
+    private String indemniteReduiteDecompte;
+    private String indemnitePartielleNombre;
+    private String indemnitePartielleTaux;
+    private String indemnitePartielleDecompte;
+    @Column(columnDefinition = "TEXT")
+    private String indicationRequisitions;
+    private String arreteSomme;
+    private String payeSomme;
+    private String payeeAvanceMontant;
+    private String payeeAvanceLieu;
+    private LocalDate payeeAvanceDate;
+    private String imputationBudgetaire;
+    private String acquitDepartRecu;
+    private String acquitDepartCni;
+    private String acquitDepartLieu;
+    private LocalDate acquitDepartDate;
+    private String acquitSoldeRecu;
 
     public OrdreDeMission() {
         this.dateEmission = LocalDate.now();
@@ -259,6 +293,22 @@ public class OrdreDeMission {
         this.rapportSoumis = rapportSoumis;
     }
 
+    public boolean isMissionTerminee() {
+        return missionTerminee;
+    }
+
+    public void setMissionTerminee(boolean missionTerminee) {
+        this.missionTerminee = missionTerminee;
+    }
+
+    public LocalDate getDateFinReelle() {
+        return dateFinReelle;
+    }
+
+    public void setDateFinReelle(LocalDate dateFinReelle) {
+        this.dateFinReelle = dateFinReelle;
+    }
+
     public StatutOrdre getStatut() {
         return statut;
     }
@@ -322,6 +372,60 @@ public class OrdreDeMission {
     public boolean isModifiable() {
         return statut == StatutOrdre.BROUILLON_MODIFIABLE;
     }
+
+    public String getIndemniteReduiteNombre() { return indemniteReduiteNombre; }
+    public void setIndemniteReduiteNombre(String v) { this.indemniteReduiteNombre = v; }
+
+    public String getIndemniteReduiteTaux() { return indemniteReduiteTaux; }
+    public void setIndemniteReduiteTaux(String v) { this.indemniteReduiteTaux = v; }
+
+    public String getIndemniteReduiteDecompte() { return indemniteReduiteDecompte; }
+    public void setIndemniteReduiteDecompte(String v) { this.indemniteReduiteDecompte = v; }
+
+    public String getIndemnitePartielleNombre() { return indemnitePartielleNombre; }
+    public void setIndemnitePartielleNombre(String v) { this.indemnitePartielleNombre = v; }
+
+    public String getIndemnitePartielleTaux() { return indemnitePartielleTaux; }
+    public void setIndemnitePartielleTaux(String v) { this.indemnitePartielleTaux = v; }
+
+    public String getIndemnitePartielleDecompte() { return indemnitePartielleDecompte; }
+    public void setIndemnitePartielleDecompte(String v) { this.indemnitePartielleDecompte = v; }
+
+    public String getIndicationRequisitions() { return indicationRequisitions; }
+    public void setIndicationRequisitions(String v) { this.indicationRequisitions = v; }
+
+    public String getArreteSomme() { return arreteSomme; }
+    public void setArreteSomme(String v) { this.arreteSomme = v; }
+
+    public String getPayeSomme() { return payeSomme; }
+    public void setPayeSomme(String v) { this.payeSomme = v; }
+
+    public String getPayeeAvanceMontant() { return payeeAvanceMontant; }
+    public void setPayeeAvanceMontant(String v) { this.payeeAvanceMontant = v; }
+
+    public String getPayeeAvanceLieu() { return payeeAvanceLieu; }
+    public void setPayeeAvanceLieu(String v) { this.payeeAvanceLieu = v; }
+
+    public LocalDate getPayeeAvanceDate() { return payeeAvanceDate; }
+    public void setPayeeAvanceDate(LocalDate v) { this.payeeAvanceDate = v; }
+
+    public String getImputationBudgetaire() { return imputationBudgetaire; }
+    public void setImputationBudgetaire(String v) { this.imputationBudgetaire = v; }
+
+    public String getAcquitDepartRecu() { return acquitDepartRecu; }
+    public void setAcquitDepartRecu(String v) { this.acquitDepartRecu = v; }
+
+    public String getAcquitDepartCni() { return acquitDepartCni; }
+    public void setAcquitDepartCni(String v) { this.acquitDepartCni = v; }
+
+    public String getAcquitDepartLieu() { return acquitDepartLieu; }
+    public void setAcquitDepartLieu(String v) { this.acquitDepartLieu = v; }
+
+    public LocalDate getAcquitDepartDate() { return acquitDepartDate; }
+    public void setAcquitDepartDate(LocalDate v) { this.acquitDepartDate = v; }
+
+    public String getAcquitSoldeRecu() { return acquitSoldeRecu; }
+    public void setAcquitSoldeRecu(String v) { this.acquitSoldeRecu = v; }
 
     public enum TypeMission {
         INTERNE,

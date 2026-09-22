@@ -16,6 +16,7 @@ import smoma.controller.model.Service.PdfGeneratorService;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/ordres-mission")
@@ -34,14 +35,35 @@ public class OrdreDeMissionController {
         this.fileStorageService = fileStorageService;
     }
 
+    /**
+     * DRH/admin (who manage mission orders) get the full roster, same as before. Anyone else only
+     * gets the orders actually issued to them — matched the same way as
+     * {@link AccessPolicy#canViewOrdreDeMission}, so "Mes Missions" can no longer receive (and then
+     * merely hide in the UI) every employee's mission data over the wire.
+     */
     @GetMapping
-    public ResponseEntity<List<OrdreDeMission>> getAllOrdres() {
-        return ResponseEntity.ok(omService.getAllOrdres());
+    public ResponseEntity<List<OrdreDeMission>> getAllOrdres(
+            @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        List<OrdreDeMission> all = omService.getAllOrdres();
+        User actor = accessPolicy.resolve(requestEmail);
+        if (accessPolicy.canIssueMissionOrder(actor)) {
+            return ResponseEntity.ok(all);
+        }
+        List<OrdreDeMission> own = all.stream()
+                .filter(om -> accessPolicy.canViewOrdreDeMission(actor, om))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(own);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrdreDeMission> getOrdreById(@PathVariable Long id) {
-        return ResponseEntity.ok(omService.getOrdreById(id));
+    public ResponseEntity<?> getOrdreById(@PathVariable Long id,
+                                          @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        OrdreDeMission om = omService.getOrdreById(id);
+        User actor = accessPolicy.resolve(requestEmail);
+        if (!accessPolicy.canViewOrdreDeMission(actor, om)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeOrdreDeMissionViewRule()));
+        }
+        return ResponseEntity.ok(om);
     }
 
     public static class DirectOmRequest {
@@ -103,9 +125,58 @@ public class OrdreDeMissionController {
         }
     }
 
-    @GetMapping("/{id}/pdf")
-    public ResponseEntity<InputStreamResource> downloadPdf(@PathVariable Long id) {
+    /**
+     * The verso fields (advance decompte, expense note, receipt acknowledgment) belong to whoever
+     * may see the order in the first place — the assigned agent (who fills in the acknowledgment
+     * they received payment) or DRH/admin (who fill in the administrative figures) — not only
+     * DRH/admin, and not gated on the order still being a draft, since this data is filled in as
+     * the mission actually happens.
+     */
+    @PutMapping("/{id}/verso")
+    public ResponseEntity<?> updateVerso(@PathVariable Long id, @RequestBody OrdreDeMission details,
+                                         @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
         OrdreDeMission om = omService.getOrdreById(id);
+        User actor = accessPolicy.resolve(requestEmail);
+        if (!accessPolicy.canViewOrdreDeMission(actor, om)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeOrdreDeMissionViewRule()));
+        }
+        try {
+            OrdreDeMission updated = omService.updateVersoDetails(id, details);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * The assigned agent checks their own step off as done (or DRH/admin does it for them) —
+     * same population as viewing the order. From then on, MissionCapacityService no longer counts
+     * this order as occupying the agent's calendar, so they can be assigned elsewhere right away.
+     */
+    @PostMapping("/{id}/terminer")
+    public ResponseEntity<?> completeMissionStep(@PathVariable Long id,
+                                                 @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        OrdreDeMission om = omService.getOrdreById(id);
+        User actor = accessPolicy.resolve(requestEmail);
+        if (!accessPolicy.canViewOrdreDeMission(actor, om)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeOrdreDeMissionViewRule()));
+        }
+        try {
+            OrdreDeMission updated = omService.completeMissionStep(id, actor != null ? actor.getUsername() : requestEmail);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<?> downloadPdf(@PathVariable Long id,
+                                         @RequestHeader(value = "X-User-Email", required = false) String requestEmail) {
+        OrdreDeMission om = omService.getOrdreById(id);
+        User actor = accessPolicy.resolve(requestEmail);
+        if (!accessPolicy.canViewOrdreDeMission(actor, om)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeOrdreDeMissionViewRule()));
+        }
         ByteArrayInputStream pdfStream = pdfService.generateOrdreDeMissionPdf(om);
 
         HttpHeaders headers = new HttpHeaders();

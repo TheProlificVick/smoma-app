@@ -117,6 +117,8 @@
                     </div>
                 </div>
 
+                <div class="alert alert-info fw-bold" id="aGenreConclusion"></div>
+
                 <div class="row g-4">
                     <div class="col-md-6">
                         <h6 class="fw-bold" data-i18n="analysisMissionsByGender">Missions Effectuées par Genre</h6>
@@ -127,6 +129,8 @@
                                     <th data-i18n="analysisMissionCount">Nombre de Missions</th>
                                     <th data-i18n="analysisAgentCount">Agents Distincts</th>
                                     <th data-i18n="analysisShare">Part (%)</th>
+                                    <th data-i18n="analysisTotalDays">Total Jours</th>
+                                    <th data-i18n="analysisTotalIndemnites">Total Indemnités Calculées</th>
                                 </tr>
                             </thead>
                             <tbody id="aGenreTable"></tbody>
@@ -143,11 +147,13 @@
                             </thead>
                             <tbody id="aTypeTable"></tbody>
                         </table>
+                        <h6 class="fw-bold" data-i18n="analysisReportCompliance">Taux de Dépôt des Rapports</h6>
+                        <p class="mb-0"><span class="fs-4 fw-bold" id="aTauxRapport">--</span>%</p>
                     </div>
                 </div>
 
                 <div class="row g-4 mt-1">
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <h6 class="fw-bold" data-i18n="analysisByDepartment">Missions par Direction / Structure (Top 10)</h6>
                         <table class="table table-sm table-bordered">
                             <thead class="table-light">
@@ -159,7 +165,77 @@
                             <tbody id="aDeptTable"></tbody>
                         </table>
                     </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold" data-i18n="analysisByDestination">Missions par Destination (Top 10)</h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="analysisDestination">Destination</th>
+                                    <th data-i18n="analysisMissionCount">Nombre de Missions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aDestTable"></tbody>
+                        </table>
+                    </div>
                 </div>
+
+                <div class="row g-4 mt-1">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold" data-i18n="analysisByTransport">Missions par Moyen de Transport</h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="analysisTransportMode">Moyen de Transport</th>
+                                    <th data-i18n="analysisMissionCount">Nombre de Missions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aTransportTable"></tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold" data-i18n="analysisByYear">Évolution des Missions par Année</h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="analysisYear">Année</th>
+                                    <th data-i18n="analysisMissionCount">Nombre de Missions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aYearTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row g-4 mt-1">
+                    <div class="col-12">
+                        <h6 class="fw-bold" data-i18n="analysisTopAgents">Agents les Plus Sollicités (Top 10)</h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="analysisAgentName">Agent</th>
+                                    <th data-i18n="analysisGender">Genre</th>
+                                    <th data-i18n="persColStructure">Structure / Direction</th>
+                                    <th data-i18n="analysisMissionCount">Nombre de Missions</th>
+                                    <th data-i18n="analysisTotalDays">Total Jours</th>
+                                    <th data-i18n="analysisTotalIndemnites">Total Indemnités Calculées</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aTopAgentsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI analysis of all mandates and mission orders, cross-checked against the report -->
+        <div class="card shadow-sm border-0 mb-4" id="aiAnalysisCard">
+            <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-wand-magic-sparkles me-1"></i> <span data-i18n="aiAnalysisTitle">Analyse IA du Bilan (Mandats & Ordres de Mission)</span></span>
+                <button class="btn btn-light btn-sm d-print-none" id="aiAnalysisBtn" onclick="runAiAnalysis()"><i class="fa-solid fa-play me-1"></i> <span id="aiAnalysisBtnLabel" data-i18n="aiAnalysisRun">Lancer l'analyse</span></button>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted" data-i18n="aiAnalysisIntro">Analyse automatique de tous les mandats et ordres de mission enregistrés, recoupée avec les chiffres du bilan ci-dessus.</p>
+                <div id="aiAnalysisResult"></div>
             </div>
         </div>
     </div>
@@ -185,13 +261,15 @@
             }
         }
 
-        const GENRE_LABELS = { HOMME: 'Masculin / Male', FEMME: 'Féminin / Female', NON_PRECISE: 'Non précisé / Unspecified' };
-
         async function loadMissionAnalysis() {
             try {
                 const res = await fetch('/api/statistiques/analyse-missions');
                 if (!res.ok) return;
                 const a = await res.json();
+
+                // Recomputed on every call (including on language switch) so these follow the
+                // current toggle, same as the rest of the page.
+                const GENRE_LABELS = { HOMME: t('adGenreMale'), FEMME: t('adGenreFemale'), NON_PRECISE: t('adGenreUnspecified') };
 
                 const effTotal = a.effectifTotal || 0;
                 document.getElementById('aEffectifH').innerText = a.effectifHommes || 0;
@@ -201,6 +279,9 @@
                 document.getElementById('aDureeMoyenne').innerText = a.dureeMoyenneJours ?? 0;
                 document.getElementById('aTotalIndemnites').innerText = Math.round(a.totalIndemnitesVersees || 0).toLocaleString('fr-FR');
 
+                const noData = `<tr><td colspan="6" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+                const fmtFcfa = (n) => Math.round(n || 0).toLocaleString('fr-FR');
+
                 const totalMissions = a.totalMissions || 0;
                 const genreRows = Object.entries(a.missionsByGenre || {}).map(([k, v]) => `
                     <tr>
@@ -208,16 +289,54 @@
                         <td>${v}</td>
                         <td>${(a.distinctAgentsByGenre || {})[k] ?? 0}</td>
                         <td>${totalMissions ? Math.round(v / totalMissions * 100) : 0}%</td>
+                        <td>${(a.joursMissionByGenre || {})[k] ?? 0}</td>
+                        <td>${fmtFcfa((a.indemnitesByGenre || {})[k])}</td>
                     </tr>`).join('');
-                document.getElementById('aGenreTable').innerHTML = genreRows || `<tr><td colspan="4" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+                document.getElementById('aGenreTable').innerHTML = genreRows || noData;
+
+                const missionsH = (a.missionsByGenre || {}).HOMME || 0;
+                const missionsF = (a.missionsByGenre || {}).FEMME || 0;
+                const conclusionEl = document.getElementById('aGenreConclusion');
+                if (a.genreDominant === 'EGALITE') {
+                    conclusionEl.innerText = t('analysisConclusionEqual') || `Égalité: ${missionsH} missions pour chaque genre.`;
+                } else {
+                    const leaderLabel = GENRE_LABELS[a.genreDominant] || a.genreDominant;
+                    const tpl = t('analysisConclusionTemplate') || '{genre} a effectué le plus de missions ({h} hommes contre {f} femmes).';
+                    conclusionEl.innerText = tpl.replace('{genre}', leaderLabel).replace('{h}', missionsH).replace('{f}', missionsF);
+                }
 
                 const typeRows = Object.entries(a.missionsByType || {}).map(([k, v]) => `
-                    <tr><td>${k === 'EXTERNE' ? 'EXTERNE (International)' : 'INTERNE (Cameroun)'}</td><td>${v}</td></tr>`).join('');
+                    <tr><td>${k === 'EXTERNE' ? t('typeExterne') : t('typeInterne')}</td><td>${v}</td></tr>`).join('');
                 document.getElementById('aTypeTable').innerHTML = typeRows || `<tr><td colspan="2" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+
+                document.getElementById('aTauxRapport').innerText = a.tauxRapportSoumisPct ?? 0;
 
                 const deptEntries = Object.entries(a.missionsByDepartment || {}).sort((x, y) => y[1] - x[1]).slice(0, 10);
                 document.getElementById('aDeptTable').innerHTML = deptEntries.map(([k, v]) => `
                     <tr><td>${k}</td><td>${v}</td></tr>`).join('') || `<tr><td colspan="2" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+
+                const destEntries = Object.entries(a.missionsByDestination || {});
+                document.getElementById('aDestTable').innerHTML = destEntries.map(([k, v]) => `
+                    <tr><td>${k}</td><td>${v}</td></tr>`).join('') || `<tr><td colspan="2" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+
+                const transportEntries = Object.entries(a.missionsByTransportMode || {}).sort((x, y) => y[1] - x[1]);
+                document.getElementById('aTransportTable').innerHTML = transportEntries.map(([k, v]) => `
+                    <tr><td>${k}</td><td>${v}</td></tr>`).join('') || `<tr><td colspan="2" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+
+                const yearEntries = Object.entries(a.missionsByYear || {});
+                document.getElementById('aYearTable').innerHTML = yearEntries.map(([k, v]) => `
+                    <tr><td>${k}</td><td>${v}</td></tr>`).join('') || `<tr><td colspan="2" class="text-center text-muted">${t('commonNoData') || 'Aucune donnée'}</td></tr>`;
+
+                const topAgentsRows = (a.topAgents || []).map(ag => `
+                    <tr>
+                        <td>${ag.nomComplet || '?'}</td>
+                        <td>${GENRE_LABELS[ag.genre] || ag.genre}</td>
+                        <td>${ag.departement || '—'}</td>
+                        <td>${ag.nbMissions}</td>
+                        <td>${ag.totalJours}</td>
+                        <td>${fmtFcfa(ag.totalIndemnite)}</td>
+                    </tr>`).join('');
+                document.getElementById('aTopAgentsTable').innerHTML = topAgentsRows || noData;
             } catch (e) {
                 console.error(e);
             }
@@ -229,6 +348,52 @@
             loadMissionAnalysis();
         });
         window.addEventListener('smoma_lang_changed', () => { smomaI18n.applyTranslations(); loadMissionAnalysis(); });
+
+        // ---- AI analysis of all mandates and mission orders (read-only) ----
+        let aiAnalysisShown = false;
+        async function runAiAnalysis() {
+            const out = document.getElementById('aiAnalysisResult');
+            const btn = document.getElementById('aiAnalysisBtn');
+            btn.disabled = true;
+            out.innerHTML = `<div class="text-muted"><span class="spinner-border spinner-border-sm me-2"></span>${escapeHtml(t('aiAnalysisRunning'))}</div>`;
+            try {
+                const res = await fetch('/api/statistiques/analyse-ia?lang=' + encodeURIComponent(smomaI18n.currentLang));
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const a = await res.json();
+                const levelStyle = {
+                    warning: { icon: 'fa-triangle-exclamation', cls: 'text-warning' },
+                    success: { icon: 'fa-circle-check', cls: 'text-success' },
+                    info: { icon: 'fa-circle-info', cls: 'text-primary' }
+                };
+                const findings = (a.constats || []).map(c => {
+                    const s = levelStyle[c.niveau] || levelStyle.info;
+                    return `<li class="list-group-item d-flex gap-2"><i class="fa-solid ${s.icon} ${s.cls} mt-1"></i><span>${escapeHtml(c.texte)}</span></li>`;
+                }).join('');
+                const checks = (a.verifications || []).map(v => `
+                    <tr>
+                        <td class="text-center" style="width:48px"><i class="fa-solid ${v.ok ? 'fa-circle-check text-success' : 'fa-triangle-exclamation text-warning'}"></i></td>
+                        <td>${escapeHtml(v.libelle)}</td>
+                        <td class="text-muted">${escapeHtml(v.detail)}</td>
+                    </tr>`).join('');
+                const when = a.genereLe ? new Date(a.genereLe).toLocaleString(smomaI18n.currentLang === 'en' ? 'en-GB' : 'fr-FR') : '';
+                out.innerHTML = `
+                    <div class="alert alert-info mb-4">${escapeHtml(a.resume)}</div>
+                    <h6 class="fw-bold">${escapeHtml(t('aiAnalysisFindings'))}</h6>
+                    <ul class="list-group list-group-flush mb-4">${findings}</ul>
+                    <h6 class="fw-bold">${escapeHtml(t('aiAnalysisChecks'))} <span class="badge bg-secondary ms-1">${a.controlesConformes}/${a.controlesTotal} ${escapeHtml(t('aiAnalysisChecksPassed'))}</span></h6>
+                    <table class="table table-sm table-bordered mb-2"><tbody>${checks}</tbody></table>
+                    <small class="text-muted">${escapeHtml(t('aiAnalysisGeneratedAt'))} ${escapeHtml(when)}</small>`;
+                aiAnalysisShown = true;
+            } catch (e) {
+                console.error(e);
+                out.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(t('aiAnalysisError'))}</div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', runAiAnalysis);
+        // Re-run on language switch so the written analysis follows the selected language.
+        window.addEventListener('smoma_lang_changed', () => { if (aiAnalysisShown) runAiAnalysis(); });
     </script>
 </body>
 </html>

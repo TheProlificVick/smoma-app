@@ -107,6 +107,42 @@
             box-shadow: 0 0 0 3px rgba(15, 44, 89, 0.15);
         }
 
+        .password-field {
+            position: relative;
+        }
+
+        .password-field .form-control {
+            padding-right: 42px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border: none;
+            background: transparent;
+            color: #6c757d;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+
+        .password-toggle:hover {
+            color: var(--art-navy);
+            background: rgba(15, 44, 89, 0.06);
+        }
+
+        .password-toggle:focus-visible {
+            outline: 2px solid var(--art-navy);
+            outline-offset: 1px;
+        }
+
         .btn-submit {
             width: 100%;
             padding: 12px;
@@ -189,7 +225,12 @@
             
             <div class="form-group">
                 <label for="password" data-i18n="passwordLabel">Mot de passe sécurisé</label>
-                <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                <div class="password-field">
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    <button type="button" class="password-toggle" id="passwordToggle" onclick="togglePasswordVisibility()" aria-label="Afficher le mot de passe">
+                        <i class="fa-solid fa-eye" id="passwordToggleIcon"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="btn-submit" data-i18n="loginSubmitBtn">Se connecter au Portail</button>
@@ -202,6 +243,22 @@
 
     <script src="/js/i18n.js"></script>
     <script>
+        // Lets the user check what they actually typed before submitting, without permanently
+        // weakening the field — it reverts to masked on every page load, and nothing here ever
+        // stores or logs the password value itself.
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('passwordToggleIcon');
+            const btn = document.getElementById('passwordToggle');
+            const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            icon.classList.toggle('fa-eye', showing);
+            icon.classList.toggle('fa-eye-slash', !showing);
+            const label = t(showing ? 'passwordToggleShow' : 'passwordToggleHide');
+            btn.setAttribute('aria-label', label);
+            btn.setAttribute('title', label);
+        }
+
         function updateLangButtons() {
             const current = smomaI18n.getLang();
             const btnFr = document.getElementById('btnFr');

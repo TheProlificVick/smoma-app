@@ -55,12 +55,27 @@ public class RapportMissionController {
         }
     }
 
+    /**
+     * Whoever manages report validation (DRH/admin) gets the full roster, same as before;
+     * anyone else only gets back reports that belong to them — a report's title, description,
+     * and any rejection justification are not something a colleague should see over the wire,
+     * even if the UI that called this only intended to show the caller their own.
+     */
     @GetMapping
     public ResponseEntity<List<RapportMission>> searchReports(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String categorie,
-            @RequestParam(required = false) Long personnelId) {
-        return ResponseEntity.ok(rapportService.searchReports(query, categorie, personnelId));
+            @RequestParam(required = false) Long personnelId,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        User actor = accessPolicy.resolve(userEmail);
+        List<RapportMission> all = rapportService.searchReports(query, categorie, personnelId);
+        if (accessPolicy.canValidateReport(actor)) {
+            return ResponseEntity.ok(all);
+        }
+        List<RapportMission> own = all.stream()
+                .filter(r -> accessPolicy.canViewReport(actor, r))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(own);
     }
 
     @PostMapping("/{id}/valider")
@@ -71,8 +86,28 @@ public class RapportMissionController {
             return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeReportRule()));
         }
         try {
-            RapportMission validated = rapportService.validateReport(id);
+            RapportMission validated = rapportService.validateReport(id, user.getUsername());
             return ResponseEntity.ok(validated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    public static class RejectRequest {
+        public String motif;
+    }
+
+    /** Same DRH/SP/admin population as validation — rejecting requires a typed-in justification. */
+    @PostMapping("/{id}/rejeter")
+    public ResponseEntity<?> rejectReport(@PathVariable Long id, @RequestBody RejectRequest body,
+                                          @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        User user = accessPolicy.resolve(userEmail);
+        if (!accessPolicy.canValidateReport(user)) {
+            return ResponseEntity.status(403).body(Map.of("error", accessPolicy.describeReportRule()));
+        }
+        try {
+            RapportMission rejected = rapportService.rejectReport(id, body != null ? body.motif : null, user.getUsername());
+            return ResponseEntity.ok(rejected);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

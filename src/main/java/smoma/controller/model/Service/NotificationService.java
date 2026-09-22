@@ -54,7 +54,7 @@ public class NotificationService {
         create(p.getMatricule(), p.getEmail(),
                 "Nouvelle mission assignée / New mission assigned",
                 "L'ordre de mission " + ref + " vous a été assigné pour la période " + periode + lieu
-                        + ". Ouvrez « Mes Missions » pour télécharger le PDF officiel et déposer votre rapport.",
+                        + ". Ouvrez « Mes Missions » pour télécharger le PDF officiel.",
                 "MISSION_ASSIGNED",
                 "/my-missions.html");
         sendEmailNotification(p.getEmail(), "Nouvelle mission assignée " + ref, "Voir le portail SMOMA.");
@@ -82,6 +82,18 @@ public class NotificationService {
                 "Votre rapport de mission pour " + ref + " a été validé par la DRH (Service du Personnel). "
                         + "Le solde des frais peut désormais être liquidé.",
                 "REPORT_VALIDATED",
+                "/my-missions.html");
+    }
+
+    public void notifyReportRejected(OrdreDeMission om, String motif) {
+        if (om == null || om.getPersonnel() == null) return;
+        Personnel p = om.getPersonnel();
+        String ref = om.getReferenceOrdre() != null ? om.getReferenceOrdre() : ("OM #" + om.getId());
+        create(p.getMatricule(), p.getEmail(),
+                "Rapport de mission rejeté / Mission report rejected",
+                "Votre rapport de mission pour " + ref + " a été rejeté par la DRH (Service du Personnel). "
+                        + "Motif : " + motif + ".",
+                "REPORT_REJECTED",
                 "/my-missions.html");
     }
 
@@ -136,11 +148,21 @@ public class NotificationService {
         return forRecipient(matricule, username).stream().filter(n -> !n.isLu()).count();
     }
 
-    public void markRead(Long id) {
-        notificationRepository.findById(id).ifPresent(n -> {
-            n.setLu(true);
-            notificationRepository.save(n);
-        });
+    /**
+     * Marks a single notification read — only if it actually belongs to the given recipient.
+     * Returns false (and changes nothing) for a notification that doesn't exist or belongs to
+     * someone else, so a caller can't clear another account's unread badge by guessing an id.
+     */
+    public boolean markRead(Long id, String matricule, String username) {
+        return notificationRepository.findById(id)
+                .filter(n -> belongsTo(n, matricule, username))
+                .map(n -> { n.setLu(true); notificationRepository.save(n); return true; })
+                .orElse(false);
+    }
+
+    private static boolean belongsTo(Notification n, String matricule, String username) {
+        if (matricule != null && !matricule.isBlank() && matricule.equalsIgnoreCase(n.getRecipientMatricule())) return true;
+        return username != null && !username.isBlank() && username.equalsIgnoreCase(n.getRecipientUsername());
     }
 
     public void markAllRead(String matricule, String username) {

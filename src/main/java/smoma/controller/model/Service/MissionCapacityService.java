@@ -35,36 +35,56 @@ public class MissionCapacityService {
         return d > 0 ? d : 1;
     }
 
-    /** Mission days already committed to this agent in the given fiscal (calendar) year. */
+    /**
+     * Mission days already committed to this agent in the given fiscal (calendar) year — counting
+     * only the days of each order that actually fall within that year. An order spanning a
+     * year boundary (e.g. Dec 20 → Jan 10) is clipped to its overlap with [fiscalYear-01-01,
+     * fiscalYear-12-31] rather than attributed wholesale to the year it started in — otherwise
+     * every one of its days lands in the start year's tally and none in the year it also occupies.
+     */
     public long committedDaysInFiscalYear(Long personnelId, int fiscalYear, Long excludeOmId) {
         if (personnelId == null) return 0;
+        LocalDate yearStart = LocalDate.of(fiscalYear, 1, 1);
+        LocalDate yearEnd = LocalDate.of(fiscalYear, 12, 31);
         List<OrdreDeMission> all = ordreRepository.findAll();
         long sum = 0;
         for (OrdreDeMission o : all) {
             if (o.getPersonnel() == null || !personnelId.equals(o.getPersonnel().getId())) continue;
             if (excludeOmId != null && excludeOmId.equals(o.getId())) continue;
             if (o.getDateDebut() == null || o.getDateFin() == null) continue;
-            if (o.getDateDebut().getYear() != fiscalYear) continue;
-            sum += durationDays(o.getDateDebut(), o.getDateFin());
+            LocalDate overlapStart = o.getDateDebut().isAfter(yearStart) ? o.getDateDebut() : yearStart;
+            LocalDate overlapEnd = o.getDateFin().isBefore(yearEnd) ? o.getDateFin() : yearEnd;
+            if (overlapStart.isAfter(overlapEnd)) continue;
+            sum += durationDays(overlapStart, overlapEnd);
         }
         return sum;
     }
 
     /**
      * Throws if committing {@code agent} to a mission period {@code [dateDebut, dateFin]} would
-     * push their total mission days for that fiscal year beyond {@link #MAX_DAYS_PER_FISCAL_YEAR}.
+     * push their total mission days for any fiscal year that period touches beyond
+     * {@link #MAX_DAYS_PER_FISCAL_YEAR}. A period spanning a year boundary is checked against
+     * every year it overlaps, each time counting only the days that actually fall in that year —
+     * otherwise a Dec→Jan mission could dodge both years' caps at once (all its days billed to
+     * the start year, which then never gets checked against the end year at all).
      */
     public void assertWithinAnnualCap(Personnel agent, LocalDate dateDebut, LocalDate dateFin, Long excludeOmId) {
         if (agent == null || dateDebut == null || dateFin == null) return;
-        long newDays = durationDays(dateDebut, dateFin);
-        int fiscalYear = dateDebut.getYear();
-        long existing = committedDaysInFiscalYear(agent.getId(), fiscalYear, excludeOmId);
-        long total = existing + newDays;
-        if (total > MAX_DAYS_PER_FISCAL_YEAR) {
-            throw new IllegalStateException("Plafond annuel de mission dépassé pour " + agent.getFullName()
-                    + " : " + existing + " jour(s) déjà comptabilisé(s) sur l'exercice " + fiscalYear
-                    + "; cette affectation de " + newDays + " jour(s) porterait le total à " + total
-                    + " jours, au-delà du plafond réglementaire de " + MAX_DAYS_PER_FISCAL_YEAR + " jours/an.");
+        for (int year = dateDebut.getYear(); year <= dateFin.getYear(); year++) {
+            LocalDate yearStart = LocalDate.of(year, 1, 1);
+            LocalDate yearEnd = LocalDate.of(year, 12, 31);
+            LocalDate overlapStart = dateDebut.isAfter(yearStart) ? dateDebut : yearStart;
+            LocalDate overlapEnd = dateFin.isBefore(yearEnd) ? dateFin : yearEnd;
+            if (overlapStart.isAfter(overlapEnd)) continue;
+            long newDaysThisYear = durationDays(overlapStart, overlapEnd);
+            long existing = committedDaysInFiscalYear(agent.getId(), year, excludeOmId);
+            long total = existing + newDaysThisYear;
+            if (total > MAX_DAYS_PER_FISCAL_YEAR) {
+                throw new IllegalStateException("Plafond annuel de mission dépassé pour " + agent.getFullName()
+                        + " : " + existing + " jour(s) déjà comptabilisé(s) sur l'exercice " + year
+                        + "; cette affectation ajouterait " + newDaysThisYear + " jour(s) sur cet exercice, portant le total à " + total
+                        + " jours, au-delà du plafond réglementaire de " + MAX_DAYS_PER_FISCAL_YEAR + " jours/an.");
+            }
         }
     }
 
@@ -77,6 +97,9 @@ public class MissionCapacityService {
         for (OrdreDeMission existing : ordreRepository.findAll()) {
             if (existing.getPersonnel() == null || !existing.getPersonnel().getId().equals(agent.getId())) continue;
             if (excludeOmId != null && excludeOmId.equals(existing.getId())) continue;
+            // The agent has checked this step off as done — it no longer occupies their calendar,
+            // regardless of how much of the originally planned period remains.
+            if (existing.isMissionTerminee()) continue;
             if (existing.getDateDebut() == null || existing.getDateFin() == null) continue;
             boolean overlaps = !dateDebut.isAfter(existing.getDateFin()) && !dateFin.isBefore(existing.getDateDebut());
             if (overlaps) {

@@ -47,6 +47,9 @@ public class OrdreDeMissionService {
 
     @Transactional
     public OrdreDeMission createDirectOrdre(OrdreDeMission om, Long mandatId, Long personnelId, Long etapeId, List<EtapeMission> etapes) {
+        if (om.getDateDebut() != null && om.getDateFin() != null && om.getDateFin().isBefore(om.getDateDebut())) {
+            throw new IllegalArgumentException("La date de fin ne peut pas précéder la date de début.");
+        }
         if (mandatId != null) {
             MandatDeMission mandat = mandatRepository.findById(mandatId)
                     .orElseThrow(() -> new IllegalArgumentException("Mandat rattache introuvable: " + mandatId));
@@ -58,6 +61,12 @@ public class OrdreDeMissionService {
             }
             if (om.getReferenceJustification() == null || om.getReferenceJustification().isBlank()) {
                 om.setReferenceJustification(mandat.getReferenceJustification());
+            }
+            if (om.getLieuDepart() == null || om.getLieuDepart().isBlank()) {
+                om.setLieuDepart(mandat.getVilleDepart());
+            }
+            if (om.getLieuDestination() == null || om.getLieuDestination().isBlank()) {
+                om.setLieuDestination(mandat.getDestination());
             }
         } else {
             throw new IllegalArgumentException("Tout ordre de mission doit être obligatoirement rattaché à un mandat de mission existant.");
@@ -154,6 +163,64 @@ public class OrdreDeMissionService {
         om.setMontantIndemnite(indemnite);
         if (om.getMontantAvance() == null) om.setMontantAvance(java.math.BigDecimal.ZERO);
         om.setMontantSolde(indemnite.subtract(om.getMontantAvance()));
+
+        return ordreRepository.save(om);
+    }
+
+    /**
+     * The assigned agent (or DRH/admin) checks a step off as done — freeing them up for a new
+     * assignment immediately, instead of waiting for the originally planned dateFin. Idempotent
+     * and irreversible by design: once checked off there's no "uncheck", matching the paper
+     * process this mirrors (you don't un-finish a mission).
+     */
+    @Transactional
+    public OrdreDeMission completeMissionStep(Long omId, String actor) {
+        OrdreDeMission om = ordreRepository.findById(omId)
+                .orElseThrow(() -> new IllegalArgumentException("Ordre de mission introuvable: " + omId));
+        if (om.isMissionTerminee()) return om;
+        if (om.getDateDebut() != null && LocalDate.now().isBefore(om.getDateDebut())) {
+            throw new IllegalStateException("Cette étape ne débute que le " + om.getDateDebut()
+                    + " — elle ne peut pas être marquée terminée avant d'avoir commencé.");
+        }
+        om.setMissionTerminee(true);
+        om.setDateFinReelle(LocalDate.now());
+        OrdreDeMission saved = ordreRepository.save(om);
+        auditLogRepository.save(new AuditLog("COMPLETE_MISSION_STEP",
+                actor != null && !actor.isBlank() ? actor : "SYSTEM",
+                "Étape marquée terminée par l'agent: " + om.getReferenceOrdre()
+                        + (om.getPersonnel() != null ? " (" + om.getPersonnel().getFullName() + ")" : "")));
+        return saved;
+    }
+
+    /**
+     * Saves the verso ("page 2") fields — advance decompte, expense note, receipt acknowledgment —
+     * unlike {@link #updateOrdre}, this is never blocked by {@code isModifiable()}: this data is
+     * filled in as the mission actually happens (at departure, on return), which is routinely
+     * *after* the order has already been DG-signed and locked for its core fields.
+     */
+    @Transactional
+    public OrdreDeMission updateVersoDetails(Long omId, OrdreDeMission details) {
+        OrdreDeMission om = ordreRepository.findById(omId)
+                .orElseThrow(() -> new IllegalArgumentException("Ordre de mission introuvable: " + omId));
+
+        om.setIndemniteReduiteNombre(details.getIndemniteReduiteNombre());
+        om.setIndemniteReduiteTaux(details.getIndemniteReduiteTaux());
+        om.setIndemniteReduiteDecompte(details.getIndemniteReduiteDecompte());
+        om.setIndemnitePartielleNombre(details.getIndemnitePartielleNombre());
+        om.setIndemnitePartielleTaux(details.getIndemnitePartielleTaux());
+        om.setIndemnitePartielleDecompte(details.getIndemnitePartielleDecompte());
+        om.setIndicationRequisitions(details.getIndicationRequisitions());
+        om.setArreteSomme(details.getArreteSomme());
+        om.setPayeSomme(details.getPayeSomme());
+        om.setPayeeAvanceMontant(details.getPayeeAvanceMontant());
+        om.setPayeeAvanceLieu(details.getPayeeAvanceLieu());
+        om.setPayeeAvanceDate(details.getPayeeAvanceDate());
+        om.setImputationBudgetaire(details.getImputationBudgetaire());
+        om.setAcquitDepartRecu(details.getAcquitDepartRecu());
+        om.setAcquitDepartCni(details.getAcquitDepartCni());
+        om.setAcquitDepartLieu(details.getAcquitDepartLieu());
+        om.setAcquitDepartDate(details.getAcquitDepartDate());
+        om.setAcquitSoldeRecu(details.getAcquitSoldeRecu());
 
         return ordreRepository.save(om);
     }

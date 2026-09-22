@@ -68,14 +68,26 @@ const CAMEROON_CITIES = [
     { name: "Mbandjock",    region: "Centre" }
 ];
 
-/** Fill a <datalist> element with the city list (value = city, label = ART role or region). */
+/**
+ * Fill a <datalist> element with the city list — value = city (what actually lands in the
+ * input), label text = "City — role" so the city name is always the first thing visible in the
+ * suggestion. Several cities share the exact same ART role text ("Délégation Régionale ART" for
+ * Yaoundé, Douala, Garoua and Bamenda alike) — showing only that role, with no city name in the
+ * visible label, made four different suggestions look identical and left no way to tell them
+ * apart while picking. Setting both the label attribute and the option's text content covers
+ * browsers that read either one for a datalist's displayed suggestion text.
+ */
 function populateCityDatalist(datalistId) {
     const dl = document.getElementById(datalistId);
     if (!dl) return;
     const seen = new Set();
     dl.innerHTML = CAMEROON_CITIES
         .filter(c => c && c.name && !c.skip && !seen.has(c.name) && seen.add(c.name))
-        .map(c => `<option value="${c.name}">${c.art ? c.art : c.region}</option>`)
+        .map(c => {
+            const roleText = c.art ? c.art : c.region;
+            const label = `${c.name} — ${roleText}`;
+            return `<option value="${c.name}" label="${label}">${label}</option>`;
+        })
         .join('');
 }
 

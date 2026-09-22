@@ -32,7 +32,10 @@ public class RapportMissionService {
         OrdreDeMission om = ordreRepository.findById(omId)
                 .orElseThrow(() -> new IllegalArgumentException("Ordre de mission introuvable: " + omId));
 
-        RapportMission rapport = new RapportMission();
+        // One report per order (RapportMission.ordreDeMission is a unique OneToOne): a rejected
+        // report is corrected and re-deposited in place rather than creating a second row that
+        // would violate that constraint.
+        RapportMission rapport = rapportRepository.findByOrdreDeMission(om).orElseGet(RapportMission::new);
         rapport.setOrdreDeMission(om);
         rapport.setPersonnel(om.getPersonnel());
         rapport.setTitre(titre != null ? titre : "Rapport de mission " + om.getReferenceOrdre());
@@ -42,6 +45,8 @@ public class RapportMissionService {
         rapport.setJustificatifsJson(justificatifsJson);
         rapport.setDateDepot(LocalDate.now());
         rapport.setStatutValidation("EN_ATTENTE");
+        rapport.setStatut(RapportMission.StatutRapport.DEPOSE);
+        rapport.setMotifRejet(null);
 
         om.setRapportScannePath(fichierPath);
         om.setRapportSoumis(true);
@@ -53,14 +58,53 @@ public class RapportMissionService {
     }
 
     @Transactional
-    public RapportMission validateReport(Long rapportId) {
+    public RapportMission validateReport(Long rapportId, String validatorIdentity) {
         RapportMission rapport = rapportRepository.findById(rapportId)
                 .orElseThrow(() -> new IllegalArgumentException("Rapport introuvable: " + rapportId));
 
         rapport.setStatutValidation("VALIDE");
+        rapport.setStatut(RapportMission.StatutRapport.VALIDE);
+        rapport.setMotifRejet(null);
+        rapport.setDateValidation(LocalDate.now());
+        rapport.setValidateurUsername(validatorIdentity);
         auditLogRepository.save(new AuditLog("VALIDATE_REPORT", "SYSTEM", "Rapport de mission valide ID: " + rapportId));
         RapportMission saved = rapportRepository.save(rapport);
         notificationService.notifyReportValidated(rapport.getOrdreDeMission());
+        return saved;
+    }
+
+    /**
+     * Sends the report back to the agent with a justification instead of validating it — the
+     * agent is expected to correct and re-submit. Rejecting a report also clears
+     * {@code OrdreDeMission.rapportSoumis} so the "submit report" flow re-opens for them.
+     */
+    @Transactional
+    public RapportMission rejectReport(Long rapportId, String motif, String validatorIdentity) {
+        if (motif == null || motif.isBlank()) {
+            throw new IllegalArgumentException("La justification du rejet est obligatoire.");
+        }
+        RapportMission rapport = rapportRepository.findById(rapportId)
+                .orElseThrow(() -> new IllegalArgumentException("Rapport introuvable: " + rapportId));
+
+        rapport.setStatutValidation("REJETE");
+        // StatutRapport has no REJETE value — it tracks submission state (has a report been filed
+        // at all), a different axis from statutValidation's review outcome. A rejected report is
+        // still a deposited one (the file exists, DEPOSE), just not validated.
+        rapport.setStatut(RapportMission.StatutRapport.DEPOSE);
+        rapport.setMotifRejet(motif.trim());
+        rapport.setDateValidation(LocalDate.now());
+        rapport.setValidateurUsername(validatorIdentity);
+        RapportMission saved = rapportRepository.save(rapport);
+
+        OrdreDeMission om = rapport.getOrdreDeMission();
+        if (om != null) {
+            om.setRapportSoumis(false);
+            ordreRepository.save(om);
+        }
+
+        auditLogRepository.save(new AuditLog("REJECT_REPORT", "SYSTEM",
+                "Rapport de mission rejete ID: " + rapportId + " — motif: " + motif.trim()));
+        notificationService.notifyReportRejected(rapport.getOrdreDeMission(), motif.trim());
         return saved;
     }
 

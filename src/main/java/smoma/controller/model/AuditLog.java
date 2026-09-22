@@ -13,7 +13,14 @@ public class AuditLog {
 
     private String action;
     private String username;
+
+    // Plain String defaults to VARCHAR(255), which a generated message (agent names, exception
+    // text, joined lists) can exceed — that insert failure used to silently abort whatever
+    // business action triggered it (it runs inside the same @Transactional method), so
+    // traceability itself became the single point of failure. TEXT has no such ceiling.
+    @Column(columnDefinition = "TEXT")
     private String details;
+
     private LocalDateTime timestamp;
 
     public AuditLog() {

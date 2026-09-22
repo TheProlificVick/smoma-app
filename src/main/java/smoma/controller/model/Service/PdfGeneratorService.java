@@ -78,12 +78,12 @@ public class PdfGeneratorService {
 
             Font headerFontFr = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(11, 37, 69));
             Font headerFontEn = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.DARK_GRAY);
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, Color.WHITE);
+            Font titleFontOnWhite = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15, Color.BLACK);
             Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.BLACK);
             Font italicFont = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 7, Color.DARK_GRAY);
             Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.BLACK);
             Font smallFont = FontFactory.getFont(FontFactory.HELVETICA, 7, Color.DARK_GRAY);
-            Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE);
+            Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
             Font approveFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, new Color(25, 135, 84));
 
             Personnel p = om.getPersonnel();
@@ -127,8 +127,10 @@ public class PdfGeneratorService {
             titleBox.setWidthPercentage(100);
             titleBox.setSpacingBefore(6);
             titleBox.setSpacingAfter(10);
-            PdfPCell titleCell = new PdfPCell(new Phrase("ORDRE DE MISSION", titleFont));
-            titleCell.setBackgroundColor(new Color(11, 37, 69));
+            // Plain white box, black text and a border — the real paper form's title banner has no
+            // color fill, unlike the app's own navy branding used elsewhere.
+            PdfPCell titleCell = new PdfPCell(new Phrase("ORDRE DE MISSION", titleFontOnWhite));
+            titleCell.setBorderWidth(1.5f);
             titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
             titleCell.setPadding(8);
             titleBox.addCell(titleCell);
@@ -140,6 +142,12 @@ public class PdfGeneratorService {
             if ((destination == null || destination.isBlank()) && om.getEtapes() != null && !om.getEtapes().isEmpty()) {
                 destination = om.getEtapes().stream().map(EtapeMission::getLieu).filter(l -> l != null && !l.isBlank())
                         .reduce((a, b) -> a + " - " + b).orElse(null);
+            }
+            // The paper form has a single "Destination" line — the departure city (captured on the
+            // mandate) is prefixed onto it rather than added as an extra row, to keep the recto
+            // an exact match of the physical form.
+            if (om.getLieuDepart() != null && !om.getLieuDepart().isBlank()) {
+                destination = om.getLieuDepart().trim() + (destination != null && !destination.isBlank() ? " → " + destination.trim() : "");
             }
             String motif = om.getObjectifsSpecifiques();
             if ((motif == null || motif.isBlank()) && om.getMandatDeMission() != null) motif = om.getMandatDeMission().getObjetGeneral();
@@ -199,10 +207,12 @@ public class PdfGeneratorService {
             decompte.addCell(plainCell(fmt(totalIndemnite) + " FCFA", bodyFont));
             document.add(decompte);
 
-            Paragraph arrete = new Paragraph("Arrêté le présent décompte à la somme de " + fmt(totalIndemnite) + " FCFA (" + amountFootnote() + ")", bodyFont);
+            // Left blank exactly as on the paper original — this line is completed by hand (the sum
+            // in words) at the time of certification, not pre-filled from the Décompte figures above.
+            Paragraph arrete = new Paragraph("Arrêté le présent décompte à la somme de ..................................................................................", bodyFont);
             arrete.setSpacingBefore(10);
             document.add(arrete);
-            Paragraph lieuDate = new Paragraph("A Yaoundé, le " + (om.getDateEmission() != null ? om.getDateEmission().toString() : "......................."), bodyFont);
+            Paragraph lieuDate = new Paragraph("A .............................................. le ..............................................", bodyFont);
             lieuDate.setSpacingBefore(4);
             lieuDate.setSpacingAfter(10);
             document.add(lieuDate);
@@ -236,11 +246,13 @@ public class PdfGeneratorService {
             document.add(finPrecoce);
 
             document.add(sectionHeader("DECOMPTES DES AVANCES - DETAILS OF ADVANCES", sectionFont));
-            PdfPTable avancesHead = new PdfPTable(2);
-            avancesHead.setWidthPercentage(100);
+            // The real form only labels this table "AU DEPART - AT DEPARTURE" — there is no
+            // separate "AU RETOUR" heading on the paper original, so this stays a single caption
+            // rather than a two-column split that would fabricate a field not actually on the form.
+            Paragraph avancesHead = new Paragraph("AU DEPART - AT DEPARTURE", boldFont);
+            avancesHead.setAlignment(Element.ALIGN_CENTER);
             avancesHead.setSpacingBefore(4);
-            avancesHead.addCell(headerCell("AU DEPART - AT DEPARTURE", boldFont));
-            avancesHead.addCell(headerCell("AU RETOUR - ON RETURN", boldFont));
+            avancesHead.setSpacingAfter(2);
             document.add(avancesHead);
 
             BigDecimal montantAvance = avance != null && avance.getMontantAvance() != null ? avance.getMontantAvance() : BigDecimal.ZERO;
@@ -271,11 +283,13 @@ public class PdfGeneratorService {
             }
             document.add(indemJour);
 
+            // Left blank exactly as on the paper original (a hand-completed certification line),
+            // same as the "Arrêté le présent décompte" line on the front page.
             PdfPTable arretePaye = new PdfPTable(2);
             arretePaye.setWidthPercentage(100);
             arretePaye.setSpacingBefore(6);
-            arretePaye.addCell(plainCell("ARRETE A LA SOMME DE " + fmt(totalIndemnite) + " FCFA\nCLOSE AT THE SUM OF", bodyFont));
-            arretePaye.addCell(plainCell("PAYE LA SOMME DE " + fmt(montantAvance) + " FCFA\nPAID THE SUM OF", bodyFont));
+            arretePaye.addCell(plainCell("ARRETE A LA SOMME DE .............................................\nCLOSE AT THE SUM OF", bodyFont));
+            arretePaye.addCell(plainCell("PAYE LA SOMME DE .............................................\nPAID THE SUM OF", bodyFont));
             document.add(arretePaye);
 
             Paragraph payeeTitre = new Paragraph("Payée à titre d'avance" + (avance != null && avance.getPourcentageAvance() != null ? " (" + avance.getPourcentageAvance() + "%)" : ""), smallFont);
@@ -335,10 +349,6 @@ public class PdfGeneratorService {
         return String.format("%,d", amount.longValue()).replace(',', ' ');
     }
 
-    private static String amountFootnote() {
-        return "voir montant en chiffres ci-dessus / see amount in figures above";
-    }
-
     private PdfPTable bilingualHeaderTable(Font headerFontFr, Font headerFontEn) {
         PdfPTable headerTable = new PdfPTable(3);
         headerTable.setWidthPercentage(100);
@@ -382,20 +392,25 @@ public class PdfGeneratorService {
         table.addCell(valueCell);
     }
 
+    /** Plain centered bold heading with only a bottom rule — the real paper form's section titles
+     *  (OBSERVATIONS, MODE DE PAIEMENT, etc.) carry no color fill, unlike the app's navy branding. */
     private PdfPTable sectionHeader(String title, Font font) {
         PdfPTable t = new PdfPTable(1);
         t.setWidthPercentage(100);
         t.setSpacingBefore(4);
         PdfPCell c = new PdfPCell(new Phrase(title, font));
-        c.setBackgroundColor(new Color(11, 37, 69));
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setBorder(Rectangle.BOTTOM);
+        c.setBorderWidth(1f);
         c.setPadding(4);
         t.addCell(c);
         return t;
     }
 
+    /** Plain bordered cell, no shading — the real form's table headers are white, not gray-filled. */
     private PdfPCell headerCell(String text, Font font) {
         PdfPCell c = new PdfPCell(new Phrase(text, font));
-        c.setBackgroundColor(new Color(230, 230, 230));
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
         c.setPadding(4);
         return c;
     }
